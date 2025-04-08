@@ -1138,6 +1138,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1882782878}
   - component: {fileID: 1882782879}
+  - component: {fileID: 1882782880}
   m_Layer: 0
   m_Name: Web3Manager
   m_TagString: Untagged
@@ -1176,6 +1177,18 @@ MonoBehaviour:
   devSeedPhrase: coconut teach old consider vivid leader minute canoe original suspect
     skirt pause
   canisterId: opcce-byaaa-aaaak-qcgda-cai
+--- !u!114 &1882782880
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1882782877}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97fee3aa423f1754c896c15739c1ff3c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameDataManager
 --- !u!1 &2116198337
 GameObject:
   m_ObjectHideFlags: 0

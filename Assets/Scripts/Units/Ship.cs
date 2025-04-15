@@ -249,5 +249,32 @@
         {
             return Thrusters == null ? false : (Thrusters.Length > 0 ? Thrusters[0].activeSelf : false);
         }
+
+        public void ResetShip()
+        {
+            // Reset movement variables
+            Speed = 0f;
+            DeathRot = Vector3.zero;
+            moveDirection = Vector3.zero;
+            
+            // Re-enable SteeringRig and set target
+            if (MySt != null)
+            {
+                MySt.enabled = true;
+                Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
+                MySt.Destination = Target.position;
+                MySt.StoppingDistance = StoppingDistance;
+            }
+            
+            // Reset thrusters
+            EnableThrusters(false);
+            
+            // Reset rotation alignment
+            AlignRotationWithMovement = true;
+            targetRotation = transform.rotation;
+            
+            // Re-enable movement
+            CanMove = true;
+        }
     }
 }

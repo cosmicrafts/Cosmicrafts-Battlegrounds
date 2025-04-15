@@ -2,13 +2,14 @@
  * This is the 4° in-game character controller 
  * Sotzeer
  */
-  namespace Cosmicrafts
+namespace Cosmicrafts
 {
 public class Character_5 : GameCharacter
 {
     void Start()
         {
-            GameMng.GM.BOT.SpeedEnergy *= 0.8f; //Decrement Energy recovery bot in 20% (skill 1)
+            if (GameMng.GM.Bots.Count > 0)
+                GameMng.GM.Bots[0].SpeedEnergy *= 0.8f; //Decrement Energy recovery bot in 20% (skill 1)
             GameMng.P.SpeedEnergy *= 1.1f; //Increment Energy recovery in 10% (skill 2)
         }
     public override void DeployUnit(Unit unit)

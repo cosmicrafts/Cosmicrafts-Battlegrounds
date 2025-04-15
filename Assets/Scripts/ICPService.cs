@@ -2,6 +2,8 @@ using UnityEngine;
 using System;
 using System.Threading.Tasks;
 using System.Text;
+using System.Runtime.InteropServices;
+using System.Collections;
 
 // ICP libraries
 using EdjCase.ICP.Agent;
@@ -13,6 +15,40 @@ using Org.BouncyCastle.Crypto.Parameters;
 // Project-specific
 using Cosmicrafts.backend;
 using Cosmicrafts.backend.Models;
+
+/// <summary>
+/// GameManager component that receives the seed phrase from Vue and passes it to ICPService.
+/// This matches what Vue is sending to.
+/// </summary>
+public class GameManager : MonoBehaviour
+{
+    private void Awake()
+    {
+        // Ensure this GameObject is named "GameManager" so Vue can find it
+        gameObject.name = "GameManager";
+        Debug.Log("[GameManager] Initialized. GameObject name set to: GameManager");
+    }
+
+    /// <summary>
+    /// Receives seed phrase from Vue and passes it to ICPService
+    /// This method name must match exactly what Vue is calling: ReceiveSeedPhrase
+    /// </summary>
+    public void ReceiveSeedPhrase(string seedPhrase)
+    {
+        Debug.Log("[GameManager] Received seed phrase from Vue. Forwarding to ICPService.");
+        
+        // Find ICPService and forward the seed phrase
+        ICPService icpService = FindObjectOfType<ICPService>();
+        if (icpService != null)
+        {
+            icpService.SetSeedPhrase(seedPhrase);
+        }
+        else
+        {
+            Debug.LogError("[GameManager] ICPService not found in scene! Cannot forward seed phrase.");
+        }
+    }
+}
 
 /// <summary>
 /// Minimal service to handle ICP authentication and player data retrieval.
@@ -37,7 +73,17 @@ public class ICPService : MonoBehaviour
     [SerializeField] private bool useDevelopmentModeInEditor = true;
     [SerializeField] private string devSeedPhrase = "coconut teach old consider vivid leader minute canoe original suspect skirt pause";
     [SerializeField] private string canisterId = "opcce-byaaa-aaaak-qcgda-cai";
+
+    private string seedPhrase;
+
+    #if UNITY_WEBGL && !UNITY_EDITOR
+    [DllImport("__Internal")]
+    private static extern void RequestSeedPhraseFromJS();
     
+    [DllImport("__Internal")]
+    private static extern void ListActiveGameObjects();
+    #endif
+
     private void Awake()
     {
         if (Instance != null && Instance != this)
@@ -46,46 +92,116 @@ public class ICPService : MonoBehaviour
             return;
         }
         
+        // Ensure this GameObject is named "ICPService"
+        gameObject.name = "ICPService";
+        
         Instance = this;
         DontDestroyOnLoad(gameObject);
-        Log("Initialized");
+        
+        // Print information about this GameObject for debugging
+        Debug.Log($"[ICPService] Initialized. GameObject name is forced to: {gameObject.name}");
+        Debug.Log($"[ICPService] Transform path: {GetTransformPath(transform)}");
+        
+        // Register to static functions for easier access from JavaScript
+        WebGLBridge.OnSeedPhraseReceived = SetSeedPhrase;
+        
+        // In WebGL, ensure GameManager exists to receive messages from Vue
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        EnsureGameManagerExists();
+        #endif
+    }
+
+    /// <summary>
+    /// Ensures a GameManager exists in the scene to receive Vue messages
+    /// </summary>
+    private void EnsureGameManagerExists()
+    {
+        GameManager gameManager = FindObjectOfType<GameManager>();
+        if (gameManager == null)
+        {
+            // Create a new GameObject with GameManager component
+            GameObject gameManagerObject = new GameObject("GameManager");
+            gameManagerObject.AddComponent<GameManager>();
+            DontDestroyOnLoad(gameManagerObject);
+            Debug.Log("[ICPService] Created GameManager to receive Vue messages");
+        }
+    }
+
+    void Start()
+    {
+        #if UNITY_WEBGL && !UNITY_EDITOR
+            Log("WebGL mode - requesting seed phrase from web app");
+            RequestSeedPhraseFromJS();
+            // Also list active GameObjects to help diagnose the hierarchy
+            ListActiveGameObjects();
+        #else
+            if (useDevelopmentModeInEditor) {
+                Log("Using development seed phrase");
+                seedPhrase = devSeedPhrase;
+                StartCoroutine(InitializeWithSeedPhrase(seedPhrase));
+            }
+        #endif
     }
     
-    private async void Start()
+    /// <summary>
+    /// This method is called by JavaScript (via SendMessage) to set the seed phrase from the Vue frontend,
+    /// or by GameManager when it receives the seed phrase from Vue
+    /// </summary>
+    public void SetSeedPhrase(string phraseFromJS)
     {
-        // Auto-initialize in Editor with development mode if enabled
-        #if UNITY_EDITOR
-        if (useDevelopmentModeInEditor)
+        if (string.IsNullOrEmpty(phraseFromJS))
         {
-            Log("Using development mode");
-            await InitializeWithSeedPhrase(devSeedPhrase);
+            LogError("Received empty seed phrase from JavaScript");
+            return;
         }
-        #elif UNITY_WEBGL
-        Log("WebGL mode - waiting for identity from web app");
-        // WebGL initialization will be triggered externally
-        #endif
+        
+        Log("Received seed phrase from web app: " + (phraseFromJS.Length > 10 ? phraseFromJS.Substring(0, 10) + "..." : phraseFromJS));
+        seedPhrase = phraseFromJS;
+        StartCoroutine(InitializeWithSeedPhrase(seedPhrase));
     }
     
     /// <summary>
     /// Initialize ICP identity using a seed phrase
     /// </summary>
-    public async Task InitializeWithSeedPhrase(string seedPhrase)
+    public IEnumerator InitializeWithSeedPhrase(string seedPhrase)
     {
-        if (IsInitialized) return;
+        if (IsInitialized) yield break;
         
         Log("Initializing with seed phrase");
         
+        Ed25519Identity createdIdentity = null;
+        bool identityCreationFailed = false;
+
+        // Start the identity creation coroutine and wait for it to finish
+        yield return StartCoroutine(CreateIdentityFromSeedPhrase(seedPhrase, identity => {
+            if (identity == null)
+            {
+                LogError("Failed to create identity from seed phrase");
+                identityCreationFailed = true;
+            }
+            else
+            {
+                createdIdentity = identity;
+            }
+        }));
+
+        // If identity creation failed, stop here
+        if (identityCreationFailed || createdIdentity == null)
+        {
+            LogError("Stopping initialization due to identity creation failure.");
+            IsInitialized = false;
+            yield break;
+        }
+        
+        // Now that identity is created, proceed with the rest inside a try block
         try
         {
-            // Create identity from seed phrase
-            Ed25519Identity identity = await CreateIdentityFromSeedPhrase(seedPhrase);
-            
             // Create HttpAgent with the identity
             var httpClient = new UnityHttpClient();
-            var agent = new HttpAgent(httpClient, identity);
+            var agent = new HttpAgent(httpClient, createdIdentity); // Use the created identity
             
             // Store the principal ID
-            PrincipalId = identity.GetPublicKey().ToPrincipal().ToText();
+            PrincipalId = createdIdentity.GetPublicKey().ToPrincipal().ToText(); // Use the created identity
             Log($"Identity initialized with principal: {PrincipalId}");
             
             // Initialize the BackendApiClient with the agent and canister ID
@@ -95,59 +211,94 @@ public class ICPService : MonoBehaviour
             IsInitialized = true;
             
             // Fetch player data after initialization
-            await GetPlayerData();
+            StartCoroutine(GetPlayerData());
             
             // Notify listeners that initialization is complete
             OnICPInitialized?.Invoke();
         }
         catch (Exception e)
         {
-            LogError($"Initialization failed: {e.Message}");
+            LogError($"Initialization failed after identity creation: {e.Message}");
             IsInitialized = false;
         }
     }
     
     /// <summary>
-    /// Helper method to create identity from seed phrase
+    /// Helper method to create identity from seed phrase using coroutine
     /// </summary>
-    private async Task<Ed25519Identity> CreateIdentityFromSeedPhrase(string seedPhrase)
+    private IEnumerator CreateIdentityFromSeedPhrase(string seedPhrase, Action<Ed25519Identity> callback)
     {
-        // BIP39 derivation
-        byte[] seedBytes = MnemonicToSeed(seedPhrase);
+        // Run on a separate thread via Task to avoid freezing the UI
+        Task<Ed25519Identity> task = Task.Run(() => {
+            try
+            {
+                // BIP39 derivation
+                byte[] seedBytes = MnemonicToSeed(seedPhrase);
+                
+                // Use first 32 bytes for private key
+                byte[] privateKeyBytes = new byte[32];
+                Array.Copy(seedBytes, 0, privateKeyBytes, 0, 32);
+                
+                // Use the seed for Ed25519 key generation
+                var privateKey = new Ed25519PrivateKeyParameters(privateKeyBytes, 0);
+                
+                // Derive the public key
+                var publicKey = privateKey.GeneratePublicKey();
+                
+                // Create the identity
+                return new Ed25519Identity(publicKey.GetEncoded(), privateKey.GetEncoded());
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[ICPService] Error creating identity: {e.Message}");
+                return null;
+            }
+        });
         
-        // Use first 32 bytes for private key
-        byte[] privateKeyBytes = new byte[32];
-        Array.Copy(seedBytes, 0, privateKeyBytes, 0, 32);
+        // Small delay to ensure we don't block the main thread
+        yield return new WaitForSeconds(0.1f);
         
-        // Simulate an async operation
-        await Task.Delay(10);
+        // Wait for task to complete
+        while (!task.IsCompleted)
+        {
+            yield return null;
+        }
         
-        // Use the seed for Ed25519 key generation
-        var privateKey = new Ed25519PrivateKeyParameters(privateKeyBytes, 0);
-        
-        // Derive the public key
-        var publicKey = privateKey.GeneratePublicKey();
-        
-        // Create the identity
-        return new Ed25519Identity(publicKey.GetEncoded(), privateKey.GetEncoded());
+        // Get result and invoke callback
+        callback?.Invoke(task.Result);
     }
     
     /// <summary>
     /// Fetches the current player's data from the blockchain
     /// </summary>
-    public async Task<Player> GetPlayerData()
+    public IEnumerator GetPlayerData()
     {
         if (!IsInitialized)
         {
             LogError("Cannot get player data: not initialized");
-            return null;
+            yield break;
         }
         
         Log("Fetching player data");
         
+        // Create a task to fetch player data
+        Task<OptionalValue<Player>> playerTask = MainCanister.GetPlayer();
+        
+        // Wait for task to complete
+        while (!playerTask.IsCompleted)
+        {
+            yield return null;
+        }
+        
         try
         {
-            var playerInfo = await MainCanister.GetPlayer();
+            if (playerTask.IsFaulted)
+            {
+                LogError($"Error fetching player data: {playerTask.Exception.Message}");
+                yield break;
+            }
+            
+            var playerInfo = playerTask.Result;
             
             if (playerInfo.HasValue)
             {
@@ -156,19 +307,15 @@ public class ICPService : MonoBehaviour
                 
                 // Notify listeners
                 OnPlayerDataReceived?.Invoke(CurrentPlayer);
-                
-                return CurrentPlayer;
             }
             else
             {
                 Log("No player found for current identity");
-                return null;
             }
         }
         catch (Exception e)
         {
-            LogError($"Error fetching player data: {e.Message}");
-            return null;
+            LogError($"Error processing player data: {e.Message}");
         }
     }
     
@@ -189,6 +336,16 @@ public class ICPService : MonoBehaviour
         }
     }
     
+    /// <summary>
+    /// Get a full path string for debugging purposes
+    /// </summary>
+    private string GetTransformPath(Transform transform)
+    {
+        if (transform.parent == null)
+            return transform.name;
+        return GetTransformPath(transform.parent) + "/" + transform.name;
+    }
+    
     // Simplified logging helpers
     private void Log(string message) => Debug.Log($"[ICPService] {message}");
     private void LogWarning(string message) => Debug.LogWarning($"[ICPService] {message}");
@@ -204,4 +361,46 @@ public class ICPIdentityData
     public string publicKey;
     public string seedPhrase;
     public string derivationPath;
+}
+
+/// <summary>
+/// Static bridge class that helps JavaScript find Unity methods regardless of GameObject name
+/// </summary>
+public static class WebGLBridge
+{
+    // Reference to the SetSeedPhrase method
+    public static Action<string> OnSeedPhraseReceived;
+    
+    // This method can be called by JavaScript without knowing the specific GameObject
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    public static void RegisterGlobalFunctions()
+    {
+        Debug.Log("[WebGLBridge] Registering global functions for JavaScript interop");
+    }
+    
+    // This static method can be called directly from JavaScript 
+    public static void SetSeedPhraseGlobal(string seedPhrase)
+    {
+        Debug.Log("[WebGLBridge] Received seed phrase via global function");
+        if (OnSeedPhraseReceived != null)
+        {
+            OnSeedPhraseReceived(seedPhrase);
+        }
+        else
+        {
+            Debug.LogError("[WebGLBridge] OnSeedPhraseReceived is not registered. ICPService might not be initialized yet.");
+            
+            // Try to find the ICPService manually
+            ICPService service = UnityEngine.Object.FindObjectOfType<ICPService>();
+            if (service != null)
+            {
+                Debug.Log("[WebGLBridge] Found ICPService manually, calling SetSeedPhrase");
+                service.SetSeedPhrase(seedPhrase);
+            }
+            else
+            {
+                Debug.LogError("[WebGLBridge] Could not find ICPService in scene");
+            }
+        }
+    }
 } 

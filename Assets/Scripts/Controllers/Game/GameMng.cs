@@ -11,10 +11,16 @@
         public static Player P;
         public static GameMetrics MT;
         public static UIGameMng UI;
-        public BotEnemy BOT;
+        public List<BotEnemy> Bots = new List<BotEnemy>(); // Replace single BOT with multiple Bots
 
         public GameObject BotPrefab; // Prefab for bot instantiation
         public Vector3[] BS_Positions; // Base stations positions
+        
+        [Header("Bot Settings")]
+        public int numberOfBots = 3; // Number of bots to spawn
+        public float botSpacing = 100f; // Distance between bots in units
+        public Vector3 botStartPosition = new Vector3(0, 0, 0); // Starting position for the first bot
+        public Vector3 botSpacingDirection = new Vector3(1, 0, 0); // Direction to space the bots
 
         private List<Unit> units = new List<Unit>();
         private List<Spell> spells = new List<Spell>();
@@ -37,25 +43,35 @@
 
             Debug.Log("--GAME VARIABLES READY--");
 
-            // Instantiate BOT if necessary
-            if (BotPrefab != null)
-            {
-                BOT = Instantiate(BotPrefab).GetComponent<BotEnemy>();
-                Debug.Log("--BOT INSTANTIATED--");
-            }
-
             MT = new GameMetrics();
             MT.InitMetrics();
         }
 
         private void Start()
         {
-            
             Debug.Log("--GAME MANAGER START--");
 
-            BOT = Instantiate(BotPrefab).GetComponent<BotEnemy>();
+            // Spawn multiple bots instead of just one
+            SpawnBots();
 
             Debug.Log("--GAME MANAGER READY--");
+        }
+        
+        private void SpawnBots()
+        {
+            // Clear existing bots list in case of resets
+            Bots.Clear();
+            
+            // Spawn multiple bots at different positions
+            for (int i = 0; i < numberOfBots; i++)
+            {
+                Vector3 botPosition = botStartPosition + (botSpacingDirection.normalized * botSpacing * i);
+                BotEnemy bot = Instantiate(BotPrefab, botPosition, Quaternion.identity).GetComponent<BotEnemy>();
+                Bots.Add(bot);
+                
+                // Set unique bot name with index
+                bot.botName = $"Bot_{i+1}";
+            }
         }
 
         public Unit InitBaseStations(GameObject baseStationPrefab)
@@ -67,10 +83,10 @@
             playerBaseStation = Instantiate(baseStationPrefab, BS_Positions[playerBaseIndex], Quaternion.identity).GetComponent<Unit>();
             Targets[playerBaseIndex] = playerBaseStation;
 
-                GameObject botBaseStation = BotPrefab.GetComponent<BotEnemy>().prefabBaseStation;
-                    Targets[botBaseIndex] = Instantiate(botBaseStation, BS_Positions[botBaseIndex], Quaternion.identity).GetComponent<Unit>();
-                    Targets[botBaseIndex].PlayerId = 2;
-                    Targets[botBaseIndex].MyTeam = Team.Red;
+            GameObject botBaseStation = BotPrefab.GetComponent<BotEnemy>().prefabBaseStation;
+            Targets[botBaseIndex] = Instantiate(botBaseStation, BS_Positions[botBaseIndex], Quaternion.identity).GetComponent<Unit>();
+            Targets[botBaseIndex].PlayerId = 2;
+            Targets[botBaseIndex].MyTeam = Team.Red;
 
             // Set the IDs of the base stations
             for (int i = 0; i < Targets.Length; i++)

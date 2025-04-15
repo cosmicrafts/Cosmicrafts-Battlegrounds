@@ -25,6 +25,7 @@ namespace Cosmicrafts
     public class Unit : MonoBehaviour
     {
         public event Action<Unit> OnDeath;
+        public event Action<Unit> OnUnitDeath;
         protected int Id;
         protected NFTsUnit NFTs;
         public bool IsDeath;
@@ -227,6 +228,7 @@ namespace Cosmicrafts
 
             // Broadcast the death event
             OnDeath?.Invoke(this);
+            OnUnitDeath?.Invoke(this);
 
             UI.HideUI();
             SA.SetActive(false);
@@ -426,6 +428,54 @@ namespace Cosmicrafts
             else
             {
                 Debug.LogWarning($"MoveTo called on {name}, but no Ship component was found.");
+            }
+        }
+
+        public virtual void ResetUnit()
+        {
+            // Reset the unit to its initial state for reuse in object pooling
+            IsDeath = false;
+            Disabled = false;
+            Casting = 0f;
+            
+            // Reset health and shield to their maximum values
+            HitPoints = MaxHp;
+            Shield = MaxShield;
+            
+            // Reset UI elements
+            UI.SetHPBar(1f);
+            UI.SetShieldBar((float)Shield / (float)MaxShield);
+            // Show UI by setting Canvas active (instead of using non-existent ShowUI method)
+            if (UI.Canvas != null)
+                UI.Canvas.SetActive(true);
+            
+            // Re-enable colliders and other components
+            if (SolidBase != null) 
+                SolidBase.enabled = true;
+            
+            // Reset animation state if needed
+            if (MyAnim != null) {
+                MyAnim.ResetTrigger("Die");
+                MyAnim.SetBool("Idle", true);
+            }
+            
+            // Reset any ship-specific components
+            Ship ship = GetComponent<Ship>();
+            if (ship != null)
+                ship.ResetShip();
+                
+            Shooter shooter = GetComponent<Shooter>();
+            if (shooter != null)
+                shooter.ResetShooter();
+                
+            // Reactivate spawn area if applicable
+            if (SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyTeam))
+                SA.SetActive(true);
+                
+            // Create portal effect for respawn only if Portal prefab exists
+            if (Portal != null) {
+                GameObject portal = Instantiate(Portal, transform.position, Quaternion.identity);
+                Destroy(portal, 3f);
             }
         }
     }

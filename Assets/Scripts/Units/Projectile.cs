@@ -181,11 +181,30 @@
 
         private void MoveToLastPositionOrDestroy()
         {
-            transform.position = Vector3.MoveTowards(transform.position, LastTargetPosition, Speed * Time.fixedDeltaTime);
-
-            if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
+            // Check if this projectile is still valid and has not been destroyed
+            if (this == null || gameObject == null || !gameObject.activeInHierarchy)
             {
-                HandleImpact(null); // Impact at the last known target position
+                // Projectile has been destroyed or is inactive, don't proceed
+                return;
+            }
+            
+            try
+            {
+                transform.position = Vector3.MoveTowards(transform.position, LastTargetPosition, Speed * Time.fixedDeltaTime);
+
+                if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
+                {
+                    HandleImpact(null); // Impact at the last known target position
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error in MoveToLastPositionOrDestroy: {e.Message}");
+                // If we can't safely move the projectile, destroy it
+                if (gameObject != null)
+                {
+                    Destroy(gameObject);
+                }
             }
         }
 
@@ -285,12 +304,28 @@
 
         public void SetTarget(GameObject target)
         {
+            // Unsubscribe from previous target if exists
+            if (Target != null)
+            {
+                Unit previousTarget = Target.GetComponent<Unit>();
+                if (previousTarget != null)
+                {
+                    previousTarget.OnDeath -= HandleTargetDeath;
+                }
+            }
+            
             Target = target;
             if (target == null)
             {
-                Destroy(gameObject);
+                // If no target, destroy this projectile
+                if (gameObject != null)
+                {
+                    Destroy(gameObject);
+                }
+                return;
             }
-            else
+            
+            try
             {
                 LastTargetPosition = target.transform.position;
                 // Subscribe to the unit's OnDeath event
@@ -300,27 +335,68 @@
                     targetUnit.OnDeath += HandleTargetDeath;
                 }
             }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error in SetTarget: {e.Message}");
+                // If we can't safely set the target, destroy the projectile
+                if (gameObject != null)
+                {
+                    Destroy(gameObject);
+                }
+            }
         }
 
         private void HandleTargetDeath(Unit unit)
         {
-            // Handle the target death, for example:
+            // Check if this projectile is still valid and has not been destroyed
+            if (this == null || gameObject == null || !gameObject.activeInHierarchy)
+            {
+                // Projectile has been destroyed or is inactive, don't proceed
+                return;
+            }
+            
+            // Store the last position before clearing the target
+            Vector3 lastPosition = unit != null && unit.gameObject != null 
+                ? unit.transform.position 
+                : LastTargetPosition;
+                
+            // Handle the target death
             Target = null;
-            LastTargetPosition = unit.transform.position;
+            LastTargetPosition = lastPosition;
 
-            // Ensure that the projectile directly moves towards the last position
-            MoveToLastPositionOrDestroy();
+            try
+            {
+                // Ensure that the projectile directly moves towards the last position
+                MoveToLastPositionOrDestroy();
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error in HandleTargetDeath: {e.Message}");
+                // If we can't safely move the projectile, destroy it
+                if (gameObject != null)
+                {
+                    Destroy(gameObject);
+                }
+            }
         }
 
         private void OnDestroy()
         {
-            if (Target != null)
+            try
             {
-                Unit targetUnit = Target.GetComponent<Unit>();
-                if (targetUnit != null)
+                if (Target != null)
                 {
-                    targetUnit.OnDeath -= HandleTargetDeath;
+                    Unit targetUnit = Target.GetComponent<Unit>();
+                    if (targetUnit != null)
+                    {
+                        targetUnit.OnDeath -= HandleTargetDeath;
+                    }
                 }
+            }
+            catch (System.Exception e)
+            {
+                // Just log and continue - we're destroying anyway
+                Debug.LogWarning($"Error in OnDestroy cleanup: {e.Message}");
             }
         }
 

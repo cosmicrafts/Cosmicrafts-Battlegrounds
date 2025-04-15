@@ -203,7 +203,8 @@ namespace Cosmicrafts
                         GameMng.P.SpeedEnergy *= Multiplier;
                         break;
                     case SkillName.BotEnergyMultiplier:
-                        GameMng.GM.BOT.SpeedEnergy *= Multiplier;
+                        if (GameMng.GM.Bots.Count > 0)
+                            GameMng.GM.Bots[0].SpeedEnergy *= Multiplier;
                         break;
                     default:
                         Debug.LogWarning($"Skill {skillName} not recognized for gameplay modification.");

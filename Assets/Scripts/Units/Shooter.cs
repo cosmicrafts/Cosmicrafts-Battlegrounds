@@ -210,5 +210,23 @@ namespace Cosmicrafts
         {
             if (nFTsUnit != null) BulletDamage = nFTsUnit.Damage;
         }
+
+        public void ResetShooter()
+        {
+            // Reset attack parameters
+            DelayShoot = 0f;
+            CanAttack = true;
+            
+            // Clear current targets and enemies
+            Target = null;
+            InRange.Clear();
+            
+            // Reset validation timer
+            lastTargetCheckTime = 0f;
+            wasTargetNull = true;
+            
+            // Reset detection range in case it was modified
+            EnemyDetector.radius = RangeDetector;
+        }
     }
 }

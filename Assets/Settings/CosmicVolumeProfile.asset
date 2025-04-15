@@ -853,26 +853,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
   m_Name: CosmicVolumeProfile
   m_EditorClassIdentifier: 
-  components:
-  - {fileID: -5826263806520642419}
-  - {fileID: -5396974472896944009}
-  - {fileID: -7553019958190441814}
-  - {fileID: 1135101255634193795}
-  - {fileID: 4949857654717421450}
-  - {fileID: 3446761548583285900}
-  - {fileID: -3052777704896534816}
-  - {fileID: -5724035593216177629}
-  - {fileID: -8981485922045733955}
-  - {fileID: -6720147046857017949}
-  - {fileID: -8528790951975950166}
-  - {fileID: 4147296132770296208}
-  - {fileID: -1628523537515228203}
-  - {fileID: 3502993957272040460}
-  - {fileID: 5022316018493315180}
-  - {fileID: 2595297726109934099}
-  - {fileID: 3902803046764662696}
-  - {fileID: 2990227216755076483}
-  - {fileID: 139148609060437394}
+  components: []
 --- !u!114 &139148609060437394
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -1500,7 +1481,7 @@ MonoBehaviour:
     m_Value: 65472
   tint:
     m_OverrideState: 1
-    m_Value: {r: 1, g: 0.0990566, b: 0.9987636, a: 1}
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
   highQualityFiltering:
     m_OverrideState: 1
     m_Value: 0

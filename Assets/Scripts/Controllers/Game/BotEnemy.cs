@@ -52,6 +52,12 @@ public class BotEnemy : MonoBehaviour
     [Range(0, 3)]
     public float waitSpawn = 0.75f;
 
+    // Object Pooling Settings
+    [Header("Object Pooling")]
+    public int maxActiveUnits = 8; // Maximum active units for this bot
+    private List<Unit> activeUnits = new List<Unit>(); // Currently active units
+    private Dictionary<ShipsDataBase, List<Unit>> unitPool = new Dictionary<ShipsDataBase, List<Unit>>(); // Pooled units by type
+
     //Delta time to make a decision
     WaitForSeconds IADelta;
 
@@ -81,6 +87,7 @@ public class BotEnemy : MonoBehaviour
         //Init Basic variables
         IADelta = new WaitForSeconds(waitSpawn);
         MyUnits = new List<Unit>();
+        activeUnits = new List<Unit>();
         CanGenEnergy = true;
         rng = new System.Random();
 
@@ -90,6 +97,8 @@ public class BotEnemy : MonoBehaviour
 
         //Init Deck Cards info with the units prefabs info
         DeckNfts = new Dictionary<ShipsDataBase, NFTsUnit>();
+        unitPool = new Dictionary<ShipsDataBase, List<Unit>>();
+        
         for (int i = 0; i < DeckUnits.Length; i++)
         {
             if (DeckUnits[i] != null)
@@ -97,6 +106,9 @@ public class BotEnemy : MonoBehaviour
                 NFTsUnit nFTsCard = DeckUnits[i].ToNFTCard();
                 GameMng.GM.AddNftCardData(nFTsCard, 2);
                 DeckNfts.Add(DeckUnits[i], nFTsCard);
+                
+                // Initialize pool for each unit type
+                unitPool.Add(DeckUnits[i], new List<Unit>());
             }
         }
 
@@ -123,12 +135,156 @@ public class BotEnemy : MonoBehaviour
         {
             CurrentEnergy = MaxEnergy;
         }
+        
+        // Clean up destroyed units from active units list
+        CleanupActiveUnitsList();
+    }
+    
+    // Helper method to clean up the active units list
+    private void CleanupActiveUnitsList()
+    {
+        for (int i = activeUnits.Count - 1; i >= 0; i--)
+        {
+            Unit unit = activeUnits[i];
+            
+            // Remove if null or destroyed
+            if (unit == null || unit.gameObject == null || !unit.gameObject.activeInHierarchy || unit.GetIsDeath())
+            {
+                activeUnits.RemoveAt(i);
+            }
+        }
     }
 
     //Set if the bot can generate energy
     public void SetCanGenEnergy(bool can)
     {
         CanGenEnergy = can;
+    }
+    
+    // Get a unit from the pool or create a new one if none available
+    private Unit GetUnitFromPool(ShipsDataBase unitData, Vector3 position)
+    {
+        if (unitData == null || unitData.prefab == null)
+        {
+            Debug.LogWarning("Cannot get unit from pool: unitData or prefab is null");
+            return null;
+        }
+        
+        List<Unit> pool = unitPool[unitData];
+        
+        // First, clean up any null references in the pool
+        for (int i = pool.Count - 1; i >= 0; i--)
+        {
+            if (pool[i] == null)
+            {
+                pool.RemoveAt(i);
+            }
+        }
+        
+        // Check if there's an available unit in the pool
+        if (pool.Count > 0)
+        {
+            Unit unit = pool[0];
+            pool.RemoveAt(0);
+            
+            // Double-check the unit is valid
+            if (unit == null)
+            {
+                // If somehow our unit is null, create a new one
+                return CreateNewUnit(unitData, position);
+            }
+            
+            // Reactivate the unit
+            unit.gameObject.SetActive(true);
+            unit.transform.position = position;
+            
+            try
+            {
+                unit.ResetUnit(); // Reset the unit's state
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error resetting unit: {e.Message}");
+                // If there's an error resetting, create a new unit instead
+                GameMng.GM.DeleteUnit(unit);
+                return CreateNewUnit(unitData, position);
+            }
+            
+            return unit;
+        }
+        
+        // If no unit in pool, create a new one
+        return CreateNewUnit(unitData, position);
+    }
+    
+    // Helper method to create a new unit
+    private Unit CreateNewUnit(ShipsDataBase unitData, Vector3 position)
+    {
+        if (unitData.prefab == null)
+        {
+            Debug.LogError($"Cannot create unit: prefab is null for unit {unitData.name}");
+            return null;
+        }
+        
+        Unit newUnit = GameMng.GM.CreateUnit(unitData.prefab, position, MyTeam, DeckNfts[unitData].KeyId, 2);
+        
+        if (newUnit != null)
+        {
+            // Subscribe to unit's death event to return it to pool
+            newUnit.OnUnitDeath += ReturnUnitToPool;
+        }
+        
+        return newUnit;
+    }
+    
+    // Return a unit to the pool when it dies
+    private void ReturnUnitToPool(Unit unit)
+    {
+        if (unit == null)
+        {
+            Debug.LogWarning("Cannot return null unit to pool");
+            return;
+        }
+        
+        // Find which unit type this is
+        ShipsDataBase unitType = null;
+        foreach (var kvp in DeckNfts)
+        {
+            if (!string.IsNullOrEmpty(unit.getKey()) && unit.getKey() == kvp.Value.KeyId)
+            {
+                unitType = kvp.Key;
+                break;
+            }
+        }
+        
+        if (unitType != null)
+        {
+            try 
+            {
+                // Deactivate the unit instead of destroying it
+                unit.gameObject.SetActive(false);
+                
+                // Add back to the pool
+                unitPool[unitType].Add(unit);
+                
+                // Remove from active units list
+                if (activeUnits.Contains(unit))
+                {
+                    activeUnits.Remove(unit);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error returning unit to pool: {e.Message}");
+                // If we can't return it to the pool safely, just destroy it
+                GameMng.GM.DeleteUnit(unit);
+            }
+        }
+        else
+        {
+            // If we can't determine the unit type, just destroy it
+            GameMng.GM.DeleteUnit(unit);
+        }
     }
 
     //AI Decision algorithm
@@ -142,6 +298,12 @@ public class BotEnemy : MonoBehaviour
             if (TargetUnit == null || GameMng.GM.IsGameOver())
             {
                 break;
+            }
+            
+            // Check if we've reached maximum active units
+            if (activeUnits.Count >= maxActiveUnits)
+            {
+                continue;
             }
             
             // Get only non-null units from the deck
@@ -176,18 +338,20 @@ public class BotEnemy : MonoBehaviour
             }
 
             //Check if the bot has enough energy
-            if (SelectedUnit.cost <= CurrentEnergy && GameMng.GM.CountUnits(Team.Red) < 30)
+            if (SelectedUnit.cost <= CurrentEnergy && activeUnits.Count < maxActiveUnits)
             {
                 //Select a random position (check the child game objects of the bot)
                 Vector3 PositionSpawn = transform.GetChild(Random.Range(0, transform.childCount)).position;
 
-                //Spawn selected unit and subtract energy
-                Unit unit = GameMng.GM.CreateUnit(SelectedUnit.prefab,
-                                                 PositionSpawn,
-                                                 MyTeam,
-                                                 DeckNfts[SelectedUnit].KeyId, 2);
-
-                CurrentEnergy -= SelectedUnit.cost;
+                //Get or create unit from pool
+                Unit unit = GetUnitFromPool(SelectedUnit, PositionSpawn);
+                
+                // Add to active units list only if unit is valid
+                if (unit != null && unit.gameObject != null)
+                {
+                    activeUnits.Add(unit);
+                    CurrentEnergy -= SelectedUnit.cost;
+                }
             }
         }
     }

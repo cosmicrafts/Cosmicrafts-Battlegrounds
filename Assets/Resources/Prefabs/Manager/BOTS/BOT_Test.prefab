@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 614409388736174088}
   - component: {fileID: 614409388736174091}
   m_Layer: 0
-  m_Name: BOT_2_2
+  m_Name: BOT_Test
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -53,7 +53,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   botName: Alpha-9
-  botLv: 100
+  botLv: 420
   botAvatar: 1
   prefabBaseStation: {fileID: 2198226034328220048, guid: f258cc328b52bc6409d352b62d01fd8b,
     type: 3}
@@ -66,9 +66,9 @@ MonoBehaviour:
   - {fileID: 11400000, guid: fdd33f2c17885514881102dfee3d5790, type: 2}
   - {fileID: 11400000, guid: d1f66f70613224243a1965a4a9082d0c, type: 2}
   - {fileID: 11400000, guid: b98b7e000a3bc264788debc7ec620704, type: 2}
-  CurrentEnergy: 20
-  MaxEnergy: 20
-  SpeedEnergy: 1.5
+  CurrentEnergy: 30
+  MaxEnergy: 30
+  SpeedEnergy: 2.5
   waitSpawn: 0.1
 --- !u!1 &943119744353045766
 GameObject:

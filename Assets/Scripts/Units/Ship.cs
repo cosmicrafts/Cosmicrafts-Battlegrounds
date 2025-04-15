@@ -27,6 +27,29 @@
         public float RotationDamping = 0.1f; // Damping factor for smoother rotation
         public bool AlignRotationWithMovement = true; // Flag to toggle rotation alignment
 
+        [Header("Regeneration Settings")]
+        [Tooltip("Amount of shield points regenerated per second")]
+        [Range(0, 50)]
+        public float ShieldRegenRate = 1f;
+        
+        [Tooltip("Determines if shield regenerates when taking damage (true) or needs to wait (false)")]
+        public bool RegenShieldWhileDamaged = false;
+        
+        [Tooltip("Amount of HP points regenerated per second")]
+        [Range(0, 50)]
+        public float HPRegenRate = 0f;
+        
+        [Tooltip("Delay in seconds before HP regeneration starts after taking damage")]
+        [Range(0, 30)]
+        public float HPRegenDelay = 5f;
+        
+        // Timer for HP regeneration
+        private float hpRegenTimer = 0f;
+        // Flag to check if regeneration was recently applied
+        private bool shieldRegenApplied = false;
+        private bool recentlyDamaged = false;
+        private float lastDamageTime = 0f;
+
         Transform Target;
         public RaySensor[] AvoidanceSensors;
         public GameObject[] Thrusters;
@@ -60,6 +83,99 @@
         {
             base.Update();
             Move();
+            
+            // Update recently damaged flag
+            if (recentlyDamaged && Time.time - lastDamageTime > ShieldDelay)
+            {
+                recentlyDamaged = false;
+            }
+            
+            // Handle regeneration
+            RegenerateShieldAndHP();
+        }
+        
+        // Public method to check if shield can regenerate
+        public bool CanRegenerateShield()
+        {
+            // Shield can regenerate if:
+            // 1. Ship allows shields to regenerate while damaged OR
+            // 2. Ship hasn't been damaged recently (ShieldLoad is low)
+            return RegenShieldWhileDamaged || !IsRecentlyDamaged();
+        }
+        
+        public void TakeDamage(int damage, TypeDmg damageType = TypeDmg.Normal)
+        {
+            // Call the standard damage method
+            AddDmg(damage, damageType);
+            
+            // Reset HP regeneration timer
+            hpRegenTimer = HPRegenDelay;
+            
+            // Mark that damage was just taken
+            recentlyDamaged = true;
+            lastDamageTime = Time.time;
+        }
+        
+        private void RegenerateShieldAndHP()
+        {
+            if (IsDeath) return;
+            
+            // Shield regeneration
+            if (Shield < GetMaxShield() && CanRegenerateShield() && ShieldRegenRate > 0)
+            {
+                // Add the regeneration amount, taking into account fractional regeneration
+                float shieldToAdd = ShieldRegenRate * Time.deltaTime;
+                int wholeAmount = Mathf.FloorToInt(shieldToAdd);
+                float fractional = shieldToAdd - wholeAmount;
+                
+                // Random chance to add an extra point based on the fractional part
+                if (UnityEngine.Random.value < fractional)
+                    wholeAmount += 1;
+                
+                if (wholeAmount > 0)
+                {
+                    Shield += wholeAmount;
+                    if (Shield > GetMaxShield())
+                        Shield = GetMaxShield();
+                    
+                    UI.SetShieldBar((float)Shield / (float)GetMaxShield());
+                    shieldRegenApplied = true;
+                }
+            }
+            
+            // HP regeneration - with delay after taking damage
+            int currentMaxHP = GetMaxHitPoints();
+            if (HPRegenRate > 0 && HitPoints < currentMaxHP)
+            {
+                if (hpRegenTimer > 0)
+                {
+                    hpRegenTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    // Same logic as shield - convert to int with chance for fractional parts
+                    int hpToAdd = Mathf.FloorToInt(HPRegenRate * Time.deltaTime);
+                    float fractional = (HPRegenRate * Time.deltaTime) - hpToAdd;
+                    if (Random.value < fractional)
+                        hpToAdd += 1;
+                    
+                    if (hpToAdd > 0)
+                    {
+                        HitPoints += hpToAdd;
+                        if (HitPoints > currentMaxHP)
+                            HitPoints = currentMaxHP;
+                        
+                        UI.SetHPBar((float)HitPoints / (float)currentMaxHP);
+                    }
+                }
+            }
+        }
+        
+        // Helper to check if shield is in recovery mode
+        private bool IsRecentlyDamaged()
+        {
+            // Check only using our local damage tracking variable
+            return recentlyDamaged;
         }
 
         protected override void FixedUpdate()
@@ -252,6 +368,9 @@
 
         public void ResetShip()
         {
+            // Reset shield and HP regeneration timers
+            hpRegenTimer = 0f;
+            
             // Reset movement variables
             Speed = 0f;
             DeathRot = Vector3.zero;

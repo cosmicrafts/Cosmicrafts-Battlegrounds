@@ -141,7 +141,7 @@ namespace Cosmicrafts
                         // Also increase the base damage for stronger effects
                         laserSpell.damagePerSecond = Mathf.RoundToInt(laserSpell.damagePerSecond * Multiplier);
                         
-                        Debug.Log($"Applied ShieldMultiplier {Multiplier} to Laser Beam spell. DPS now: {laserSpell.damagePerSecond}");
+                        //Debug.Log($"Applied ShieldMultiplier {Multiplier} to Laser Beam spell. DPS now: {laserSpell.damagePerSecond}");
                     }
                     else
                     {
@@ -151,11 +151,11 @@ namespace Cosmicrafts
                         {
                             // Boost explosion damage
                             explosionSpell.damageMultiplier *= Multiplier;
-                            Debug.Log($"Applied ShieldMultiplier {Multiplier} to Explosion spell. Damage multiplier now: {explosionSpell.damageMultiplier}");
+                           // Debug.Log($"Applied ShieldMultiplier {Multiplier} to Explosion spell. Damage multiplier now: {explosionSpell.damageMultiplier}");
                         }
                         else
                         {
-                            Debug.Log($"Applied ShieldMultiplier {Multiplier} to spell {spell.getKey()}");
+                           // Debug.Log($"Applied ShieldMultiplier {Multiplier} to spell {spell.getKey()}");
                         }
                     }
                     break;

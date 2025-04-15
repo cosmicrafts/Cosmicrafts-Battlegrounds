@@ -636,7 +636,7 @@ MonoBehaviour:
   AvoidanceSensitivity: 1
   MaxAvoidanceLength: 1
   YAxis: 0
-  RotateTowardsTarget: 0
+  RotateTowardsTarget: 1
   RB: {fileID: 2198226034328220052}
   TurnForce: 0
   MoveForce: 0
@@ -898,7 +898,7 @@ MonoBehaviour:
   MyTeam: 0
   HitPoints: 80
   Shield: 80
-  ShieldDelay: 2
+  ShieldDelay: 1.41
   Size: 3
   SpawnAreaSize: 0
   DodgeChance: 0
@@ -914,11 +914,11 @@ MonoBehaviour:
   UI: {fileID: 8725141663424671622}
   MyAnim: {fileID: 6364282005187429036}
   MySt: {fileID: 2198226033917351815}
-  Aceleration: 0.25
-  MaxSpeed: 0.25
+  Aceleration: 99
+  MaxSpeed: 99
   DragSpeed: 0.25
   TurnSpeed: 60
-  StopSpeed: 0.75
+  StopSpeed: 99
   StoppingDistance: 2.5
   AvoidanceRange: 0.25
   RotationDamping: 0.1
@@ -950,9 +950,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
   CanAttack: 1
-  RangeDetector: 28
+  RangeDetector: 58
   CoolDown: 0.9
-  BulletSpeed: 36
+  BulletSpeed: 99
   BulletDamage: 1
   criticalStrikeChance: 0.25
   criticalStrikeMultiplier: 2

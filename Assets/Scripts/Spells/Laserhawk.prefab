@@ -65,18 +65,20 @@ MonoBehaviour:
   MyTeam: 0
   PlayerId: 1
   Duration: 1
-  Lazer: {fileID: 7450480653438804957}
-  StartLazer: {fileID: 2952778753973073564}
-  EndLazer: {fileID: 2952778753973073564}
-  ShieldDamageMultiplier: 1
-  BaseDamage: 20
+  damagePerSecond: 100
+  damageInterval: 0.25
+  beamLength: 100
+  beamWidth: 2.5
+  damageType: 0
   criticalStrikeChance: 0.058
   criticalStrikeMultiplier: 2
-  damageType: 0
-  laserWidth: 2.5
-  damagePerSecond: 25
-  laserLength: 100
-  laserOriginOffset: {x: 0, y: 0.5, z: 0}
+  ShieldDamageMultiplier: 1
+  laserLineRenderer: {fileID: 7450480653438804957}
+  laserStartVFX: {fileID: 2952778753973073564}
+  laserEndVFX: {fileID: 2952778753973073564}
+  laserMaterial: {fileID: 2100000, guid: 3af5e999b9d65a849b81b2325439e8a3, type: 2}
+  laserColor: {r: 1, g: 0.99437773, b: 0, a: 1}
+  laserIntensity: 2
 --- !u!65 &6134375252558460818
 BoxCollider:
   m_ObjectHideFlags: 0

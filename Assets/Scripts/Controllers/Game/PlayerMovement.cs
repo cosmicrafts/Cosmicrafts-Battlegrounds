@@ -488,6 +488,18 @@ namespace Cosmicrafts
         {
             return isDashing;
         }
+        
+        // Public accessor for the player's movement direction - used by spells for aiming
+        public Vector3 GetLastMoveDirection()
+        {
+            // If we have significant velocity, use it
+            if (currentVelocity.sqrMagnitude > 0.01f)
+            {
+                return currentVelocity.normalized;
+            }
+            // Otherwise return the forward direction
+            return transform.forward;
+        }
 
         // Get a marker from pool
         GameObject GetMarker() {

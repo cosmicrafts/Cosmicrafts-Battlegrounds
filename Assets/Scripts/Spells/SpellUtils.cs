@@ -107,6 +107,23 @@ public static class SpellUtils
         // Get all units in the scene
         Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
         
+        // Log how many units we're checking
+        Debug.Log($"[SpellUtils] Checking {allUnits.Length} units for beam collision. Beam width: {beamWidth}");
+        
+        // Draw debug for beam visualization
+        Debug.DrawLine(lineStart, lineEnd, Color.red, 1.0f);
+        Debug.DrawLine(lineStart + Vector3.up * 0.1f, lineEnd + Vector3.up * 0.1f, Color.yellow, 1.0f);
+        
+        Vector3 beamDirection = (lineEnd - lineStart).normalized;
+        Vector3 right = Vector3.Cross(beamDirection, Vector3.up).normalized * (beamWidth / 2);
+        
+        // Draw beam boundaries for debug
+        Debug.DrawLine(lineStart + right, lineEnd + right, Color.green, 1.0f);
+        Debug.DrawLine(lineStart - right, lineEnd - right, Color.green, 1.0f);
+        
+        // Use a slightly larger width for detection to ensure hits
+        float detectionWidth = beamWidth * 1.2f;
+        
         foreach (Unit unit in allUnits)
         {
             // Skip units on our team, null, or dead units
@@ -117,10 +134,56 @@ public static class SpellUtils
             if (unit.GetComponent<MainStation>() != null)
                 continue;
                 
-            // Check if unit is in the beam path
-            if (IsPointInBeam(unit.transform.position, lineStart, lineEnd, beamWidth))
+            // Instead of just checking position, check multiple points on the unit's collider if available
+            Collider unitCollider = unit.GetComponent<Collider>();
+            bool inBeam = false;
+            
+            if (unitCollider != null)
+            {
+                // Check center and bounds extents
+                Vector3 center = unitCollider.bounds.center;
+                Vector3 extents = unitCollider.bounds.extents;
+                
+                // Check multiple points of the collider
+                inBeam = IsPointInBeam(center, lineStart, lineEnd, detectionWidth);
+                
+                // If center isn't in beam, check 8 corners of the bounding box
+                if (!inBeam)
+                {
+                    // Check corners
+                    for (int x = -1; x <= 1; x += 2)
+                    {
+                        for (int y = -1; y <= 1; y += 2)
+                        {
+                            for (int z = -1; z <= 1; z += 2)
+                            {
+                                Vector3 cornerPoint = center + new Vector3(x * extents.x, y * extents.y, z * extents.z);
+                                if (IsPointInBeam(cornerPoint, lineStart, lineEnd, detectionWidth))
+                                {
+                                    inBeam = true;
+                                    Debug.DrawLine(cornerPoint, center, Color.yellow, 1.0f); // Debug line to show which point is hit
+                                    break;
+                                }
+                            }
+                            if (inBeam) break;
+                        }
+                        if (inBeam) break;
+                    }
+                }
+            }
+            else
+            {
+                // No collider, just check the transform position
+                inBeam = IsPointInBeam(unit.transform.position, lineStart, lineEnd, detectionWidth);
+            }
+            
+            if (inBeam)
             {
                 targetsInBeam.Add(unit);
+                Debug.Log($"[SpellUtils] Unit {unit.name} is in beam!");
+                
+                // Draw debug line to hit unit
+                Debug.DrawLine(lineStart, unit.transform.position, Color.magenta, 1.0f);
             }
         }
         
@@ -140,6 +203,12 @@ public static class SpellUtils
         
         // Check if the closest point is actually on the line segment
         bool isOnLineSegment = IsPointOnLineSegment(lineStart, lineEnd, closestPoint);
+        
+        // Draw debug line from point to closest point on beam
+        if (distanceToBeam <= beamWidth/2)
+        {
+            Debug.DrawLine(point, closestPoint, Color.green, 1.0f);
+        }
         
         return isOnLineSegment && distanceToBeam <= beamWidth/2;
     }
@@ -194,14 +263,16 @@ public static class SpellUtils
         // Configure basic properties
         lineRenderer.useWorldSpace = true;
         lineRenderer.positionCount = 2;
-        lineRenderer.startWidth = width;
-        lineRenderer.endWidth = width * 0.5f;
+        
+        // Increased width for better visibility
+        lineRenderer.startWidth = width * 1.5f;
+        lineRenderer.endWidth = width * 0.8f;
         lineRenderer.enabled = true;
         
-        // Create emissive material
+        // Create emissive material with double intensity for better visibility
         Material beamMaterial = new Material(Shader.Find("Particles/Standard Unlit"));
         beamMaterial.SetColor("_Color", color);
-        beamMaterial.SetColor("_EmissionColor", color * intensity);
+        beamMaterial.SetColor("_EmissionColor", color * intensity * 2.0f); // Double intensity
         beamMaterial.EnableKeyword("_EMISSION");
         
         // Configure transparency

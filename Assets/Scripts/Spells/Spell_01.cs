@@ -20,8 +20,12 @@ public class Spell_01 : Spell
     public int damagePerSecond = 250;
     public float damageInterval = 0.25f;
     public float beamLength = 100f;
-    public float beamWidth = 2.5f;
+    public float beamWidth = 8f;  // This controls both visual width and collision detection width
     public TypeDmg damageType = TypeDmg.Shield;
+    
+    [Header("Detection Settings")]
+    [Tooltip("Multiplier applied to beam width for hit detection. Increase this if beam misses targets it should hit.")]
+    public float hitDetectionWidthMultiplier = 1.5f;  // Makes hit detection wider than visual beam
     
     [Header("Critical Hit Settings")]
     [Range(0f, 1f)] public float criticalStrikeChance = 0f;
@@ -37,6 +41,8 @@ public class Spell_01 : Spell
     public Material laserMaterial;
     public Color laserColor = Color.red;
     public float laserIntensity = 5.0f;
+    [Tooltip("Whether to create additional VFX where the beam penetrates through targets")]
+    public bool createPenetrationEffects = true;
     
     // Tracking references
     private Unit _mainStationUnit;
@@ -59,7 +65,6 @@ public class Spell_01 : Spell
         _baseDamagePerTick = Mathf.RoundToInt(damagePerSecond * damageInterval);
         
         // Find the MainStation for the appropriate team using the utility
-        // EXAMPLE: How to use SpellUtils to find the player's MainStation
         var (mainStation, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
         _mainStationUnit = mainStationUnit;
         
@@ -71,8 +76,6 @@ public class Spell_01 : Spell
         
         // Initial position update
         UpdateLaserBeam();
-        
-        Debug.Log($"Laser Beam initialized with DPS: {damagePerSecond}, shield multiplier: {ShieldDamageMultiplier}");
     }
     
     private void SetupLineRenderer()
@@ -81,7 +84,6 @@ public class Spell_01 : Spell
         if (laserLineRenderer == null)
         {
             laserLineRenderer = SpellUtils.CreateBeamLineRenderer(gameObject, beamWidth * 0.5f, laserColor, laserIntensity);
-            Debug.Log("Created new LineRenderer using SpellUtils");
         }
         
         // Create VFX objects if not assigned using SpellUtils
@@ -108,9 +110,6 @@ public class Spell_01 : Spell
             );
             laserEndVFX.name = "LaserEndVFX";
         }
-        
-        // Log that visual components are set up
-        Debug.Log($"Visual components created - LineRenderer: {laserLineRenderer != null}, StartVFX: {laserStartVFX != null}, EndVFX: {laserEndVFX != null}");
     }
     
     protected override void Update()
@@ -123,12 +122,6 @@ public class Spell_01 : Spell
             // If MainStation is destroyed, try to find it again using SpellUtils
             var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
             _mainStationUnit = mainStationUnit;
-            
-            // If still not found, use fallback position
-            if (_mainStationUnit == null)
-            {
-                Debug.LogWarning("MainStation not found or destroyed. Using default position.");
-            }
         }
         
         // Update laser beam position based on MainStation
@@ -159,9 +152,6 @@ public class Spell_01 : Spell
         {
             stationPosition = _mainStationUnit.transform.position;
             stationRotation = _mainStationUnit.transform.rotation;
-            
-            // Trace movement
-            Debug.Log($"MainStation position: {stationPosition}, rotation: {stationRotation.eulerAngles}");
         }
         else
         {
@@ -170,8 +160,16 @@ public class Spell_01 : Spell
             stationRotation = Quaternion.identity;
         }
         
-        // EXAMPLE: How to use SpellUtils to get direction toward enemy base
+        // Get direction toward enemy base
         Vector3 direction = SpellUtils.GetDirectionToEnemyBase(stationPosition, MyTeam);
+        
+        // If direction is roughly Vector3.forward (indicates no enemy found), use a more interesting direction
+        if (Vector3.Distance(direction.normalized, Vector3.forward) < 0.1f)
+        {
+            // Use the rotation of the station + a time-based offset for movement
+            float angle = Time.time * 20f; // Rotate 20 degrees per second
+            direction = Quaternion.Euler(0, angle, 0) * stationRotation * Vector3.forward;
+        }
         
         // Move this GameObject to follow the MainStation
         transform.position = stationPosition;
@@ -180,23 +178,8 @@ public class Spell_01 : Spell
         // Calculate laser start position (at the station position)
         _laserPositions[0] = stationPosition + Vector3.up * 2.0f; // Increased height offset for better visibility
         
-        // Cast a ray to find what the laser hits
-        RaycastHit hit;
-        Vector3 endPos;
-        
-        if (Physics.Raycast(_laserPositions[0], direction, out hit, beamLength, _targetLayerMask))
-        {
-            // Laser hits something
-            endPos = hit.point;
-        }
-        else
-        {
-            // Laser doesn't hit anything - use full length
-            endPos = _laserPositions[0] + (direction * beamLength);
-        }
-        
-        // Set the end position
-        _laserPositions[1] = endPos;
+        // IMPORTANT CHANGE: Always use full beam length - don't stop at first hit
+        _laserPositions[1] = _laserPositions[0] + (direction * beamLength);
         
         // Set positions directly on the line renderer
         if (laserLineRenderer != null)
@@ -208,19 +191,15 @@ public class Spell_01 : Spell
             laserLineRenderer.SetPositions(_laserPositions);
             
             // Make the effect stronger by adding width variation
-            laserLineRenderer.startWidth = beamWidth * 0.8f;
-            laserLineRenderer.endWidth = beamWidth * 0.3f;
+            laserLineRenderer.startWidth = beamWidth * 1.5f; // Increased width at start
+            laserLineRenderer.endWidth = beamWidth * 0.5f;  // Narrower at end
             
             // Set glow parameter if using Standard Unlit shader
             if (laserLineRenderer.material.HasProperty("_Glow"))
                 laserLineRenderer.material.SetFloat("_Glow", 1.5f);
-            
-            // Debug positions
-            Debug.Log($"Line positions: Start={_laserPositions[0]}, End={_laserPositions[1]}, Length={Vector3.Distance(_laserPositions[0], _laserPositions[1])}");
         }
         else
         {
-            Debug.LogError("LineRenderer is missing! Call SetupLineRenderer first");
             SetupLineRenderer(); // Try to recreate it
         }
         
@@ -228,58 +207,126 @@ public class Spell_01 : Spell
         if (laserStartVFX != null)
         {
             laserStartVFX.transform.position = _laserPositions[0];
+            laserStartVFX.transform.localScale = Vector3.one * beamWidth * 1.2f; // Scale up
             laserStartVFX.SetActive(true); // Ensure it's active
         }
         
         if (laserEndVFX != null)
         {
             laserEndVFX.transform.position = _laserPositions[1];
+            laserEndVFX.transform.localScale = Vector3.one * beamWidth * 0.8f; // Scale up
             laserEndVFX.SetActive(true); // Ensure it's active
         }
     }
     
     private void FindTargetsInBeam()
     {
-        // EXAMPLE: How to use SpellUtils to find units in a beam
-        _targetsInBeam = SpellUtils.FindUnitsInBeam(
-            MyTeam,           // Our team
-            _laserPositions[0], // Beam start
-            _laserPositions[1], // Beam end
-            beamWidth         // Beam width
-        );
+        // Calculate detection width (use multiplier for easier collision detection)
+        float detectionWidth = beamWidth * hitDetectionWidthMultiplier;
+        
+        // Direct approach to find units - similar to Shooter.cs
+        // Get all units in the scene - this is more expensive but more reliable for beam weapons
+        Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
+        
+        // Clear previous targets
+        _targetsInBeam.Clear();
+        
+        foreach (Unit unit in allUnits)
+        {
+            // Skip units on our team, null, or dead units
+            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
+                continue;
+                
+            // Skip MainStation units (they're not damage targets)
+            if (unit.GetComponent<MainStation>() != null)
+                continue;
+                
+            // Check if unit is in beam path
+            if (IsUnitInBeam(unit, _laserPositions[0], _laserPositions[1], detectionWidth))
+            {
+                _targetsInBeam.Add(unit);
+                
+                // Only create visual effects if we're close to damage application
+                if (_damageTimer <= 0.05f && createPenetrationEffects)
+                {
+                    // Calculate beam direction
+                    Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]).normalized;
+                    
+                    // Create hit effect at entry point (front of unit relative to beam)
+                    Vector3 frontPos = FindBeamIntersectionPoint(unit, _laserPositions[0], beamDirection);
+                    SpellUtils.CreateHitEffect(frontPos, beamWidth * 0.3f, Color.yellow, 0.3f);
+                }
+            }
+        }
+    }
+    
+    // More efficient unit detection for beam (similar to Shooter approach)
+    private bool IsUnitInBeam(Unit unit, Vector3 beamStart, Vector3 beamEnd, float beamWidth)
+    {
+        Collider unitCollider = unit.GetComponent<Collider>();
+        if (unitCollider == null) return false;
+        
+        // Check if collider bounds intersect with beam
+        Vector3 center = unitCollider.bounds.center;
+        Vector3 extents = unitCollider.bounds.extents;
+        
+        // Simple distance check from center to beam line
+        Vector3 beamDir = (beamEnd - beamStart).normalized;
+        Vector3 toCenter = center - beamStart;
+        
+        // Project toCenter onto beam direction
+        float projLength = Vector3.Dot(toCenter, beamDir);
+        
+        // If projection is outside beam length, unit is not in beam
+        if (projLength < 0 || projLength > Vector3.Distance(beamStart, beamEnd))
+            return false;
+            
+        // Find closest point on beam to center
+        Vector3 projectedPoint = beamStart + beamDir * projLength;
+        
+        // Check if distance from center to beam is less than beam width + unit extents
+        float distance = Vector3.Distance(projectedPoint, center);
+        
+        // Use the largest horizontal extent for beam collision
+        float horizontalExtent = Mathf.Max(extents.x, extents.z);
+        
+        // If distance is less than beam width + unit extent, unit is in beam
+        return distance < (beamWidth / 2 + horizontalExtent);
     }
     
     private void ApplyDamageToTargets()
     {
-        if (_targetsInBeam.Count == 0)
-        {
-            // Even if no targets, log that we're trying to apply damage
-            Debug.Log("Checking for targets to damage - none found in beam");
-            return;
-        }
-            
-        Debug.Log($"Applying damage to {_targetsInBeam.Count} targets in laser beam");
+        if (_targetsInBeam.Count == 0) return;
+        
+        // Calculate base damage with multipliers, similar to Shooter.cs
+        int damage = CalculateDamage();
         
         foreach (Unit unit in _targetsInBeam)
         {
             if (unit != null && !unit.GetIsDeath())
             {
-                // Calculate damage with critical hit chance
-                int damage = CalculateDamage();
-                
-                // Apply damage
+                // Apply damage directly with type - similar to Shooter.cs projectile implementation
                 unit.AddDmg(damage, damageType);
                 
-                // Visual feedback
-                Debug.Log($"Laser did {damage} {damageType} damage to {unit.name}");
-                
-                // EXAMPLE: How to use SpellUtils to create hit effects
-                SpellUtils.CreateHitEffect(unit.transform.position, 0.5f, Color.yellow, 0.3f);
+                // Create penetration VFX to show beam passing through target
+                if (createPenetrationEffects)
+                {
+                    // Calculate beam direction
+                    Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]).normalized;
+                    
+                    // Create hit effect at entry point (front of unit relative to beam)
+                    Vector3 frontPos = FindBeamIntersectionPoint(unit, _laserPositions[0], beamDirection);
+                    SpellUtils.CreateHitEffect(frontPos, beamWidth * 0.3f, Color.yellow, 0.3f);
+                    
+                    // Create hit effect at exit point (back of unit relative to beam)
+                    Vector3 backPos = FindBeamIntersectionPoint(unit, frontPos + beamDirection * 0.1f, beamDirection);
+                    SpellUtils.CreateHitEffect(backPos, beamWidth * 0.2f, Color.red, 0.3f);
+                }
             }
         }
     }
     
-    // Calculate damage with shield multiplier and critical hit chance
+    // Calculate damage with shield multiplier and critical hit chance - similar to Shooter.cs
     private int CalculateDamage()
     {
         // Apply shield damage multiplier from character skills
@@ -294,7 +341,25 @@ public class Spell_01 : Spell
         return finalDamage;
     }
     
-    // Draw debug visualization in editor
+    // Calculate a point where the beam intersects with a unit's collider
+    private Vector3 FindBeamIntersectionPoint(Unit unit, Vector3 startPos, Vector3 direction)
+    {
+        // Use the unit's collider if available
+        Collider collider = unit.GetComponent<Collider>();
+        if (collider != null)
+        {
+            RaycastHit hit;
+            if (collider.Raycast(new Ray(startPos, direction), out hit, beamLength))
+            {
+                return hit.point;
+            }
+        }
+        
+        // Fallback to unit's position if no collider or no hit
+        return unit.transform.position;
+    }
+    
+    // Draw debug visualization in editor - simplified version
     private void OnDrawGizmos()
     {
         if (laserLineRenderer != null && laserLineRenderer.positionCount >= 2)
@@ -305,14 +370,6 @@ public class Spell_01 : Spell
             
             // Draw main beam line
             Gizmos.DrawLine(start, end);
-            
-            // Draw beam boundaries
-            Vector3 right = Vector3.Cross(end - start, Vector3.up).normalized * (beamWidth / 2f);
-            
-            Gizmos.DrawLine(start + right, end + right);
-            Gizmos.DrawLine(start - right, end - right);
-            Gizmos.DrawLine(start + right, start - right);
-            Gizmos.DrawLine(end + right, end - right);
         }
     }
 }

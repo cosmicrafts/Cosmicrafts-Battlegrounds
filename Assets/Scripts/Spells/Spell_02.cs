@@ -102,7 +102,7 @@ public class Spell_02 : Spell
                     unit.AddDmg(finalDamage, damageType);
                     
                     // Visual feedback
-                    Debug.Log($"Explosion hit {unit.name} for {finalDamage} damage at distance {distance:F2}m");
+                    // Debug.Log($"Explosion hit {unit.name} for {finalDamage} damage at distance {distance:F2}m");
                     
                     // Apply knockback effect (optional)
                     ApplyKnockback(unit, distance, radius);
@@ -112,7 +112,7 @@ public class Spell_02 : Spell
             }
         }
         
-        Debug.Log($"Explosion affected {hitCount} enemy units with radius {radius:F2}m");
+        // Debug.Log($"Explosion affected {hitCount} enemy units with radius {radius:F2}m");
     }
     
     // Calculate damage with critical hit chance and distance falloff
@@ -168,7 +168,7 @@ public class Spell_02 : Spell
         criticalStrikeChance = critChance;
         
         // Log the updated values
-        Debug.Log($"Explosion spell updated with: Damage Multi={damageMultiplier}, Radius Multi={radiusMultiplier}, Crit Chance={criticalStrikeChance}");
+        // Debug.Log($"Explosion spell updated with: Damage Multi={damageMultiplier}, Radius Multi={radiusMultiplier}, Crit Chance={criticalStrikeChance}");
     }
 }
 } 

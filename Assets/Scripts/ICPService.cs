@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
         Debug.Log("[GameManager] Received seed phrase from Vue. Forwarding to ICPService.");
         
         // Find ICPService and forward the seed phrase
-        ICPService icpService = FindObjectOfType<ICPService>();
+        ICPService icpService = UnityEngine.Object.FindFirstObjectByType<ICPService>();
         if (icpService != null)
         {
             icpService.SetSeedPhrase(seedPhrase);
@@ -116,7 +116,7 @@ public class ICPService : MonoBehaviour
     /// </summary>
     private void EnsureGameManagerExists()
     {
-        GameManager gameManager = FindObjectOfType<GameManager>();
+        GameManager gameManager = UnityEngine.Object.FindAnyObjectByType<GameManager>();
         if (gameManager == null)
         {
             // Create a new GameObject with GameManager component
@@ -391,7 +391,7 @@ public static class WebGLBridge
             Debug.LogError("[WebGLBridge] OnSeedPhraseReceived is not registered. ICPService might not be initialized yet.");
             
             // Try to find the ICPService manually
-            ICPService service = UnityEngine.Object.FindObjectOfType<ICPService>();
+            ICPService service = UnityEngine.Object.FindAnyObjectByType<ICPService>();
             if (service != null)
             {
                 Debug.Log("[WebGLBridge] Found ICPService manually, calling SetSeedPhrase");

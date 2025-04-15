@@ -31,7 +31,7 @@ public static class SpellUtils
                 stationUnit.IsMyTeam(team) && 
                 stationUnit.PlayerId == playerId)
             {
-                Debug.Log($"[SpellUtils] Found exact MainStation match: Team={team}, PlayerId={playerId}, UnitId={stationUnit.getId()}");
+                // Debug.Log($"[SpellUtils] Found exact MainStation match: Team={team}, PlayerId={playerId}, UnitId={stationUnit.getId()}");
                 return (station, stationUnit);
             }
         }
@@ -43,7 +43,7 @@ public static class SpellUtils
             
             if (stationUnit != null && stationUnit.IsMyTeam(team))
             {
-                Debug.Log($"[SpellUtils] Found team-only MainStation match: Team={team}, PlayerId={stationUnit.PlayerId}, UnitId={stationUnit.getId()}");
+                // Debug.Log($"[SpellUtils] Found team-only MainStation match: Team={team}, PlayerId={stationUnit.PlayerId}, UnitId={stationUnit.getId()}");
                 return (station, stationUnit);
             }
         }
@@ -55,7 +55,7 @@ public static class SpellUtils
             if (GameMng.GM.Targets[stationIndex] != null)
             {
                 Unit targetUnit = GameMng.GM.Targets[stationIndex];
-                Debug.Log($"[SpellUtils] Using GameMng Target as fallback: Team={targetUnit.MyTeam}, PlayerId={targetUnit.PlayerId}");
+                // Debug.Log($"[SpellUtils] Using GameMng Target as fallback: Team={targetUnit.MyTeam}, PlayerId={targetUnit.PlayerId}");
                 return (null, targetUnit);
             }
         }
@@ -108,7 +108,7 @@ public static class SpellUtils
         Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
         
         // Log how many units we're checking
-        Debug.Log($"[SpellUtils] Checking {allUnits.Length} units for beam collision. Beam width: {beamWidth}");
+        // Debug.Log($"[SpellUtils] Checking {allUnits.Length} units for beam collision. Beam width: {beamWidth}");
         
         // Draw debug for beam visualization
         Debug.DrawLine(lineStart, lineEnd, Color.red, 1.0f);
@@ -180,7 +180,7 @@ public static class SpellUtils
             if (inBeam)
             {
                 targetsInBeam.Add(unit);
-                Debug.Log($"[SpellUtils] Unit {unit.name} is in beam!");
+                // Debug.Log($"[SpellUtils] Unit {unit.name} is in beam!");
                 
                 // Draw debug line to hit unit
                 Debug.DrawLine(lineStart, unit.transform.position, Color.magenta, 1.0f);

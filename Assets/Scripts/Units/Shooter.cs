@@ -208,7 +208,7 @@ namespace Cosmicrafts
 
         public virtual void InitStatsFromNFT(NFTsUnit nFTsUnit)
         {
-            if (nFTsUnit != null) BulletDamage = nFTsUnit.Dammage;
+            if (nFTsUnit != null) BulletDamage = nFTsUnit.Damage;
         }
     }
 }

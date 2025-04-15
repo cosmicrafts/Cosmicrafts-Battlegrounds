@@ -70,7 +70,7 @@
         [Header("Damage")]
         [SerializeField]
         [Range(0, 9999)]
-        protected int Dammage;
+        protected int Damage;
 
         //----Unit Speed-----------------------------------------------------------
         [Tooltip("Ship speed")]
@@ -108,7 +108,7 @@
 
         public int cost => EnergyCost;
 
-        public int dmg => Dammage;
+        public int dmg => Damage;
 
         public float speed => Speed;
 
@@ -121,7 +121,7 @@
                 EnergyCost = cost,
                 HitPoints = hp,
                 Shield = shield,
-                Dammage = dmg,
+                Damage = dmg,
                 Faction = faction,
                 EntType = type,
                 LocalID = localId,

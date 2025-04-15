@@ -82,8 +82,8 @@ public class UICardDetail : UICard
             Bar_HP.fillAmount = (float)unitdata.HitPoints / 200f;
             Txt_Shield.text = unitdata.Shield.ToString();
             Bar_Shield.fillAmount = (float)unitdata.Shield / 200f;
-            Txt_Dmg.text = unitdata.Dammage.ToString();
-            Bar_Dmg.fillAmount = (float)unitdata.Dammage / 100f;
+            Txt_Dmg.text = unitdata.Damage.ToString();
+            Bar_Dmg.fillAmount = (float)unitdata.Damage / 100f;
             Txt_Type.text = Lang.GetText(unitdata.EntType == (int)NFTClass.Station ? "mn_station" : "mn_ship");
         }
     }

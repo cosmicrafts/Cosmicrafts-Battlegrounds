@@ -20,5 +20,5 @@ MonoBehaviour:
   HitPoints: 800
   Shield: 650
   EnergyCost: 4
-  Dammage: 64
+  Damage: 64
   Speed: 8

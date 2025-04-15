@@ -20,6 +20,6 @@ MonoBehaviour:
   HitPoints: 0
   Shield: 0
   EnergyCost: 0
-  Dammage: 0
+  Damage: 0
   Speed: 0
   Level: 0

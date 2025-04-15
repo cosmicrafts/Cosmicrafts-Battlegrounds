@@ -20,7 +20,7 @@ MonoBehaviour:
   NftType: 3
   HitPoints: 240
   Shield: 120
-  EnergyCost: 2
+  Damageost: 2
   Dammage: 16
   Speed: 3
   Level: 0

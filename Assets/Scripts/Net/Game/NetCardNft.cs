@@ -29,7 +29,7 @@ public class NetCardNft
 
     public int Shield { get; set; }
 
-    public int Dammage { get; set; }
+    public int Damage { get; set; }
 
     public float Speed { get; set; }
 }

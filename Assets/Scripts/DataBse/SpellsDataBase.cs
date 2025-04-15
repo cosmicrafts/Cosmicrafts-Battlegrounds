@@ -2,42 +2,48 @@ namespace Cosmicrafts
 {
     using UnityEngine;
 
-    [CreateAssetMenu(fileName = ("Nueva Hechizo"), menuName = ("Crear Nuevo Hechizo"))]
+    [CreateAssetMenu(fileName = "New Spell", menuName = "Create New Spell")]
     public class SpellsDataBase : ScriptableObject
     {
         #region DataBase
 
-        [Tooltip("Prefab asociado")]
+        [Tooltip("Associated Prefab")]
         [Header("Prefab")]
         [SerializeField]
         protected GameObject Prefab;
+        
+        [Tooltip("Spell icon sprite")]
+        [Header("Spell Icon")]
+        [SerializeField]
+        protected Sprite IconSprite;
 
-        [Tooltip("Informa de la Nombre del hechizo")]
-        [Header("Nombre del hechizo")]
+        [Tooltip("Name of the spell")]
+        [Header("Spell Name")]
         [SerializeField]
         protected string Name;
 
-        [Tooltip("ID local del hechizo")]
-        [Header("ID Local")]
+        [Tooltip("Local ID of the spell")]
+        [Header("Local ID")]
         [SerializeField]
         protected int LocalID;
 
-        [Tooltip("Faccion del hechizo")]
-        [Header("Faccion")]
+        [Tooltip("Faction of the spell")]
+        [Header("Faction")]
         [SerializeField]
         protected Factions Faction;
 
-        [Tooltip("Costo de energia del hechizo")]
-        [Header("Asignar el costo del hechizo")]
+        [Tooltip("Energy cost of the spell")]
+        [Header("Spell Cost")]
         [SerializeField]
         [Range(1, 9999)]
         protected int EnergyCost;
 
         #endregion
 
-        #region Variables de Lectura
+        #region Read Variables
 
         public GameObject prefab => Prefab;
+        public Sprite iconSprite => IconSprite;
         public string cardName => Name;
         public int localId => LocalID;
         public int faction => (int)Faction;
@@ -53,8 +59,15 @@ namespace Cosmicrafts
                 LocalID = localId,
                 TypePrefix = NFTsCollection.NFTsPrefix[(int)NFTClass.Skill],
                 FactionPrefix = NFTsCollection.NFTsFactionsPrefixs[(Factions)faction],
+                Prefab = prefab,
+                IconSprite = iconSprite
             };
-            nFTsCard.IconSprite = ResourcesServices.LoadCardIcon(nFTsCard.KeyId);
+            
+            if (nFTsCard.IconSprite == null)
+            {
+                nFTsCard.IconSprite = ResourcesServices.LoadCardIcon(nFTsCard.KeyId);
+            }
+            
             return nFTsCard;
         }
 

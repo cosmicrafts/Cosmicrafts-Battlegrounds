@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: S_All_4
   m_EditorClassIdentifier: 
   Prefab: {fileID: 2198226034328220048, guid: 32d8982daf2abb94aa708bf67a43bf2c, type: 3}
+  IconSprite: {fileID: 21300000, guid: 4f7ef1ab59bfbea4884aec4977189bf9, type: 3}
   Name: Farragut
   LocalID: 4
   Faction: 1
@@ -22,3 +23,4 @@ MonoBehaviour:
   EnergyCost: 4
   Dammage: 64
   Speed: 2
+  Level: 0

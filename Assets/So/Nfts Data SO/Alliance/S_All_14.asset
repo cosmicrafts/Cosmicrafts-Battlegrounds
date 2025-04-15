@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: S_All_14
   m_EditorClassIdentifier: 
   Prefab: {fileID: 2198226034328220048, guid: f529ee64c0732014c83f75b837e62953, type: 3}
+  IconSprite: {fileID: 21300000, guid: 4f7ef1ab59bfbea4884aec4977189bf9, type: 3}
   Name: IPD1
   LocalID: 14
   Faction: 1
@@ -22,3 +23,4 @@ MonoBehaviour:
   EnergyCost: 5
   Dammage: 10
   Speed: 0
+  Level: 0

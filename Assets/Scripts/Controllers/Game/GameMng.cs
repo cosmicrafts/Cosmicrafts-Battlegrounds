@@ -87,7 +87,12 @@
             unit.MyTeam = team;
             unit.PlayerId = playerId == -1 ? P.ID : playerId;
             unit.setId(GenerateUnitId());
-            unit.SetNfts(GetNftCardData(nftKey, unit.PlayerId) as NFTsUnit);
+            
+            NFTsUnit nftData = GetNftCardData(nftKey, unit.PlayerId) as NFTsUnit;
+            if (nftData != null) {
+                unit.SetNfts(nftData);
+            }
+            
             return unit;
         }
 

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: S_All_16
   m_EditorClassIdentifier: 
   Prefab: {fileID: 8449816080087110711, guid: a300a6a2c933be1419249d986153a19a, type: 3}
+  IconSprite: {fileID: 21300000, guid: 4f7ef1ab59bfbea4884aec4977189bf9, type: 3}
   Name: Skill
   LocalID: 16
   Faction: 1

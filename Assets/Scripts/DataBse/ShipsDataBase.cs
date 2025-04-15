@@ -3,88 +3,96 @@
     using System.Collections.Generic;
     using UnityEngine;
 
-    [CreateAssetMenu(fileName =("Nueva Nave"), menuName =("Crear Nueva Nave"))]
+    [CreateAssetMenu(fileName ="New Ship", menuName ="Create New Ship")]
     public class ShipsDataBase : ScriptableObject
     {
         #region DataBase
 
         //----Prefab-----------------------------------------------------------
-        [Tooltip("Prefab asociado")]
+        [Tooltip("Associated Prefab")]
         [Header("Prefab")]
         [SerializeField]
         protected GameObject Prefab;
 
-        //----Ship´s name-----------------------------------------------------------
-        [Tooltip("Informa de la Nombre de la carta")]
-        [Header("Nombre de la unidad")]
+        //----Ship's Icon-----------------------------------------------------------
+        [Tooltip("Unit icon sprite")]
+        [Header("Unit Icon")]
+        [SerializeField]
+        protected Sprite IconSprite;
+
+        //----Ship's name-----------------------------------------------------------
+        [Tooltip("Name of the card")]
+        [Header("Unit Name")]
         [SerializeField]
         protected string Name;
 
         //----Nft local ID-----------------------------------------------------------
-        [Tooltip("ID local del nft")]
-        [Header("ID Local")]
+        [Tooltip("NFT local ID")]
+        [Header("Local ID")]
         [SerializeField]
         protected int LocalID;
 
         //----Nft faction-----------------------------------------------------------
-        [Tooltip("Faccion del Nft")]
-        [Header("Faccion")]
+        [Tooltip("NFT Faction")]
+        [Header("Faction")]
         [SerializeField]
         protected Factions Faction;
 
         //----Nft card type-----------------------------------------------------------
-        [Tooltip("Tipo de NFT")]
-        [Header("Tipo de Nft")]
+        [Tooltip("NFT Type")]
+        [Header("NFT Type")]
         [SerializeField]
         protected NFTClass NftType;
 
         //----Unit HP-----------------------------------------------------------
-        [Tooltip("Puntos de vida de la unidad")]
+        [Tooltip("Unit hit points")]
         [Header("HP")]
         [Range(1, 9999)]
         [SerializeField]
         protected int HitPoints;
 
         //----Unit Shield-----------------------------------------------------------
-        [Tooltip("Puntos de escudo de la unidad")]
-        [Header("Escudo")]
+        [Tooltip("Unit shield points")]
+        [Header("Shield")]
         [SerializeField]
         [Range(1, 9999)]
         protected int Shield;
 
         //----Unit card cost-----------------------------------------------------------
-        [Tooltip("Costo de energia de la unidad")]
-        [Header("Asignar el costo de la unidad")]
+        [Tooltip("Energy cost of the unit")]
+        [Header("Unit Cost")]
         [SerializeField]
         [Range(1, 9999)]
         protected int EnergyCost;
 
         //----Unit Damage-----------------------------------------------------------
-        [Tooltip("Puntos de daño por bala de la unidad")]
-        [Header("Daño")]
+        [Tooltip("Damage points per bullet")]
+        [Header("Damage")]
         [SerializeField]
         [Range(0, 9999)]
         protected int Dammage;
 
         //----Unit Speed-----------------------------------------------------------
-        [Tooltip("Velocidad de la nave")]
-        [Header("Velocidad de movimiento")]
+        [Tooltip("Ship speed")]
+        [Header("Movement Speed")]
         [SerializeField]
         [Range(0, 99)]
         protected float Speed;
 
         //----Unit Level-----------------------------------------------------------
-        [Tooltip("Nivel de la unidad")]
-        [Header("Nivel")]
+        [Tooltip("Unit level")]
+        [Header("Level")]
         [SerializeField]
         [Range(1, 99)]
         protected int Level;
 
         #endregion
 
-        #region Variables de Lectura
+        #region Read Variables
 
         public GameObject prefab => Prefab;
+        
+        public Sprite iconSprite => IconSprite;
 
         public string cardName => Name;
 
@@ -120,9 +128,17 @@
                 TypePrefix = NFTsCollection.NFTsPrefix[type],
                 FactionPrefix = NFTsCollection.NFTsFactionsPrefixs[(Factions)faction],
                 Level = level,
-                Speed = speed // Include the speed value
+                Speed = speed,
+                Prefab = prefab,
+                IconSprite = iconSprite // Use the sprite directly from the SO
             };
-            nFTsCard.IconSprite = ResourcesServices.LoadCardIcon(nFTsCard.KeyId);
+            
+            // Fallback to resource loading only if no sprite is assigned
+            if (nFTsCard.IconSprite == null)
+            {
+                nFTsCard.IconSprite = ResourcesServices.LoadCardIcon(nFTsCard.KeyId);
+            }
+            
             return nFTsCard;
         }
 

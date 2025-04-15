@@ -9,4 +9,7 @@ public class NFTsCharacter : NFTs
     public string Skill { get; set; } 
 
     public string PassiveSkill { get; set; } 
+    
+    // Direct reference to character prefab
+    public GameObject Prefab { get; set; }
 }

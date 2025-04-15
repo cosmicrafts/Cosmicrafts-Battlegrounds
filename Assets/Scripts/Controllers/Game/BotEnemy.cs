@@ -7,17 +7,17 @@ using UnityEngine;
 using UnityEngine.XR;
 
 /* 
- * This is the IA controller
- * Works with a timing loop and has 3 behaviour modes
- * Use his own energy and deck
- * The positions to deply units are predefined
+ * This is the AI controller
+ * Works with a timing loop and has 3 behavior modes
+ * Uses its own energy and deck
+ * The positions to deploy units are predefined
  */
 public class BotEnemy : MonoBehaviour
 {
 
     //Bot player Name 
     public string botName = "DefaultScriptName";
-    //Bot player Lv 
+    //Bot player Level 
     public int botLv = 5;
     //Bot player Avatar 
     public int botAvatar = 1;
@@ -61,12 +61,12 @@ public class BotEnemy : MonoBehaviour
     //NFTs data
     Dictionary<ShipsDataBase, NFTsUnit> DeckNfts;
 
-    //Bot´s enemy base station
+    //Bot's enemy base station
     Unit TargetUnit;
 
     //The cost of the most expensive card
     int MaxCostUnit;
-    //The cost of the sheapest card
+    //The cost of the cheapest card
     int MinCostUnit;
 
     //Random class service
@@ -84,7 +84,7 @@ public class BotEnemy : MonoBehaviour
         CanGenEnergy = true;
         rng = new System.Random();
 
-        //Add bot´s base station to bot's units list and set the bot´s enemy base station
+        //Add bot's base station to bot's units list and set the bot's enemy base station
         MyUnits.Add(GameMng.GM.Targets[0]);
         TargetUnit = GameMng.GM.Targets[1];
 
@@ -100,18 +100,18 @@ public class BotEnemy : MonoBehaviour
             }
         }
 
-        //Set the max and min cost of the bot´s deck
-        MaxCostUnit = DeckUnits.Max(f => f.cost);
-        MinCostUnit = DeckUnits.Min(f => f.cost);
+        //Set the max and min cost of the bot's deck
+        MaxCostUnit = DeckUnits.Where(unit => unit != null).Max(f => f.cost);
+        MinCostUnit = DeckUnits.Where(unit => unit != null).Min(f => f.cost);
 
-        //Start IA loop
+        //Start AI loop
         StartCoroutine(IA());
     }
 
     // Update is called once per frame
     void Update()
     {
-        //Generate energy if the bot's can
+        //Generate energy if the bot can
         if (!CanGenEnergy)
             return;
         
@@ -131,24 +131,36 @@ public class BotEnemy : MonoBehaviour
         CanGenEnergy = can;
     }
 
-    //IA Decision algoritm
+    //AI Decision algorithm
     IEnumerator IA()
     {
         //Check if the game is not ended
         while(!GameMng.GM.IsGameOver())
         {
             yield return IADelta;//Add a delay time to think
-            //Check if the game is not ended and the player base station still exist
+            //Check if the game is not ended and the player base station still exists
             if (TargetUnit == null || GameMng.GM.IsGameOver())
             {
                 break;
             }
-            //Select first unit has default to spawn
-            ShipsDataBase SelectedUnit = DeckUnits[0];
+            
+            // Get only non-null units from the deck
+            ShipsDataBase[] validUnits = DeckUnits.Where(unit => unit != null).ToArray();
+            
+            // Skip if there are no valid units
+            if (validUnits.Length == 0)
+            {
+                yield return IADelta;
+                continue;
+            }
+            
+            //Select first unit as default to spawn
+            ShipsDataBase SelectedUnit = validUnits[0];
+            
             //Mix game cards
-            DeckUnits.OrderBy(r => rng.Next());
-            //Select a unit depending the ia mode and current energy
-
+            validUnits = validUnits.OrderBy(r => rng.Next()).ToArray();
+            
+            //Select a unit depending on the AI mode and current energy
             if (CurrentEnergy < MaxCostUnit)
             {
                 continue;
@@ -156,20 +168,20 @@ public class BotEnemy : MonoBehaviour
             
             for (int i = 0; i < 10; i++)
             {
-                SelectedUnit = DeckUnits[Random.Range(0, DeckUnits.Length)];
+                SelectedUnit = validUnits[Random.Range(0, validUnits.Length)];
                 if (SelectedUnit.cost <= CurrentEnergy)
                 {
                     break;
                 }
             }
 
-            //Check if the bot have enough energy
+            //Check if the bot has enough energy
             if (SelectedUnit.cost <= CurrentEnergy && GameMng.GM.CountUnits(Team.Red) < 30)
             {
-                //Select a random position (check the childs game objects of the bot)
+                //Select a random position (check the child game objects of the bot)
                 Vector3 PositionSpawn = transform.GetChild(Random.Range(0, transform.childCount)).position;
 
-                //Spawn selected unit and rest energy
+                //Spawn selected unit and subtract energy
                 Unit unit = GameMng.GM.CreateUnit(SelectedUnit.prefab,
                                                  PositionSpawn,
                                                  MyTeam,

@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: S_All_1
   m_EditorClassIdentifier: 
   Prefab: {fileID: 2198226034328220048, guid: 193483c2cab0da642874f5aa23d12329, type: 3}
+  IconSprite: {fileID: 21300000, guid: e3763a0fd85c67f4f9f31b55f886d31d, type: 3}
   Name: Barracuda
   LocalID: 1
   Faction: 1

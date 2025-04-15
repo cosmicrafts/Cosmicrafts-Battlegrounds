@@ -95,15 +95,53 @@ private void Start()
     InControl = CanGenEnergy = true;
 
     PlayerDeck = new List<NFTsCard>();
+    
+    // Track which card keys we've already processed to handle duplicates
+    HashSet<string> processedCardKeys = new HashSet<string>();
+    
+    // Generate card instances
+    int uniqueIdCounter = 1; // Used to create unique IDs for duplicates
     foreach (ScriptableObject card in TestingDeck)
     {
         if (card is ShipsDataBase shipCard)
         {
-            PlayerDeck.Add(shipCard.ToNFTCard());
+            NFTsUnit cardData = shipCard.ToNFTCard();
+            
+            // If this key already exists, generate a unique variant
+            string originalKey = cardData.KeyId;
+            while (processedCardKeys.Contains(cardData.KeyId))
+            {
+                // Modify LocalID to make it unique
+                cardData.LocalID = cardData.LocalID * 100 + uniqueIdCounter;
+                uniqueIdCounter++;
+                
+                // This will update the KeyId through the property
+                string newKey = cardData.KeyId;
+                Debug.Log($"Created unique variant of card: {originalKey} -> {newKey}");
+            }
+            
+            processedCardKeys.Add(cardData.KeyId);
+            PlayerDeck.Add(cardData);
         }
         else if (card is SpellsDataBase spellCard)
         {
-            PlayerDeck.Add(spellCard.ToNFTCard());
+            NFTsSpell cardData = spellCard.ToNFTCard();
+            
+            // If this key already exists, generate a unique variant
+            string originalKey = cardData.KeyId;
+            while (processedCardKeys.Contains(cardData.KeyId))
+            {
+                // Modify LocalID to make it unique
+                cardData.LocalID = cardData.LocalID * 100 + uniqueIdCounter;
+                uniqueIdCounter++;
+                
+                // This will update the KeyId through the property
+                string newKey = cardData.KeyId;
+                Debug.Log($"Created unique variant of card: {originalKey} -> {newKey}");
+            }
+            
+            processedCardKeys.Add(cardData.KeyId);
+            PlayerDeck.Add(cardData);
         }
     }
 
@@ -215,7 +253,15 @@ private void Start()
             }
             
             // Add to the deck only after ensuring we have a valid prefab
-            DeckUnits.Add(card.KeyId, prefab);
+            // Check if key already exists to avoid duplicate key error
+            if (!DeckUnits.ContainsKey(card.KeyId))
+            {
+                DeckUnits.Add(card.KeyId, prefab);
+            }
+            else
+            {
+                Debug.LogWarning($"Card with key {card.KeyId} already exists in the deck, not adding duplicate to dictionary");
+            }
         }
     }
 
@@ -411,17 +457,19 @@ public void PrepareDeploy(GameObject preview, float cost)
 
 public void DeplyUnit(NFTsCard nftcard)
 {
-    if (nftcard == null || !DeckUnits.ContainsKey(nftcard.KeyId))
-    {
-        Debug.LogWarning($"Attempted to deploy an invalid or missing card");
-        return;
-    }
-
     if (nftcard.EnergyCost <= CurrentEnergy)
     {
         if ((NFTClass)nftcard.EntType != NFTClass.Skill)
         {
-            GameObject unitPrefab = DeckUnits[nftcard.KeyId];
+            // First try to use the prefab from the NFTsCard directly
+            GameObject unitPrefab = nftcard.Prefab;
+            
+            // If not available, fall back to the deck prefab
+            if (unitPrefab == null && DeckUnits.ContainsKey(nftcard.KeyId))
+            {
+                unitPrefab = DeckUnits[nftcard.KeyId];
+            }
+            
             if (unitPrefab != null)
             {
                 Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
@@ -439,7 +487,15 @@ public void DeplyUnit(NFTsCard nftcard)
         }
         else // If the card is a spell
         {
-            GameObject spellPrefab = DeckUnits[nftcard.KeyId];
+            // First try to use the prefab from the NFTsCard directly
+            GameObject spellPrefab = nftcard.Prefab;
+            
+            // If not available, fall back to the deck prefab
+            if (spellPrefab == null && DeckUnits.ContainsKey(nftcard.KeyId))
+            {
+                spellPrefab = DeckUnits[nftcard.KeyId];
+            }
+            
             if (spellPrefab != null)
             {
                 Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);

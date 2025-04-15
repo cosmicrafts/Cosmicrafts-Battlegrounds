@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: S_All_8
   m_EditorClassIdentifier: 
   Prefab: {fileID: 2198226034328220048, guid: f8aa39765566fcc49aceafee51c6270a, type: 3}
+  IconSprite: {fileID: 21300000, guid: 4f7ef1ab59bfbea4884aec4977189bf9, type: 3}
   Name: Predator
   LocalID: 8
   Faction: 1
@@ -22,3 +23,4 @@ MonoBehaviour:
   EnergyCost: 4
   Dammage: 36
   Speed: 12
+  Level: 0

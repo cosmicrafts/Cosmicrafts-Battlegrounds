@@ -15,6 +15,12 @@ namespace Cosmicrafts
         public float BaseMoveSpeed => baseMoveSpeed;
         public float BaseRotationSpeed => baseRotationSpeed;
 
+        //----Character Icon-----------------------------------------------------------
+        [Tooltip("Character icon sprite")]
+        [Header("Character Icon")]
+        [SerializeField]
+        private Sprite characterIcon;
+        
         //----Prefab-----------------------------------------------------------
         [Tooltip("Reference to the base prefab")]
         [Header("Base Prefab")]
@@ -60,8 +66,10 @@ namespace Cosmicrafts
 
         #endregion
 
-        #region Variables de Lectura
+        #region Read Variables
 
+        public Sprite CharacterIcon => characterIcon;
+        
         public GameObject BasePrefab => basePrefab;
 
         public int HpOverride => hpOverride;

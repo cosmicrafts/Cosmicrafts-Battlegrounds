@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: S_All_9
   m_EditorClassIdentifier: 
   Prefab: {fileID: 2198226034328220048, guid: 0071857cec8ed4f48ba78f98098268fa, type: 3}
+  IconSprite: {fileID: 21300000, guid: 4f7ef1ab59bfbea4884aec4977189bf9, type: 3}
   Name: Blackbird
   LocalID: 9
   Faction: 1
@@ -22,3 +23,4 @@ MonoBehaviour:
   EnergyCost: 4
   Dammage: 24
   Speed: 8
+  Level: 0

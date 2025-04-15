@@ -50,67 +50,95 @@ public class UserCollection
         Cards = new List<NFTsCard>();
         Characters = new List<NFTsCharacter>();
        
+        // Look for a CharacterBaseSO in Resources for character 1
+        CharacterBaseSO characterBase1 = Resources.Load<CharacterBaseSO>("Characters/Character1");
+        
         DefaultCharacter = new NFTsCharacter()
         {
             ID = 1,
             Name = "Alpha-9",
-            IconSprite = ResourcesServices.LoadCharacterIcon("Chr_1"),
+            IconSprite = characterBase1 != null ? characterBase1.CharacterIcon : ResourcesServices.LoadCharacterIcon("Chr_1"),
+            Prefab = characterBase1 != null ? characterBase1.BasePrefab : null,
             Faction = (int) Factions.Webe,
             LocalID = 1,
             EntType = (int) NFTClass.Character,
             Level = 10
         };
+        
+        // Look for a CharacterBaseSO in Resources for character 2
+        CharacterBaseSO characterBase2 = Resources.Load<CharacterBaseSO>("Characters/Character2");
+        
         DefaultCharacter2 = new NFTsCharacter()
         {
             ID = 2,
             Name = "Epsilon",
-            IconSprite = ResourcesServices.LoadCharacterIcon("Chr_2"),
+            IconSprite = characterBase2 != null ? characterBase2.CharacterIcon : ResourcesServices.LoadCharacterIcon("Chr_2"),
+            Prefab = characterBase2 != null ? characterBase2.BasePrefab : null,
             Faction = (int) Factions.Webe,
             LocalID = 2,
             EntType = (int) NFTClass.Character,
             Level = 10
         };
+        
+        // Continue for other characters...
+        CharacterBaseSO characterBase3 = Resources.Load<CharacterBaseSO>("Characters/Character3");
+        
         DefaultCharacter3 = new NFTsCharacter()
         {
             ID = 3,
             Name = "Elara Dawnstrider",
-            IconSprite = ResourcesServices.LoadCharacterIcon("Chr_3"),
+            IconSprite = characterBase3 != null ? characterBase3.CharacterIcon : ResourcesServices.LoadCharacterIcon("Chr_3"),
+            Prefab = characterBase3 != null ? characterBase3.BasePrefab : null,
             Faction = (int) Factions.Alliance,
             LocalID = 3,
             EntType = (int) NFTClass.Character,
             Level = 10
         };
+        
+        // Look for a CharacterBaseSO in Resources for character 4
+        CharacterBaseSO characterBase4 = Resources.Load<CharacterBaseSO>("Characters/Character4");
+        
         DefaultCharacter4 = new NFTsCharacter()
         {
             ID = 4,
             Name = "Talon Frostbane",
-            IconSprite = ResourcesServices.LoadCharacterIcon("Chr_4"),
+            IconSprite = characterBase4 != null ? characterBase4.CharacterIcon : ResourcesServices.LoadCharacterIcon("Chr_4"),
+            Prefab = characterBase4 != null ? characterBase4.BasePrefab : null,
             Faction = (int) Factions.Alliance,
             LocalID = 4,
             EntType = (int) NFTClass.Character,
             Level = 10
         };
+        
+        // Look for a CharacterBaseSO in Resources for character 5
+        CharacterBaseSO characterBase5 = Resources.Load<CharacterBaseSO>("Characters/Character5");
+        
         DefaultCharacter5 = new NFTsCharacter()
         {
             ID = 5,
             Name = "Echo Nodeblast",
-            IconSprite = ResourcesServices.LoadCharacterIcon("Chr_5"),
+            IconSprite = characterBase5 != null ? characterBase5.CharacterIcon : ResourcesServices.LoadCharacterIcon("Chr_5"),
+            Prefab = characterBase5 != null ? characterBase5.BasePrefab : null,
             Faction = (int) Factions.Spirats,
             LocalID = 5,
             EntType = (int) NFTClass.Character,
             Level = 10
         };
+        
+        // Look for a CharacterBaseSO in Resources for character 6
+        CharacterBaseSO characterBase6 = Resources.Load<CharacterBaseSO>("Characters/Character6");
+        
         DefaultCharacter6 = new NFTsCharacter()
         {
             ID = 6,
             Name = "Lucius Darkstorm",
-            IconSprite = ResourcesServices.LoadCharacterIcon("Chr_6"),
+            IconSprite = characterBase6 != null ? characterBase6.CharacterIcon : ResourcesServices.LoadCharacterIcon("Chr_6"),
+            Prefab = characterBase6 != null ? characterBase6.BasePrefab : null,
             Faction = (int) Factions.Spirats,
             LocalID = 6,
             EntType = (int) NFTClass.Character,
             Level = 10
         };
-        
     }
     
     public void ChangeDeckFaction(NFTsCharacter nFTsCharacter)

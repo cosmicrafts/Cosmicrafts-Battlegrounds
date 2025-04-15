@@ -65,20 +65,22 @@ MonoBehaviour:
   MyTeam: 0
   PlayerId: 1
   Duration: 1
-  damagePerSecond: 100
+  damagePerSecond: 5
   damageInterval: 0.25
   beamLength: 100
-  beamWidth: 2.5
+  beamWidth: 3
   damageType: 0
+  hitDetectionWidthMultiplier: 3
   criticalStrikeChance: 0.058
   criticalStrikeMultiplier: 2
   ShieldDamageMultiplier: 1
   laserLineRenderer: {fileID: 7450480653438804957}
   laserStartVFX: {fileID: 2952778753973073564}
   laserEndVFX: {fileID: 2952778753973073564}
-  laserMaterial: {fileID: 2100000, guid: 3af5e999b9d65a849b81b2325439e8a3, type: 2}
+  laserMaterial: {fileID: 10308, guid: 0000000000000000f000000000000000, type: 0}
   laserColor: {r: 1, g: 0.99437773, b: 0, a: 1}
-  laserIntensity: 2
+  laserIntensity: 1
+  createPenetrationEffects: 1
 --- !u!65 &6134375252558460818
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -156,7 +158,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: aecf3cf83556df2449c796b9772b6bf5, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -187,7 +189,16 @@ LineRenderer:
       serializedVersion: 2
       m_Curve:
       - serializedVersion: 3
-        time: 0
+        time: 0.00887574
+        value: 0.34228185
+        inSlope: 2.1874402
+        outSlope: 2.1874402
+        tangentMode: 0
+        weightedMode: 0
+        inWeight: 0
+        outWeight: 0.3916084
+      - serializedVersion: 3
+        time: 0.98816603
         value: 1
         inSlope: 0
         outSlope: 0

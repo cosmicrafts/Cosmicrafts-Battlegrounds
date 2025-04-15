@@ -122,6 +122,8 @@ private void Start()
             
             processedCardKeys.Add(cardData.KeyId);
             PlayerDeck.Add(cardData);
+            // Add the NFT data to GameMng
+            GameMng.GM.AddNftCardData(cardData, ID);
         }
         else if (card is SpellsDataBase spellCard)
         {
@@ -142,6 +144,8 @@ private void Start()
             
             processedCardKeys.Add(cardData.KeyId);
             PlayerDeck.Add(cardData);
+            // Add the NFT data to GameMng
+            GameMng.GM.AddNftCardData(cardData, ID);
         }
     }
 
@@ -157,10 +161,10 @@ private void Start()
             NFTsCard card = PlayerDeck[i];
             bool isSpell = (NFTClass)card.EntType == NFTClass.Skill;
             
-            // Load the card prefab
-            GameObject prefab = ResourcesServices.LoadCardPrefab(card.KeyId, isSpell);
+            // Use the prefab from the NFTs data directly instead of loading from Resources
+            GameObject prefab = card.Prefab;
             
-            // Create a placeholder prefab if the original can't be loaded
+            // Create a placeholder prefab if the original doesn't exist
             if (prefab == null)
             {
                 Debug.LogWarning($"Creating placeholder for missing prefab: {card.KeyId}, isSpell: {isSpell}");
@@ -472,7 +476,7 @@ public void DeplyUnit(NFTsCard nftcard)
             
             if (unitPrefab != null)
             {
-                Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
+                Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId, ID);
                 if (MyCharacter != null)
                 {
                     MyCharacter.DeployUnit(unit);
@@ -498,12 +502,29 @@ public void DeplyUnit(NFTsCard nftcard)
             
             if (spellPrefab != null)
             {
-                Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
-                if (MyCharacter != null)
+                // Pass ID to create spell to ensure NFT data gets properly set
+                NFTsSpell spellCard = nftcard as NFTsSpell;
+                if (spellCard != null)
                 {
-                    MyCharacter.DeploySpell(spell);
+                    Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
+                    if (spell != null)
+                    {
+                        spell.PlayerId = ID; // Ensure PlayerId is set to match the player
+                        if (MyCharacter != null)
+                        {
+                            MyCharacter.DeploySpell(spell);
+                        }
+                        RestEnergy(nftcard.EnergyCost);
+                    }
+                    else
+                    {
+                        Debug.LogError($"Failed to create spell from prefab for {nftcard.KeyId}. Make sure the prefab has a Spell component.");
+                    }
                 }
-                RestEnergy(nftcard.EnergyCost);
+                else
+                {
+                    Debug.LogWarning($"Failed to cast NFTsCard to NFTsSpell for {nftcard.KeyId}");
+                }
             }
             else
             {

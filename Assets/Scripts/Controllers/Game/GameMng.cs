@@ -19,7 +19,7 @@
         private List<Unit> units = new List<Unit>();
         private List<Spell> spells = new List<Spell>();
         private int idCounter = 0;
-        private Dictionary<string, NFTsUnit> allPlayersNfts = new Dictionary<string, NFTsUnit>();
+        private Dictionary<string, NFTsCard> allPlayersNfts = new Dictionary<string, NFTsCard>();
 
         public Unit[] Targets = new Unit[2]; // Array for managing base stations
         bool GameOver = false;
@@ -98,9 +98,23 @@
 
         public Spell CreateSpell(GameObject obj, Vector3 position, Team team, string nftKey = "none")
         {
+            // Check if the prefab has a Spell component
+            if (obj.GetComponent<Spell>() == null)
+            {
+                Debug.LogError($"Spell prefab is missing Spell component! NFT Key: {nftKey}");
+                return null;
+            }
+            
             Spell spell = Instantiate(obj, position, Quaternion.identity).GetComponent<Spell>();
             spell.MyTeam = team;
             spell.setId(GenerateUnitId());
+            
+            // Set NFT data similar to CreateUnit method
+            NFTsSpell nftData = GetNftSpellData(nftKey, spell.PlayerId) as NFTsSpell;
+            if (nftData != null) {
+                spell.SetNfts(nftData);
+            }
+            
             AddSpell(spell);
             return spell;
         }
@@ -202,6 +216,17 @@
                 allPlayersNfts.Add(finalKey, nFTsCard);
             }
         }
+        
+        // Add a method for spell data
+        public void AddNftCardData(NFTsSpell nFTsSpell, int playerId)
+        {
+            // Similar logic as for units
+            string finalKey = $"{playerId}_{nFTsSpell.KeyId}";
+            if (!allPlayersNfts.ContainsKey(finalKey))
+            {
+                allPlayersNfts.Add(finalKey, nFTsSpell);
+            }
+        }
 
         public int CountUnits()
         {
@@ -216,7 +241,14 @@
         private NFTsUnit GetNftCardData(string nftKey, int playerId)
         {
             string finalKey = $"{playerId}_{nftKey}";
-            return allPlayersNfts.ContainsKey(finalKey) ? allPlayersNfts[finalKey] : null;
+            return allPlayersNfts.ContainsKey(finalKey) ? allPlayersNfts[finalKey] as NFTsUnit : null;
+        }
+        
+        // Add a method for getting spell data
+        private NFTsSpell GetNftSpellData(string nftKey, int playerId)
+        {
+            string finalKey = $"{playerId}_{nftKey}";
+            return allPlayersNfts.ContainsKey(finalKey) ? allPlayersNfts[finalKey] as NFTsSpell : null;
         }
 
         public int GetRemainingSecs()

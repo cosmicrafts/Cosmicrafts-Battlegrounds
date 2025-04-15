@@ -38,7 +38,8 @@ namespace Cosmicrafts
         SizeMultiplier,
         SpellDurationMultiplier,
         SpeedEnergyMultiplier,
-        BotEnergyMultiplier 
+        BotEnergyMultiplier,
+        RadiusMultiplier // New skill for explosion spell radius
         // Add more as needed
     }
 
@@ -128,6 +129,63 @@ namespace Cosmicrafts
             {
                 case SkillName.SpellDurationMultiplier:
                     spell.Duration *= Multiplier;
+                    break;
+                case SkillName.ShieldMultiplier:
+                    // For Spell_01 (Laser), adjust shield damage
+                    Spell_01 laserSpell = spell as Spell_01;
+                    if (laserSpell != null)
+                    {
+                        // Store the multiplier in the spell to use when doing damage
+                        laserSpell.ShieldDamageMultiplier = Multiplier;
+                        
+                        // Also increase the base damage for stronger effects
+                        laserSpell.damagePerSecond = Mathf.RoundToInt(laserSpell.damagePerSecond * Multiplier);
+                        
+                        Debug.Log($"Applied ShieldMultiplier {Multiplier} to Laser Beam spell. DPS now: {laserSpell.damagePerSecond}");
+                    }
+                    else
+                    {
+                        // For Spell_02 (Explosion), adjust damage
+                        Spell_02 explosionSpell = spell as Spell_02;
+                        if (explosionSpell != null)
+                        {
+                            // Boost explosion damage
+                            explosionSpell.damageMultiplier *= Multiplier;
+                            Debug.Log($"Applied ShieldMultiplier {Multiplier} to Explosion spell. Damage multiplier now: {explosionSpell.damageMultiplier}");
+                        }
+                        else
+                        {
+                            Debug.Log($"Applied ShieldMultiplier {Multiplier} to spell {spell.getKey()}");
+                        }
+                    }
+                    break;
+                case SkillName.CriticalStrikeChance:
+                    // Apply critical strike chance to Spell_01 (Laser)
+                    Spell_01 spellWithCrits = spell as Spell_01;
+                    if (spellWithCrits != null)
+                    {
+                        spellWithCrits.criticalStrikeChance += Multiplier;
+                        Debug.Log($"Applied CriticalStrikeChance {Multiplier} to Laser spell {spell.getKey()}");
+                    }
+                    else 
+                    {
+                        // Apply critical strike chance to Spell_02 (Explosion)
+                        Spell_02 explosionWithCrits = spell as Spell_02;
+                        if (explosionWithCrits != null)
+                        {
+                            explosionWithCrits.criticalStrikeChance += Multiplier;
+                            Debug.Log($"Applied CriticalStrikeChance {Multiplier} to Explosion spell {spell.getKey()}");
+                        }
+                    }
+                    break;
+                case SkillName.RadiusMultiplier:
+                    // Apply radius multiplier to Spell_02 (Explosion)
+                    Spell_02 explosionRadius = spell as Spell_02;
+                    if (explosionRadius != null)
+                    {
+                        explosionRadius.radiusMultiplier *= Multiplier;
+                        Debug.Log($"Applied RadiusMultiplier {Multiplier} to Explosion spell. Radius multiplier now: {explosionRadius.radiusMultiplier}");
+                    }
                     break;
                 default:
                     Debug.LogWarning($"Skill {skillName} not recognized for spell deployment.");

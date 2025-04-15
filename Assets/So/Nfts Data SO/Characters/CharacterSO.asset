@@ -10,21 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 06a5fcb66d9ad3045ba725af3153fa65, type: 3}
-  m_Name: NewCharacterBase
+  m_Name: CharacterSO
   m_EditorClassIdentifier: 
   baseMoveSpeed: 25
   baseRotationSpeed: 25
   characterIcon: {fileID: 21300000, guid: efd34ca1d1c5b8646ba2d500cece4fc6, type: 3}
   basePrefab: {fileID: 2198226034328220048, guid: 48702580a18d34942acecf00b1aeb5d6, type: 3}
-  hpOverride: 9999
-  shieldOverride: 9999
+  hpOverride: 2422
+  shieldOverride: 2369
   bulletDamageOverride: 4
   levelOverride: 21
   skills:
   - skillName: 2
     Type: 1
     Target: 3
-    Multiplier: 100
+    Multiplier: 10
     ApplicationType: 0
   - skillName: 10
     Type: 2

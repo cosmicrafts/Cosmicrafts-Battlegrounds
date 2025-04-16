@@ -1,3 +1,5 @@
+#nullable enable
+#pragma warning disable CS8618
 using EdjCase.ICP.Candid.Mapping;
 using Cosmicrafts.backend.Models;
 using System;

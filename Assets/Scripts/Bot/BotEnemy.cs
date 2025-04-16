@@ -202,7 +202,7 @@ public class BotEnemy : MonoBehaviour
             {
                 unit.ResetUnit(); // Reset the unit's state
             }
-            catch (System.Exception e)
+            catch (System.Exception)
             {
                // Debug.LogError($"Error resetting unit: {e.Message}");
                 // If there's an error resetting, create a new unit instead

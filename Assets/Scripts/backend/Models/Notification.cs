@@ -1,3 +1,5 @@
+#nullable enable
+#pragma warning disable CS8618
 using EdjCase.ICP.Candid.Mapping;
 using Timestamp = System.UInt64;
 using Time = EdjCase.ICP.Candid.Models.UnboundedInt;

@@ -1,3 +1,5 @@
+#nullable enable
+#pragma warning disable CS8618
 using EdjCase.ICP.Candid.Mapping;
 using EdjCase.ICP.Candid.Models;
 using Playerid1 = EdjCase.ICP.Candid.Models.Principal;

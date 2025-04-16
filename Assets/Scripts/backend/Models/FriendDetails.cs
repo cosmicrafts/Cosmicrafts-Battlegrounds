@@ -1,3 +1,5 @@
+#nullable enable
+#pragma warning disable CS8618
 using EdjCase.ICP.Candid.Mapping;
 using Username1 = System.String;
 using Username = System.String;

@@ -9056,7 +9056,7 @@ MonoBehaviour:
   botSpacingDirection: {x: 1, y: 0, z: 0}
   playerLives: 3
   respawnDelay: 5
-  respawnEffectPrefab: {fileID: 0}
+  respawnEffectPrefab: {fileID: 3952169841054198065, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}
   Targets:
   - {fileID: 0}
   - {fileID: 0}

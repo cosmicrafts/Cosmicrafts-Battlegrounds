@@ -1,3 +1,5 @@
+#nullable enable
+#pragma warning disable CS8618
 using EdjCase.ICP.Agent.Agents;
 using EdjCase.ICP.Candid.Models;
 using EdjCase.ICP.Candid;

@@ -1,3 +1,5 @@
+#nullable enable
+#pragma warning disable CS8618
 namespace Cosmicrafts.backend.Models
 {
 	public enum Achievementtype1

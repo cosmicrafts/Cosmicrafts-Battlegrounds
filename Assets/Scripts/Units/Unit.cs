@@ -246,7 +246,7 @@ namespace Cosmicrafts
             if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
             {
                 // Don't hide UI or disable anything
-                Debug.Log($"Player base station 'died' but keeping visuals active");
+               // Debug.Log($"Player base station 'died' but keeping visuals active");
             }
             else
             {

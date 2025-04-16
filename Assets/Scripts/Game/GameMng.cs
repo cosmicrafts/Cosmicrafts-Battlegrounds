@@ -24,7 +24,7 @@
         public Vector3 botSpacingDirection = new Vector3(1, 0, 0); // Direction to space the bots
         
         [Header("Player Respawn Settings")]
-        public int playerLives = 3; // Number of lives before game over
+        public int playerLives = 9; // Number of lives before game over
         public float respawnDelay = 5f; // Seconds to wait before respawning
         public GameObject respawnEffectPrefab; // Optional visual effect for respawn
         
@@ -163,7 +163,7 @@
                         collider.enabled = true;
                     }
                     
-                    Debug.Log($"Instantly reset player base station to position {BS_Positions[playerBaseIndex]}");
+                    //Debug.Log($"Instantly reset player base station to position {BS_Positions[playerBaseIndex]}");
                 }
             }
         }
@@ -174,7 +174,7 @@
             isRespawning = true;
             
             // Debug the current position
-            Debug.Log($"[Reset] Base station current position: {baseStation.transform.position}, target position: {BS_Positions[baseIndex]}");
+            //Debug.Log($"[Reset] Base station current position: {baseStation.transform.position}, target position: {BS_Positions[baseIndex]}");
             
             // Wait for respawn delay
             yield return new WaitForSeconds(respawnDelay);
@@ -201,19 +201,19 @@
             if (targetUnit != null)
             {
                 // Make sure we're resetting the actual base station
-                Debug.Log($"[Reset] Found base station unit ID {targetUnit.getId()}, resetting...");
+                //Debug.Log($"[Reset] Found base station unit ID {targetUnit.getId()}, resetting...");
                 
                 // Reset unit first (makes it active again)
                 targetUnit.ResetUnit();
                 
                 // Log before repositioning
-                Debug.Log($"[Reset] Before repositioning: {targetUnit.transform.position}");
+                //Debug.Log($"[Reset] Before repositioning: {targetUnit.transform.position}");
                 
                 // Force position using teleport
                 targetUnit.transform.SetPositionAndRotation(BS_Positions[baseIndex], Quaternion.identity);
                 
                 // Log after repositioning
-                Debug.Log($"[Reset] After repositioning: {targetUnit.transform.position}, Target: {BS_Positions[baseIndex]}");
+                //Debug.Log($"[Reset] After repositioning: {targetUnit.transform.position}, Target: {BS_Positions[baseIndex]}");
                 
                 // Update the Targets reference
                 Targets[baseIndex] = targetUnit;
@@ -231,7 +231,7 @@
                     shooter.enabled = true;
                 }
                 
-                Debug.Log($"[Reset] Player base station reset complete at {targetUnit.transform.position}");
+                //Debug.Log($"[Reset] Player base station reset complete at {targetUnit.transform.position}");
             }
             else
             {
@@ -252,7 +252,7 @@
                 // Add to units list
                 AddUnit(newBaseStation);
                 
-                Debug.Log($"[Reset] Player base station recreated at {BS_Positions[baseIndex]}");
+                //Debug.Log($"[Reset] Player base station recreated at {BS_Positions[baseIndex]}");
             }
             
             isRespawning = false;

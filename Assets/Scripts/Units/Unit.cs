@@ -481,7 +481,7 @@ namespace Cosmicrafts
 
         public virtual void ResetUnit()
         {
-            Debug.Log($"[Unit.ResetUnit] Resetting unit {gameObject.name} (ID: {Id})");
+           // Debug.Log($"[Unit.ResetUnit] Resetting unit {gameObject.name} (ID: {Id})");
             
             // Reset the unit to its initial state for reuse in object pooling
             IsDeath = false;
@@ -534,7 +534,7 @@ namespace Cosmicrafts
                 Destroy(portal, 3f);
             }
             
-            Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
+            //Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
         }
     }
 }

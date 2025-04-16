@@ -204,7 +204,7 @@ public class BotEnemy : MonoBehaviour
             }
             catch (System.Exception e)
             {
-                Debug.LogError($"Error resetting unit: {e.Message}");
+               // Debug.LogError($"Error resetting unit: {e.Message}");
                 // If there's an error resetting, create a new unit instead
                 GameMng.GM.DeleteUnit(unit);
                 return CreateNewUnit(unitData, position);

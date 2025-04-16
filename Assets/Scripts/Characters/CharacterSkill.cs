@@ -165,7 +165,7 @@ namespace Cosmicrafts
                     if (spellWithCrits != null)
                     {
                         spellWithCrits.criticalStrikeChance += Multiplier;
-                        Debug.Log($"Applied CriticalStrikeChance {Multiplier} to Laser spell {spell.getKey()}");
+                       // Debug.Log($"Applied CriticalStrikeChance {Multiplier} to Laser spell {spell.getKey()}");
                     }
                     else 
                     {
@@ -174,7 +174,7 @@ namespace Cosmicrafts
                         if (explosionWithCrits != null)
                         {
                             explosionWithCrits.criticalStrikeChance += Multiplier;
-                            Debug.Log($"Applied CriticalStrikeChance {Multiplier} to Explosion spell {spell.getKey()}");
+                         //   Debug.Log($"Applied CriticalStrikeChance {Multiplier} to Explosion spell {spell.getKey()}");
                         }
                     }
                     break;
@@ -184,7 +184,7 @@ namespace Cosmicrafts
                     if (explosionRadius != null)
                     {
                         explosionRadius.radiusMultiplier *= Multiplier;
-                        Debug.Log($"Applied RadiusMultiplier {Multiplier} to Explosion spell. Radius multiplier now: {explosionRadius.radiusMultiplier}");
+                      //  Debug.Log($"Applied RadiusMultiplier {Multiplier} to Explosion spell. Radius multiplier now: {explosionRadius.radiusMultiplier}");
                     }
                     break;
                 default:

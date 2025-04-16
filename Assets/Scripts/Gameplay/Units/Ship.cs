@@ -45,8 +45,6 @@
         
         // Timer for HP regeneration
         private float hpRegenTimer = 0f;
-        // Flag to check if regeneration was recently applied
-        private bool shieldRegenApplied = false;
         private bool recentlyDamaged = false;
         private float lastDamageTime = 0f;
 
@@ -139,7 +137,6 @@
                         Shield = GetMaxShield();
                     
                     UI.SetShieldBar((float)Shield / (float)GetMaxShield());
-                    shieldRegenApplied = true;
                 }
             }
             

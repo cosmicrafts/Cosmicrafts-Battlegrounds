@@ -4859,7 +4859,7 @@ GameObject:
   - component: {fileID: 1698891818668517187}
   - component: {fileID: 1701196742605775049}
   m_Layer: 18
-  m_Name: Cosm_Portal
+  m_Name: Portal_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

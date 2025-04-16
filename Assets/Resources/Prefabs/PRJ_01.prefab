@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 49977308736601857}
   - component: {fileID: 9066554652131141818}
   m_Layer: 0
-  m_Name: PRJ_NullProjectile
+  m_Name: PRJ_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

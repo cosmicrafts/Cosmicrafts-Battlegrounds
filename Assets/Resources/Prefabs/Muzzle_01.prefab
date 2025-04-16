@@ -4897,7 +4897,7 @@ GameObject:
   - component: {fileID: 3686315682011417805}
   - component: {fileID: 3686315682009538909}
   m_Layer: 0
-  m_Name: CO_MU_Standard
+  m_Name: Muzzle_01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

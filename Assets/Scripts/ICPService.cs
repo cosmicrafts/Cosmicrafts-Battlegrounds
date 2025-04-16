@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using System.Text;
 using System.Runtime.InteropServices;
 using System.Collections;
+using System.Linq;
 
 // ICP libraries
 using EdjCase.ICP.Agent;
@@ -52,6 +53,7 @@ public class GameManager : MonoBehaviour
 
 /// <summary>
 /// Minimal service to handle ICP authentication and player data retrieval.
+/// Refactored to avoid coroutines and Task.Run for initialization.
 /// </summary>
 public class ICPService : MonoBehaviour
 {
@@ -73,8 +75,6 @@ public class ICPService : MonoBehaviour
     [SerializeField] private bool useDevelopmentModeInEditor = true;
     [SerializeField] private string devSeedPhrase = "coconut teach old consider vivid leader minute canoe original suspect skirt pause";
     [SerializeField] private string canisterId = "opcce-byaaa-aaaak-qcgda-cai";
-
-    private string seedPhrase;
 
     #if UNITY_WEBGL && !UNITY_EDITOR
     [DllImport("__Internal")]
@@ -132,208 +132,208 @@ public class ICPService : MonoBehaviour
         #if UNITY_WEBGL && !UNITY_EDITOR
             Log("WebGL mode - requesting seed phrase from web app");
             RequestSeedPhraseFromJS();
-            // Also list active GameObjects to help diagnose the hierarchy
-            ListActiveGameObjects();
-        #else
+            ListActiveGameObjects(); // Keep for debugging JS calls
+        #elif UNITY_EDITOR // Use #elif UNITY_EDITOR for clarity
             if (useDevelopmentModeInEditor) {
-                Log("Using development seed phrase");
-                seedPhrase = devSeedPhrase;
-                StartCoroutine(InitializeWithSeedPhrase(seedPhrase));
+                Log("Editor: Using development seed phrase for initialization.");
+                 _ = InitializeAsync(devSeedPhrase); // Fire-and-forget async call
+            }
+            else {
+                 LogWarning("Editor: Development mode disabled. Waiting for manual seed phrase input or other trigger.");
             }
         #endif
     }
     
     /// <summary>
-    /// This method is called by JavaScript (via SendMessage) to set the seed phrase from the Vue frontend,
-    /// or by GameManager when it receives the seed phrase from Vue
+    /// Called by JavaScript (via WebGLBridge) or GameManager to set the seed phrase.
+    /// Triggers the asynchronous initialization process.
     /// </summary>
     public void SetSeedPhrase(string phraseFromJS)
     {
         if (string.IsNullOrEmpty(phraseFromJS))
         {
-            LogError("Received empty seed phrase from JavaScript");
+            LogError("Received empty or null seed phrase.");
             return;
         }
-        
-        Log("Received seed phrase from web app: " + (phraseFromJS.Length > 10 ? phraseFromJS.Substring(0, 10) + "..." : phraseFromJS));
-        seedPhrase = phraseFromJS;
-        StartCoroutine(InitializeWithSeedPhrase(seedPhrase));
+
+        Log($"Received seed phrase (length: {phraseFromJS.Length}). Triggering initialization.");
+        Log("First 10 chars: " + (phraseFromJS.Length > 10 ? phraseFromJS.Substring(0, 10) + "..." : phraseFromJS));
+
+        #if UNITY_WEBGL && !UNITY_EDITOR
+        // HACK: Force reset IsInitialized in WebGL just before attempting init.
+        // If this works, it confirms something else set it true beforehand.
+        Log("[HACK] Forcing IsInitialized = false in SetSeedPhrase (WebGL)");
+        IsInitialized = false; 
+        #endif
+
+        // Trigger the async initialization process.
+        // We don't typically await calls originating from Unity messages or JS directly.
+         _ = InitializeAsync(phraseFromJS); // Fire-and-forget async call
     }
     
     /// <summary>
-    /// Initialize ICP identity using a seed phrase
+    /// Asynchronous initialization process. Orchestrates identity creation and player data fetching.
     /// </summary>
-    public IEnumerator InitializeWithSeedPhrase(string seedPhrase)
+    private async Task InitializeAsync(string seedPhrase)
     {
-        if (IsInitialized) yield break;
-        
-        Log("Initializing with seed phrase");
-        
-        Ed25519Identity createdIdentity = null;
-        bool identityCreationFailed = false;
-
-        // Start the identity creation coroutine and wait for it to finish
-        yield return StartCoroutine(CreateIdentityFromSeedPhrase(seedPhrase, identity => {
-            if (identity == null)
-            {
-                LogError("Failed to create identity from seed phrase");
-                identityCreationFailed = true;
-            }
-            else
-            {
-                createdIdentity = identity;
-            }
-        }));
-
-        // If identity creation failed, stop here
-        if (identityCreationFailed || createdIdentity == null)
+        Log($"InitializeAsync started. Current IsInitialized: {IsInitialized}");
+        if (IsInitialized)
         {
-            LogError("Stopping initialization due to identity creation failure.");
-            IsInitialized = false;
-            yield break;
+            LogWarning("InitializeAsync: Already initialized, ignoring.");
+            return;
         }
-        
-        // Now that identity is created, proceed with the rest inside a try block
+         if (string.IsNullOrEmpty(seedPhrase))
+        {
+             LogError("InitializeAsync: Seed phrase is null or empty. Aborting.");
+             return;
+        }
+
+        Log("InitializeAsync: Creating identity...");
+        Ed25519Identity createdIdentity = null;
+        try
+        {
+            // *** Run SYNCHRONOUSLY on the current (main) thread ***
+            createdIdentity = CreateIdentityFromSeedPhrase(seedPhrase);
+        }
+        catch (Exception e)
+        {
+             LogError($"InitializeAsync: Exception during CreateIdentityFromSeedPhrase: {e.Message}");
+             LogError($"Stack Trace: {e.StackTrace}");
+             // Optionally set some state to indicate failure
+             return; // Stop initialization
+        }
+
+
+        if (createdIdentity == null)
+        {
+            LogError("InitializeAsync: Failed to create identity (CreateIdentityFromSeedPhrase returned null). Aborting.");
+            return;
+        }
+
+        Log("InitializeAsync: Identity created successfully. Setting up Agent and Client...");
+
         try
         {
             // Create HttpAgent with the identity
-            var httpClient = new UnityHttpClient();
-            var agent = new HttpAgent(httpClient, createdIdentity); // Use the created identity
-            
+            var httpClient = new UnityHttpClient(); // Ensure this works correctly in WebGL
+            var agent = new HttpAgent(httpClient, createdIdentity);
+
             // Store the principal ID
-            PrincipalId = createdIdentity.GetPublicKey().ToPrincipal().ToText(); // Use the created identity
-            Log($"Identity initialized with principal: {PrincipalId}");
-            
-            // Initialize the BackendApiClient with the agent and canister ID
+            PrincipalId = createdIdentity.GetPublicKey().ToPrincipal().ToText();
+            Log($"InitializeAsync: Principal ID: {PrincipalId}");
+
+            // Initialize the BackendApiClient
             Principal canisterPrincipal = Principal.FromText(canisterId);
             MainCanister = new BackendApiClient(agent, canisterPrincipal);
-            
-            IsInitialized = true;
-            
-            // Notify listeners that initialization is complete
-            OnICPInitialized?.Invoke();
-            
-            // Don't yield inside try-catch
-            Log("Initialization complete, now fetching player data");
+            Log($"InitializeAsync: BackendApiClient initialized for canister: {canisterId}");
+
+            // *** ADDING LOG BEFORE SETTING IsInitialized = true ***
+            Log("InitializeAsync: *** Setting IsInitialized = true NOW! ***");
+            IsInitialized = true; // Mark as initialized *before* fetching data
+            Log("InitializeAsync: ICP Agent and Client setup complete. IsInitialized = true.");
+
+            // Notify listeners about base initialization completion
+             OnICPInitialized?.Invoke();
+
+             Log("InitializeAsync: Fetching player data...");
+             await GetPlayerDataAsync(); // Await the async player data fetch
         }
         catch (Exception e)
         {
-            LogError($"Initialization failed after identity creation: {e.Message}");
-            IsInitialized = false;
-            yield break; // Exit if initialization failed
-        }
-        
-        // If we got here, initialization succeeded, so fetch player data
-        if (IsInitialized)
-        {
-            // Fetch player data after initialization - moved outside try-catch
-            yield return StartCoroutine(GetPlayerData());
-            
-            // Check if we need to handle player creation (when no player data found)
-            if (CurrentPlayer == null)
-            {
-                Log("No player found for current identity, may need to handle signup");
-                // Uncomment and implement the following when you add SignupNewPlayer functionality
-                // yield return StartCoroutine(SignupNewPlayer());
-            }
+            LogError($"InitializeAsync: Failed during Agent/Client setup or GetPlayerDataAsync: {e.Message}");
+            LogError($"Stack Trace: {e.StackTrace}");
+            IsInitialized = false; // Reset initialization state on failure
+            PrincipalId = null;
+            MainCanister = null;
         }
     }
     
     /// <summary>
-    /// Helper method to create identity from seed phrase using coroutine
+    /// Creates an Ed25519Identity from a seed phrase SYNCHRONOUSLY.
+    /// Runs on the calling thread (main thread in WebGL).
     /// </summary>
-    private IEnumerator CreateIdentityFromSeedPhrase(string seedPhrase, Action<Ed25519Identity> callback)
+    private Ed25519Identity CreateIdentityFromSeedPhrase(string seedPhrase)
     {
-        // Run on a separate thread via Task to avoid freezing the UI
-        Task<Ed25519Identity> task = Task.Run(() => {
-            try
-            {
-                // BIP39 derivation
-                byte[] seedBytes = MnemonicToSeed(seedPhrase);
-                
-                // Use first 32 bytes for private key
-                byte[] privateKeyBytes = new byte[32];
-                Array.Copy(seedBytes, 0, privateKeyBytes, 0, 32);
-                
-                // Use the seed for Ed25519 key generation
-                var privateKey = new Ed25519PrivateKeyParameters(privateKeyBytes, 0);
-                
-                // Derive the public key
-                var publicKey = privateKey.GeneratePublicKey();
-                
-                // Create the identity
-                return new Ed25519Identity(publicKey.GetEncoded(), privateKey.GetEncoded());
-            }
-            catch (Exception e)
-            {
-                Debug.LogError($"[ICPService] Error creating identity: {e.Message}");
-                return null;
-            }
-        });
-        
-        // Small delay to ensure we don't block the main thread
-        yield return new WaitForSeconds(0.1f);
-        
-        // Wait for task to complete
-        while (!task.IsCompleted)
-        {
-            yield return null;
-        }
-        
-        // Get result and invoke callback
-        callback?.Invoke(task.Result);
+         Log($"CreateIdentityFromSeedPhrase: Starting synchronous creation (length: {seedPhrase.Length})");
+         if (string.IsNullOrEmpty(seedPhrase))
+         {
+              LogWarning("CreateIdentityFromSeedPhrase: Input seed phrase is null or empty.");
+              return null;
+         }
+
+         try
+         {
+             Log("CreateIdentityFromSeedPhrase: Converting mnemonic to seed bytes...");
+             byte[] seedBytes = MnemonicToSeed(seedPhrase); // This might be slow
+             Log($"CreateIdentityFromSeedPhrase: Seed bytes length: {seedBytes.Length}");
+             if (seedBytes == null || seedBytes.Length < 32)
+             {
+                  LogError("CreateIdentityFromSeedPhrase: Failed to generate sufficient seed bytes from mnemonic.");
+                  return null;
+             }
+
+             byte[] privateKeyBytes = new byte[32];
+             Array.Copy(seedBytes, 0, privateKeyBytes, 0, 32);
+             Log("CreateIdentityFromSeedPhrase: Private key bytes extracted.");
+
+             Log("CreateIdentityFromSeedPhrase: Generating Ed25519 key pair...");
+             var privateKey = new Ed25519PrivateKeyParameters(privateKeyBytes, 0);
+             var publicKey = privateKey.GeneratePublicKey();
+             Log("CreateIdentityFromSeedPhrase: Public key generated.");
+
+             var identity = new Ed25519Identity(publicKey.GetEncoded(), privateKey.GetEncoded());
+             Log("CreateIdentityFromSeedPhrase: Ed25519Identity object created successfully.");
+             return identity;
+         }
+         catch (Exception e)
+         {
+             LogError($"CreateIdentityFromSeedPhrase: Error during identity creation: {e.Message}");
+             LogError($"Stack Trace: {e.StackTrace}");
+             return null; // Return null on failure
+         }
     }
     
     /// <summary>
-    /// Fetches the current player's data from the blockchain
+    /// Fetches the current player's data from the blockchain asynchronously.
     /// </summary>
-    public IEnumerator GetPlayerData()
+    private async Task GetPlayerDataAsync()
     {
-        if (!IsInitialized)
+        Log("GetPlayerDataAsync: Started.");
+        if (!IsInitialized || MainCanister == null)
         {
-            LogError("Cannot get player data: not initialized");
-            yield break;
+            LogError("GetPlayerDataAsync: Cannot get player data - not initialized or MainCanister is null.");
+            return;
         }
-        
-        Log("Fetching player data");
-        
-        // Create a task to fetch player data
-        Task<OptionalValue<Player>> playerTask = MainCanister.GetPlayer();
-        
-        // Wait for task to complete
-        while (!playerTask.IsCompleted)
-        {
-            yield return null;
-        }
-        
+
+        Log("GetPlayerDataAsync: Calling MainCanister.GetPlayer()...");
         try
         {
-            if (playerTask.IsFaulted)
-            {
-                LogError($"Error fetching player data: {playerTask.Exception.Message}");
-                yield break;
-            }
-            
-            var playerInfo = playerTask.Result;
-            
+            // Assume MainCanister.GetPlayer() returns Task<OptionalValue<Player>>
+            // Use ConfigureAwait(false) if possible, though Unity's context might handle it.
+            OptionalValue<Player> playerInfo = await MainCanister.GetPlayer(); //.ConfigureAwait(false);
+
+            Log("GetPlayerDataAsync: GetPlayer call completed.");
+
             if (playerInfo.HasValue)
             {
                 CurrentPlayer = playerInfo.ValueOrDefault;
-                Log($"Player found: {CurrentPlayer.Username} (Level {CurrentPlayer.Level})");
-                
-                // Notify listeners
-                OnPlayerDataReceived?.Invoke(CurrentPlayer);
+                Log($"GetPlayerDataAsync: Player found: {CurrentPlayer.Username} (Level {CurrentPlayer.Level})");
+                OnPlayerDataReceived?.Invoke(CurrentPlayer); // Notify listeners
             }
             else
             {
-                Log("No player found for current identity");
-                // We'll need to implement player signup logic here in the future
+                CurrentPlayer = null; // Ensure player is null if not found
+                LogWarning("GetPlayerDataAsync: No player found for the current identity.");
+                // Handle player signup logic or state here if needed
             }
         }
         catch (Exception e)
         {
-            LogError($"Error processing player data: {e.Message}");
+            LogError($"GetPlayerDataAsync: Error fetching or processing player data: {e.Message}");
+            LogError($"Stack Trace: {e.StackTrace}");
+            CurrentPlayer = null; // Clear player data on error
         }
+        Log("GetPlayerDataAsync: Finished.");
     }
     
     /// <summary>
@@ -341,15 +341,18 @@ public class ICPService : MonoBehaviour
     /// </summary>
     private byte[] MnemonicToSeed(string mnemonic)
     {
-        string salt = "mnemonic";
+        Log("MnemonicToSeed: Converting...");
+        string salt = "mnemonic"; // Standard BIP39 salt
         byte[] saltBytes = Encoding.UTF8.GetBytes(salt);
         byte[] mnemonicBytes = Encoding.UTF8.GetBytes(mnemonic.Normalize(NormalizationForm.FormKD));
         
-        // PBKDF2 with HMAC-SHA512, 2048 iterations, 64 bytes output
+        // PBKDF2 with HMAC-SHA512, 2048 iterations, 64 bytes output (BIP39 Standard)
         using (var deriveBytes = new System.Security.Cryptography.Rfc2898DeriveBytes(
             mnemonicBytes, saltBytes, 2048, System.Security.Cryptography.HashAlgorithmName.SHA512))
         {
-            return deriveBytes.GetBytes(64);
+            byte[] seed = deriveBytes.GetBytes(64); // 512 bits = 64 bytes
+            Log("MnemonicToSeed: Conversion complete.");
+            return seed;
         }
     }
     

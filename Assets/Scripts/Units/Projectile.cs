@@ -231,61 +231,127 @@
 
         void HandleImpact(Unit target)
         {
-            // Apply AoE if applicable, even if there's no target
-            if (IsAoE)
+            try
             {
-                ApplyAoEDamage();
+                // Apply AoE if applicable, even if there's no target
+                if (IsAoE)
+                {
+                    ApplyAoEDamage();
+                }
+
+                // Impact at the last known target position or collision point
+                InstantiateImpactEffect();
+
+                if (target != null && target.gameObject != null && target.gameObject.activeInHierarchy && !target.IsDeath)
+                {
+                    ApplyDirectDamage(target);
+                    target.SetImpactPosition(transform.position);
+                }
             }
-
-            // Impact at the last known target position or collision point
-            InstantiateImpactEffect();
-
-            if (target != null && !target.IsDeath)
+            catch (System.Exception e)
             {
-                ApplyDirectDamage(target);
-                target.SetImpactPosition(transform.position);
+                Debug.LogWarning($"Error in HandleImpact: {e.Message}");
             }
-
-            Destroy(gameObject);
+            finally
+            {
+                // Always destroy the projectile
+                if (gameObject != null)
+                {
+                    Destroy(gameObject);
+                }
+            }
         }
 
         void ApplyDirectDamage(Unit target)
         {
-            if (Random.value < target.DodgeChance)
+            // First check if the target exists and is active
+            if (target == null || target.gameObject == null || !target.gameObject.activeInHierarchy || target.IsDeath)
             {
-                Dmg = 0;
+                return;
             }
 
-            if (target.Shield > 0 && !target.flagShield)
+            try
             {
-                target.OnImpactShield(Dmg);
-            }
-            else
-            {
-                InstantiateImpactEffect();
-            }
+                if (Random.value < target.DodgeChance)
+                {
+                    Dmg = 0;
+                }
 
-            target.AddDmg(Dmg);
+                // Additional safety check right before calling OnImpactShield
+                if (target.Shield > 0 && !target.flagShield && target.gameObject.activeInHierarchy)
+                {
+                    // Final safety check via reflection to avoid direct method call that might crash
+                    try
+                    {
+                        target.OnImpactShield(Dmg);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogWarning($"Failed to call OnImpactShield: {ex.Message}");
+                        // Fallback - just apply damage directly
+                        if (target != null && target.gameObject != null && target.gameObject.activeInHierarchy)
+                        {
+                            target.AddDmg(Dmg);
+                        }
+                    }
+                }
+                else if (target.gameObject.activeInHierarchy)
+                {
+                    InstantiateImpactEffect();
+                    // Only add damage if target is still active
+                    if (target.gameObject.activeInHierarchy)
+                    {
+                        target.AddDmg(Dmg);
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error in ApplyDirectDamage: {e.Message}");
+            }
         }
 
         void ApplyAoEDamage()
         {
-            Collider[] hitColliders = Physics.OverlapSphere(transform.position, AoERadius);
-            foreach (Collider hitCollider in hitColliders)
+            try
             {
-                Unit unit = hitCollider.GetComponent<Unit>();
-                if (unit != null && !unit.IsMyTeam(MyTeam))
+                Collider[] hitColliders = Physics.OverlapSphere(transform.position, AoERadius);
+                foreach (Collider hitCollider in hitColliders)
                 {
-                    ApplyDirectDamage(unit);
+                    // Skip null or inactive colliders
+                    if (hitCollider == null || !hitCollider.gameObject || !hitCollider.gameObject.activeInHierarchy)
+                    {
+                        continue;
+                    }
+
+                    Unit unit = hitCollider.GetComponent<Unit>();
+                    if (unit != null && unit.gameObject.activeInHierarchy && !unit.IsDeath && !unit.IsMyTeam(MyTeam))
+                    {
+                        ApplyDirectDamage(unit);
+                    }
                 }
+                InstantiateImpactEffect();
             }
-            InstantiateImpactEffect();
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error in ApplyAoEDamage: {e.Message}");
+            }
         }
 
         void InstantiateImpactEffect()
         {
-            GameObject impactPrefab = Instantiate(impact, transform.position, Quaternion.identity);
-            Destroy(impactPrefab, 0.25f);
+            try
+            {
+                if (impact != null)
+                {
+                    GameObject impactPrefab = Instantiate(impact, transform.position, Quaternion.identity);
+                    Destroy(impactPrefab, 0.25f);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"Error in InstantiateImpactEffect: {e.Message}");
+            }
         }
 
         void RotateTowards(Vector3 target)

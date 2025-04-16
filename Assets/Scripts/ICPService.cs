@@ -210,16 +210,32 @@ public class ICPService : MonoBehaviour
             
             IsInitialized = true;
             
-            // Fetch player data after initialization
-            StartCoroutine(GetPlayerData());
-            
             // Notify listeners that initialization is complete
             OnICPInitialized?.Invoke();
+            
+            // Don't yield inside try-catch
+            Log("Initialization complete, now fetching player data");
         }
         catch (Exception e)
         {
             LogError($"Initialization failed after identity creation: {e.Message}");
             IsInitialized = false;
+            yield break; // Exit if initialization failed
+        }
+        
+        // If we got here, initialization succeeded, so fetch player data
+        if (IsInitialized)
+        {
+            // Fetch player data after initialization - moved outside try-catch
+            yield return StartCoroutine(GetPlayerData());
+            
+            // Check if we need to handle player creation (when no player data found)
+            if (CurrentPlayer == null)
+            {
+                Log("No player found for current identity, may need to handle signup");
+                // Uncomment and implement the following when you add SignupNewPlayer functionality
+                // yield return StartCoroutine(SignupNewPlayer());
+            }
         }
     }
     
@@ -311,6 +327,7 @@ public class ICPService : MonoBehaviour
             else
             {
                 Log("No player found for current identity");
+                // We'll need to implement player signup logic here in the future
             }
         }
         catch (Exception e)

@@ -84,6 +84,8 @@ namespace Cosmicrafts
 
         protected Rigidbody MyRb;
 
+        private float shieldVisualTimer = 0f;
+
         private void Awake()
         {
             //MyClips = MyAnim.runtimeAnimatorController.animationClips;
@@ -141,6 +143,16 @@ namespace Cosmicrafts
                     ShieldCharge = 12.5f;
                     Shield++;
                     UI.SetShieldBar((float)Shield / (float)MaxShield);
+                }
+            }
+            
+            // Handle shield visual timer without coroutines
+            if (shieldVisualTimer > 0)
+            {
+                shieldVisualTimer -= Time.deltaTime;
+                if (shieldVisualTimer <= 0 && ShieldGameObject != null)
+                {
+                    ShieldGameObject.SetActive(false);
                 }
             }
         }
@@ -230,10 +242,28 @@ namespace Cosmicrafts
             OnDeath?.Invoke(this);
             OnUnitDeath?.Invoke(this);
 
-            UI.HideUI();
-            SA.SetActive(false);
-            MyAnim.SetTrigger("Die");
-            SolidBase.enabled = false;
+            // Special handling for player base stations - don't hide UI or disable colliders
+            if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
+            {
+                // Don't hide UI or disable anything
+                Debug.Log($"Player base station 'died' but keeping visuals active");
+            }
+            else
+            {
+                // Regular death handling for other units
+                UI.HideUI();
+                SA.SetActive(false);
+                MyAnim.SetTrigger("Die");
+                SolidBase.enabled = false;
+            }
+
+            // Don't automatically destroy if it's the player's base station
+            // GameMng.HandlePlayerBaseStationDeath will handle it instead
+            if (!IsBaseStation || MyTeam != GameMng.P.MyTeam)
+            {
+                // For non-player base stations, destroy normally
+                Destroy(gameObject, 2f); // Give time for death animation to play
+            }
         }
 
         public virtual void DisableUnit()
@@ -286,8 +316,17 @@ namespace Cosmicrafts
             return Casting > 0f;
         }
 
-        public void DestroyUnit()
+        public virtual void DestroyUnit()
         {
+            // If it's the player's base station, let GameMng handle it instead
+            // This prevents actual destruction of the player's base
+            if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
+            {
+                // GameMng.HandlePlayerBaseStationDeath will be called through the OnUnitDeath event
+                // which will handle respawning without destroying the base station
+                return;
+            }
+
             GameMng.GM.DeleteUnit(this);
 
             if (!GameMng.GM.IsGameOver() && IsBaseStation)
@@ -296,10 +335,13 @@ namespace Cosmicrafts
                 {
                     WaveController.instance.OnBaseDestroyed();
                 }
-                else
+                else if (MyTeam == Team.Red)
                 {
-                    GameMng.GM.EndGame(MyTeam == Team.Blue ? Team.Red : Team.Blue);
+                    // Enemy base station is destroyed - player wins
+                    GameMng.GM.EndGame(Team.Blue);
                 }
+                // Player base station destruction is now handled by GameMng.HandlePlayerBaseStationDeath
+                // We don't immediately end the game here
             }
 
             if (!IsMyTeam(GameMng.P.MyTeam))
@@ -396,16 +438,22 @@ namespace Cosmicrafts
 
         public void OnImpactShield(int dmg)
         {
-            ShieldGameObject.SetActive(true);
+            // Early return if object is inactive or destroyed
+            if (this == null || !gameObject || !gameObject.activeInHierarchy || IsDeath)
+            {
+                return;
+            }
+            
+            // Activate shield visual if available
+            if (ShieldGameObject != null)
+            {
+                ShieldGameObject.SetActive(true);
+                // Set timer instead of using coroutine
+                shieldVisualTimer = 1f;
+            }
+            
+            // Apply damage
             AddDmg(dmg);
-            StopAllCoroutines();
-            StartCoroutine(DesactiveShield());
-        }
-
-        public IEnumerator DesactiveShield()
-        {
-            yield return new WaitForSeconds(1f);
-            ShieldGameObject.SetActive(false);
         }
 
         public int GetLevel()
@@ -433,25 +481,33 @@ namespace Cosmicrafts
 
         public virtual void ResetUnit()
         {
+            Debug.Log($"[Unit.ResetUnit] Resetting unit {gameObject.name} (ID: {Id})");
+            
             // Reset the unit to its initial state for reuse in object pooling
             IsDeath = false;
             Disabled = false;
             Casting = 0f;
+            
+            // Make sure colliders are enabled
+            if (SolidBase != null) 
+                SolidBase.enabled = true;
+            
+            // Re-enable GameObject if it was disabled
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
             
             // Reset health and shield to their maximum values
             HitPoints = MaxHp;
             Shield = MaxShield;
             
             // Reset UI elements
-            UI.SetHPBar(1f);
-            UI.SetShieldBar((float)Shield / (float)MaxShield);
-            // Show UI by setting Canvas active (instead of using non-existent ShowUI method)
-            if (UI.Canvas != null)
-                UI.Canvas.SetActive(true);
-            
-            // Re-enable colliders and other components
-            if (SolidBase != null) 
-                SolidBase.enabled = true;
+            if (UI != null) {
+                UI.SetHPBar(1f);
+                UI.SetShieldBar((float)Shield / (float)MaxShield);
+                // Show UI
+                if (UI.Canvas != null)
+                    UI.Canvas.SetActive(true);
+            }
             
             // Reset animation state if needed
             if (MyAnim != null) {
@@ -463,20 +519,22 @@ namespace Cosmicrafts
             Ship ship = GetComponent<Ship>();
             if (ship != null)
                 ship.ResetShip();
-                
+            
             Shooter shooter = GetComponent<Shooter>();
             if (shooter != null)
                 shooter.ResetShooter();
-                
+            
             // Reactivate spawn area if applicable
-            if (SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyTeam))
+            if (SA != null && SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyTeam))
                 SA.SetActive(true);
-                
-            // Create portal effect for respawn only if Portal prefab exists
+            
+            // Create portal effect for respawn if Portal prefab exists
             if (Portal != null) {
                 GameObject portal = Instantiate(Portal, transform.position, Quaternion.identity);
                 Destroy(portal, 3f);
             }
+            
+            Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
         }
     }
 }

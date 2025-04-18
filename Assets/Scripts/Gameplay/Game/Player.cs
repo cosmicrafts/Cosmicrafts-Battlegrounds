@@ -8,17 +8,16 @@ using UnityEngine;
  */
 public class Player : MonoBehaviour
 {
+    // These will be set by GameMng during instantiation
     [HideInInspector]
     public int ID = 1;
     [HideInInspector]
     public Team MyTeam = Team.Blue;
+
     bool InControl;
     bool CanGenEnergy;
-    DragUnitCtrl UnitDrag;
     [HideInInspector]
     public Dictionary<string, GameObject> DeckUnits;
-
-    [SerializeField] private GameObject characterPrefab;
 
     List<NFTsCard> PlayerDeck;
     Mesh[] UnitsMeshs;
@@ -27,8 +26,8 @@ public class Player : MonoBehaviour
     GameObject[] SpellPreviews;
     int DragingCard;
     int SelectedCard;
-    GameCharacter MyCharacter;
-
+    // Remove GameCharacter reference
+    
     [Range(0, 99)]
     public float CurrentEnergy = 5;
     [Range(0, 99)]
@@ -46,164 +45,190 @@ public class Player : MonoBehaviour
     KeyCode[] Keys;
     private PlayerMovement playerMovement;
 
-private void Awake()
-{
-    Debug.Log("--PLAYER AWAKES--");
-    GameMng.P = this;
-    DeckUnits = new Dictionary<string, GameObject>();
-    DragingCard = -1;
-    SelectedCard = -1;
-    
-    // Get player movement component
-    playerMovement = GetComponent<PlayerMovement>();
-
-    GameObject basePrefabToUse = null;
-
-    if (characterPrefab != null)
+    // Static methods for UI events to access the player instance
+    public static void OnUICardClick(int cardIndex)
     {
-        MyCharacter = Instantiate(characterPrefab, transform).GetComponent<GameCharacter>();
-
-        if (MyCharacter.characterBaseSO != null && MyCharacter.characterBaseSO.BasePrefab != null)
+        if (GameMng.P != null)
         {
-            basePrefabToUse = MyCharacter.characterBaseSO.BasePrefab;
-
-            // Pass the prefab to GameMng and get the instantiated base station
-            Unit baseStation = GameMng.GM.InitBaseStations(basePrefabToUse);
-
-            // Apply overrides to the instantiated base station
-            if (baseStation != null)
-            {
-                MyCharacter.characterBaseSO.ApplyOverridesToUnit(baseStation);
-            }
+            GameMng.P.SelectCard(cardIndex);
         }
         else
         {
-            Debug.LogError("CharacterBaseSO or BasePrefab is missing!");
+            Debug.LogWarning("Player instance not found when trying to select card.");
+        }
+    }
+    
+    public static void OnUICardDragStart(int cardIndex)
+    {
+        if (GameMng.P != null)
+        {
+            GameMng.P.DragDeckUnit(cardIndex);
+        }
+        else
+        {
+            Debug.LogWarning("Player instance not found when trying to drag card.");
+        }
+    }
+    
+    public static void OnUICardDragEnd()
+    {
+        if (GameMng.P != null)
+        {
+            GameMng.P.DropDeckUnit();
+        }
+        else
+        {
+            Debug.LogWarning("Player instance not found when trying to drop card.");
         }
     }
 
-    Debug.Log("--PLAYER END AWAKE--");
-}
-
-private void Start()
-{
-    Debug.Log("--PLAYER STARTS--");
-    Keys = new KeyCode[8] { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
-        KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8 };
-    UnitDrag = FindFirstObjectByType<DragUnitCtrl>();
-    UnitDrag.setMeshActive(false);
-    InControl = CanGenEnergy = true;
-
-    PlayerDeck = new List<NFTsCard>();
-    
-    // Track which card keys we've already processed to handle duplicates
-    HashSet<string> processedCardKeys = new HashSet<string>();
-    
-    // Generate card instances
-    int uniqueIdCounter = 1; // Used to create unique IDs for duplicates
-    foreach (ScriptableObject card in TestingDeck)
+    private void Awake()
     {
-        if (card is ShipsDataBase shipCard)
-        {
-            NFTsUnit cardData = shipCard.ToNFTCard();
-            
-            // If this key already exists, generate a unique variant
-            string originalKey = cardData.KeyId;
-            while (processedCardKeys.Contains(cardData.KeyId))
-            {
-                // Modify LocalID to make it unique
-                cardData.LocalID = cardData.LocalID * 100 + uniqueIdCounter;
-                uniqueIdCounter++;
-                
-                // This will update the KeyId through the property
-                string newKey = cardData.KeyId;
-                Debug.Log($"Created unique variant of card: {originalKey} -> {newKey}");
-            }
-            
-            processedCardKeys.Add(cardData.KeyId);
-            PlayerDeck.Add(cardData);
-            // Add the NFT data to GameMng
-            GameMng.GM.AddNftCardData(cardData, ID);
-        }
-        else if (card is SpellsDataBase spellCard)
-        {
-            NFTsSpell cardData = spellCard.ToNFTCard();
-            
-            // If this key already exists, generate a unique variant
-            string originalKey = cardData.KeyId;
-            while (processedCardKeys.Contains(cardData.KeyId))
-            {
-                // Modify LocalID to make it unique
-                cardData.LocalID = cardData.LocalID * 100 + uniqueIdCounter;
-                uniqueIdCounter++;
-                
-                // This will update the KeyId through the property
-                string newKey = cardData.KeyId;
-                Debug.Log($"Created unique variant of card: {originalKey} -> {newKey}");
-            }
-            
-            processedCardKeys.Add(cardData.KeyId);
-            PlayerDeck.Add(cardData);
-            // Add the NFT data to GameMng
-            GameMng.GM.AddNftCardData(cardData, ID);
-        }
+        Debug.Log("--PLAYER AWAKES--");
+        // GameMng.P is set in Start after ID/Team are potentially set
+        DeckUnits = new Dictionary<string, GameObject>();
+        DragingCard = -1;
+        SelectedCard = -1;
+
+        // Get components from this GameObject
+        playerMovement = GetComponent<PlayerMovement>();
+        
+        // No longer need to get or create GameCharacter
+        Debug.Log("--PLAYER END AWAKE--");
     }
 
-    SpellPreviews = new GameObject[8];
-    ShipPreviews = new GameObject[8];
-    UnitsMeshs = new Mesh[8];
-    UnitMaterials = new Material[8];
-
-    if (PlayerDeck.Count == 8)
+    private void Start()
     {
-        for (int i = 0; i < 8; i++)
+        // Set the static reference now that ID/Team should be initialized
+        GameMng.P = this;
+        Debug.Log("--PLAYER STARTS--");
+        Keys = new KeyCode[8] { KeyCode.Alpha1, KeyCode.Alpha2, KeyCode.Alpha3, KeyCode.Alpha4,
+            KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8 };
+        
+        // Check if DragUnitCtrl exists in the scene, if not, create it
+        if (DragUnitCtrl.Instance == null)
         {
-            NFTsCard card = PlayerDeck[i];
-            bool isSpell = (NFTClass)card.EntType == NFTClass.Skill;
+            GameObject dragCtrlObj = new GameObject("DragUnitCtrl");
+            DragUnitCtrl dragCtrl = dragCtrlObj.AddComponent<DragUnitCtrl>();
             
-            // Use the prefab from the NFTs data directly instead of loading from Resources
-            GameObject prefab = card.Prefab;
+            // Add required components
+            dragCtrlObj.AddComponent<MeshFilter>();
+            MeshRenderer meshRenderer = dragCtrlObj.AddComponent<MeshRenderer>();
+            // Create a child object for the visual
+            GameObject visualObj = new GameObject("Visual");
+            visualObj.transform.SetParent(dragCtrlObj.transform);
             
-            // Create a placeholder prefab if the original doesn't exist
-            if (prefab == null)
-            {
-                Debug.LogWarning($"Creating placeholder for missing prefab: {card.KeyId}, isSpell: {isSpell}");
-                prefab = new GameObject($"PlaceholderCard_{card.KeyId}");
-                
-                // Add a GameCard component to the placeholder
-                if (isSpell)
-                {
-                    SpellCard placeholder = prefab.AddComponent<SpellCard>();
-                    placeholder.PreviewEffect = new GameObject($"PlaceholderPreview_{card.KeyId}");
-                    SpellPreviews[i] = placeholder.PreviewEffect;
-                }
-                else
-                {
-                    UnitCard placeholder = prefab.AddComponent<UnitCard>();
-                    GameObject unitMesh = new GameObject($"PlaceholderMesh_{card.KeyId}");
-                    placeholder.UnitMesh = unitMesh;
-                    
-                    // Create minimal mesh structure
-                    GameObject meshHolder = new GameObject("MeshHolder");
-                    meshHolder.transform.SetParent(unitMesh.transform);
-                    SkinnedMeshRenderer renderer = meshHolder.AddComponent<SkinnedMeshRenderer>();
-                    renderer.sharedMesh = CreatePrimitiveMesh();
-                    renderer.sharedMaterial = new Material(Shader.Find("Standard"));
-                    
-                    ShipPreviews[i] = placeholder.UnitMesh;
-                    UnitsMeshs[i] = renderer.sharedMesh;
-                    UnitMaterials[i] = renderer.sharedMaterial;
+            // Set up the required components
+            dragCtrl.MyMesh = meshRenderer;
+            dragCtrl.MyMeshFilter = dragCtrlObj.GetComponent<MeshFilter>();
+            
+            // Try to add Outlinable component if the class exists
+            try {
+                // Use reflection to check if the Outlinable type exists
+                System.Type outlinableType = System.Type.GetType("EPOOutline.Outlinable, Assembly-CSharp");
+                if (outlinableType != null) {
+                    Component outlineComp = visualObj.AddComponent(outlinableType);
+                    // Use reflection to set the Outlinable property
+                    System.Reflection.FieldInfo fieldInfo = typeof(DragUnitCtrl).GetField("Outline");
+                    if (fieldInfo != null) {
+                        fieldInfo.SetValue(dragCtrl, outlineComp);
+                    }
                 }
             }
-            else
+            catch (System.Exception e) {
+                Debug.LogWarning("Could not add Outlinable component: " + e.Message);
+            }
+            
+            Debug.Log("Created DragUnitCtrl GameObject automatically");
+        }
+        
+        // Check if it exists now before using it
+        if (DragUnitCtrl.Instance != null) {
+            DragUnitCtrl.Instance.setMeshActive(false);
+        }
+        else {
+            Debug.LogWarning("DragUnitCtrl.Instance is still null after attempted creation.");
+        }
+
+        InControl = CanGenEnergy = true;
+
+        PlayerDeck = new List<NFTsCard>();
+        
+        // Track which card keys we've already processed to handle duplicates
+        HashSet<string> processedCardKeys = new HashSet<string>();
+        
+        // Generate card instances
+        int uniqueIdCounter = 1; // Used to create unique IDs for duplicates
+        foreach (ScriptableObject card in TestingDeck)
+        {
+            if (card is ShipsDataBase shipCard)
             {
-                GameCard gameCard = prefab.GetComponent<GameCard>();
+                NFTsUnit cardData = shipCard.ToNFTCard();
                 
-                // Skip if GameCard component is missing
-                if (gameCard == null)
+                // If this key already exists, generate a unique variant
+                string originalKey = cardData.KeyId;
+                while (processedCardKeys.Contains(cardData.KeyId))
                 {
-                    Debug.LogWarning($"Prefab for card {card.KeyId} is missing GameCard component, creating placeholder");
-                    // Create a basic GameCard component on the prefab
+                    // Modify LocalID to make it unique
+                    cardData.LocalID = cardData.LocalID * 100 + uniqueIdCounter;
+                    uniqueIdCounter++;
+                    
+                    // This will update the KeyId through the property
+                    string newKey = cardData.KeyId;
+                    Debug.Log($"Created unique variant of card: {originalKey} -> {newKey}");
+                }
+                
+                processedCardKeys.Add(cardData.KeyId);
+                PlayerDeck.Add(cardData);
+                // Add the NFT data to GameMng
+                GameMng.GM.AddNftCardData(cardData, ID);
+            }
+            else if (card is SpellsDataBase spellCard)
+            {
+                NFTsSpell cardData = spellCard.ToNFTCard();
+                
+                // If this key already exists, generate a unique variant
+                string originalKey = cardData.KeyId;
+                while (processedCardKeys.Contains(cardData.KeyId))
+                {
+                    // Modify LocalID to make it unique
+                    cardData.LocalID = cardData.LocalID * 100 + uniqueIdCounter;
+                    uniqueIdCounter++;
+                    
+                    // This will update the KeyId through the property
+                    string newKey = cardData.KeyId;
+                    Debug.Log($"Created unique variant of card: {originalKey} -> {newKey}");
+                }
+                
+                processedCardKeys.Add(cardData.KeyId);
+                PlayerDeck.Add(cardData);
+                // Add the NFT data to GameMng
+                GameMng.GM.AddNftCardData(cardData, ID);
+            }
+        }
+
+        SpellPreviews = new GameObject[8];
+        ShipPreviews = new GameObject[8];
+        UnitsMeshs = new Mesh[8];
+        UnitMaterials = new Material[8];
+
+        if (PlayerDeck.Count == 8)
+        {
+            for (int i = 0; i < 8; i++)
+            {
+                NFTsCard card = PlayerDeck[i];
+                bool isSpell = (NFTClass)card.EntType == NFTClass.Skill;
+                
+                // Use the prefab from the NFTs data directly instead of loading from Resources
+                GameObject prefab = card.Prefab;
+                
+                // Create a placeholder prefab if the original doesn't exist
+                if (prefab == null)
+                {
+                    Debug.LogWarning($"Creating placeholder for missing prefab: {card.KeyId}, isSpell: {isSpell}");
+                    prefab = new GameObject($"PlaceholderCard_{card.KeyId}");
+                    
+                    // Add a GameCard component to the placeholder
                     if (isSpell)
                     {
                         SpellCard placeholder = prefab.AddComponent<SpellCard>();
@@ -228,86 +253,166 @@ private void Start()
                         UnitMaterials[i] = renderer.sharedMaterial;
                     }
                 }
-                else if (isSpell)
-                {
-                    SpellCard spell = gameCard as SpellCard;
-                    SpellPreviews[i] = spell.PreviewEffect;
-                }
                 else
                 {
-                    UnitCard unit = gameCard as UnitCard;
-                    ShipPreviews[i] = unit.UnitMesh;
+                    GameCard gameCard = prefab.GetComponent<GameCard>();
                     
-                    // Ensure UnitMesh and renderers exist
-                    if (unit.UnitMesh != null && 
-                        unit.UnitMesh.transform.childCount > 0 &&
-                        unit.UnitMesh.transform.GetChild(0).GetComponentInChildren<SkinnedMeshRenderer>() != null)
+                    // Skip if GameCard component is missing
+                    if (gameCard == null)
                     {
-                        UnitsMeshs[i] = unit.UnitMesh.transform.GetChild(0).GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
-                        UnitMaterials[i] = unit.UnitMesh.transform.GetChild(0).GetComponentInChildren<SkinnedMeshRenderer>().sharedMaterial;
+                        Debug.LogWarning($"Prefab for card {card.KeyId} is missing GameCard component, creating placeholder");
+                        // Create a basic GameCard component on the prefab
+                        if (isSpell)
+                        {
+                            SpellCard placeholder = prefab.AddComponent<SpellCard>();
+                            placeholder.PreviewEffect = new GameObject($"PlaceholderPreview_{card.KeyId}");
+                            SpellPreviews[i] = placeholder.PreviewEffect;
+                        }
+                        else
+                        {
+                            UnitCard placeholder = prefab.AddComponent<UnitCard>();
+                            GameObject unitMesh = new GameObject($"PlaceholderMesh_{card.KeyId}");
+                            placeholder.UnitMesh = unitMesh;
+                            
+                            // Create minimal mesh structure
+                            GameObject meshHolder = new GameObject("MeshHolder");
+                            meshHolder.transform.SetParent(unitMesh.transform);
+                            SkinnedMeshRenderer renderer = meshHolder.AddComponent<SkinnedMeshRenderer>();
+                            renderer.sharedMesh = CreatePrimitiveMesh();
+                            renderer.sharedMaterial = new Material(Shader.Find("Standard"));
+                            
+                            ShipPreviews[i] = placeholder.UnitMesh;
+                            UnitsMeshs[i] = renderer.sharedMesh;
+                            UnitMaterials[i] = renderer.sharedMaterial;
+                        }
+                    }
+                    else if (isSpell)
+                    {
+                        SpellCard spell = gameCard as SpellCard;
+                        SpellPreviews[i] = spell.PreviewEffect;
                     }
                     else
                     {
-                        Debug.LogWarning($"UnitCard for {card.KeyId} has invalid UnitMesh or SkinnedMeshRenderer, creating placeholder");
-                        // Create fallback mesh and material
-                        UnitsMeshs[i] = CreatePrimitiveMesh();
-                        UnitMaterials[i] = new Material(Shader.Find("Standard"));
+                        UnitCard unit = gameCard as UnitCard;
+                        ShipPreviews[i] = unit.UnitMesh;
+                        
+                        // Ensure UnitMesh and renderers exist
+                        if (unit.UnitMesh != null && 
+                            unit.UnitMesh.transform.childCount > 0 &&
+                            unit.UnitMesh.transform.GetChild(0).GetComponentInChildren<SkinnedMeshRenderer>() != null)
+                        {
+                            UnitsMeshs[i] = unit.UnitMesh.transform.GetChild(0).GetComponentInChildren<SkinnedMeshRenderer>().sharedMesh;
+                            UnitMaterials[i] = unit.UnitMesh.transform.GetChild(0).GetComponentInChildren<SkinnedMeshRenderer>().sharedMaterial;
+                        }
+                        else
+                        {
+                            Debug.LogWarning($"UnitCard for {card.KeyId} has invalid UnitMesh or SkinnedMeshRenderer, creating placeholder");
+                            // Create fallback mesh and material
+                            UnitsMeshs[i] = CreatePrimitiveMesh();
+                            UnitMaterials[i] = new Material(Shader.Find("Standard"));
+                        }
                     }
                 }
+                
+                // Add to the deck only after ensuring we have a valid prefab
+                // Check if key already exists to avoid duplicate key error
+                if (!DeckUnits.ContainsKey(card.KeyId))
+                {
+                    DeckUnits.Add(card.KeyId, prefab);
+                }
+                else
+                {
+                    Debug.LogWarning($"Card with key {card.KeyId} already exists in the deck, not adding duplicate to dictionary");
+                }
             }
+        }
+
+        if (GameMng.UI != null)
+        {
+            GameMng.UI.InitGameCards(PlayerDeck.ToArray());
+        } else {
+             Debug.LogWarning("GameMng.UI is null, cannot initialize game cards UI.");
+        }
+        Debug.Log("--PLAYER END START--");
+    }
+
+    private void Update()
+    {
+        if (!InControl)
+        {
+            return;
+        }
+
+        for (int i = 0; i < 8; i++)
+        {
+            if (Input.GetKeyDown(Keys[i]) && DragUnitCtrl.Instance.IsValid())
+                DeplyUnit(PlayerDeck[i]);
+        }
+
+        AddEnergy(Time.deltaTime * SpeedEnergy);
+    }
+
+    public void SelectCard(int idu)
+    {
+        if (!InControl || idu < 0 || idu >= PlayerDeck.Count || DragUnitCtrl.Instance == null)
+        {
+            return;
+        }
+
+        if (SelectedCard == idu)
+        {
+            SelectedCard = -1;
+            GameMng.UI.DeselectCards();
+            DragUnitCtrl.Instance.setMeshActive(false);
+        }
+        else
+        {
+            GameMng.UI.DeselectCards();
+            SelectedCard = idu;
+            GameMng.UI.SelectCard(idu);
             
-            // Add to the deck only after ensuring we have a valid prefab
-            // Check if key already exists to avoid duplicate key error
-            if (!DeckUnits.ContainsKey(card.KeyId))
+            // Safely access preview objects with null checks
+            if ((NFTClass)PlayerDeck[idu].EntType == NFTClass.Skill)
             {
-                DeckUnits.Add(card.KeyId, prefab);
+                if (SpellPreviews != null && idu < SpellPreviews.Length && SpellPreviews[idu] != null)
+                {
+                    PrepareDeploy(SpellPreviews[idu], PlayerDeck[idu].EnergyCost);
+                }
+                else
+                {
+                    Debug.LogWarning($"Missing SpellPreview for card at index {idu}");
+                    DragUnitCtrl.Instance.setMeshActive(false);
+                }
             }
             else
             {
-                Debug.LogWarning($"Card with key {card.KeyId} already exists in the deck, not adding duplicate to dictionary");
+                if (ShipPreviews != null && idu < ShipPreviews.Length && ShipPreviews[idu] != null)
+                {
+                    PrepareDeploy(ShipPreviews[idu], PlayerDeck[idu].EnergyCost);
+                }
+                else
+                {
+                    Debug.LogWarning($"Missing ShipPreview for card at index {idu}");
+                    DragUnitCtrl.Instance.setMeshActive(false);
+                }
             }
         }
     }
 
-    GameMng.UI.InitGameCards(PlayerDeck.ToArray());
-    Debug.Log("--PLAYER END START--");
-}
-
-private void Update()
-{
-    if (!InControl)
+    public void DragDeckUnit(int idu)
     {
-        return;
-    }
+        if (!InControl || idu < 0 || idu >= PlayerDeck.Count || DragUnitCtrl.Instance == null)
+        {
+            return;
+        }
 
-    for (int i = 0; i < 8; i++)
-    {
-        if (Input.GetKeyDown(Keys[i]) && UnitDrag.IsValid())
-            DeplyUnit(PlayerDeck[i]);
-    }
+        DragingCard = idu;
+        if (SelectedCard != -1 && SelectedCard != DragingCard)
+        {
+            SelectedCard = -1;
+            GameMng.UI.DeselectCards();
+        }
 
-    AddEnergy(Time.deltaTime * SpeedEnergy);
-}
-
-public void SelectCard(int idu)
-{
-    if (!InControl || idu < 0 || idu >= PlayerDeck.Count)
-    {
-        return;
-    }
-
-    if (SelectedCard == idu)
-    {
-        SelectedCard = -1;
-        GameMng.UI.DeselectCards();
-        UnitDrag.setMeshActive(false);
-    }
-    else
-    {
-        GameMng.UI.DeselectCards();
-        SelectedCard = idu;
-        GameMng.UI.SelectCard(idu);
-        
         // Safely access preview objects with null checks
         if ((NFTClass)PlayerDeck[idu].EntType == NFTClass.Skill)
         {
@@ -318,7 +423,7 @@ public void SelectCard(int idu)
             else
             {
                 Debug.LogWarning($"Missing SpellPreview for card at index {idu}");
-                UnitDrag.setMeshActive(false);
+                DragUnitCtrl.Instance.setMeshActive(false);
             }
         }
         else
@@ -330,233 +435,199 @@ public void SelectCard(int idu)
             else
             {
                 Debug.LogWarning($"Missing ShipPreview for card at index {idu}");
-                UnitDrag.setMeshActive(false);
+                DragUnitCtrl.Instance.setMeshActive(false);
             }
         }
     }
-}
 
-public void DragDeckUnit(int idu)
-{
-    if (!InControl || idu < 0 || idu >= PlayerDeck.Count)
+    public void DropDeckUnit()
     {
-        return;
-    }
+        if (!InControl || DragUnitCtrl.Instance == null)
+        {
+            return;
+        }
 
-    DragingCard = idu;
-    if (SelectedCard != -1 && SelectedCard != DragingCard)
-    {
+        if (DragUnitCtrl.Instance.IsValid() && (DragingCard != -1 || SelectedCard != -1))
+        {
+            int cardIndex = DragingCard == -1 ? SelectedCard : DragingCard;
+            if (cardIndex >= 0 && cardIndex < PlayerDeck.Count)
+            {
+                DeplyUnit(PlayerDeck[cardIndex]);
+            }
+        }
+        DragUnitCtrl.Instance.setMeshActive(false);
+        DragingCard = -1;
         SelectedCard = -1;
         GameMng.UI.DeselectCards();
     }
 
-    // Safely access preview objects with null checks
-    if ((NFTClass)PlayerDeck[idu].EntType == NFTClass.Skill)
+    public void SetInControl(bool incontrol)
     {
-        if (SpellPreviews != null && idu < SpellPreviews.Length && SpellPreviews[idu] != null)
+        InControl = incontrol;
+        if (!InControl && DragUnitCtrl.Instance != null)
         {
-            PrepareDeploy(SpellPreviews[idu], PlayerDeck[idu].EnergyCost);
-        }
-        else
-        {
-            Debug.LogWarning($"Missing SpellPreview for card at index {idu}");
-            UnitDrag.setMeshActive(false);
+            DragUnitCtrl.Instance.setMeshActive(false);
+            DragingCard = -1;
         }
     }
-    else
+
+    public void SetCanGenEnergy(bool can)
     {
-        if (ShipPreviews != null && idu < ShipPreviews.Length && ShipPreviews[idu] != null)
+        CanGenEnergy = can;
+    }
+
+    public void AddEnergy(float value)
+    {
+        if (!CanGenEnergy)
+            return;
+
+        if (CurrentEnergy < MaxEnergy)
         {
-            PrepareDeploy(ShipPreviews[idu], PlayerDeck[idu].EnergyCost);
+            CurrentEnergy += value;
+            GameMng.MT.AddEnergyGenerated(value);
         }
-        else
+        else if (CurrentEnergy >= MaxEnergy)
         {
-            Debug.LogWarning($"Missing ShipPreview for card at index {idu}");
-            UnitDrag.setMeshActive(false);
+            CurrentEnergy = MaxEnergy;
+            GameMng.MT.AddEnergyWasted(value);
+        }
+        GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
+    }
+
+    public void RestEnergy(float value)
+    {
+        CurrentEnergy -= value;
+        GameMng.MT.AddEnergyUsed(value);
+        // Null check for UI
+        if (GameMng.UI != null)
+        {
+            GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
+        } else {
+             Debug.LogWarning("GameMng.UI is null, cannot update energy UI.");
         }
     }
-}
 
-public void DropDeckUnit()
-{
-    if (!InControl)
+    public bool IsPreparingDeploy()
     {
-        return;
+        return DragingCard != -1 || SelectedCard != -1;
     }
 
-    if (UnitDrag.IsValid() && (DragingCard != -1 || SelectedCard != -1))
+    public void PrepareDeploy(Mesh mesh, Material mat, float cost)
     {
-        int cardIndex = DragingCard == -1 ? SelectedCard : DragingCard;
-        if (cardIndex >= 0 && cardIndex < PlayerDeck.Count)
+        if (DragUnitCtrl.Instance == null) return;
+        
+        DragUnitCtrl.Instance.setMeshActive(true);
+        DragUnitCtrl.Instance.SetMeshAndTexture(mesh, mat);
+        DragUnitCtrl.Instance.transform.position = CMath.GetMouseWorldPos();
+        DragUnitCtrl.Instance.TargetCost = cost;
+    }
+
+    public void PrepareDeploy(GameObject preview, float cost)
+    {
+        if (DragUnitCtrl.Instance == null) return;
+        
+        DragUnitCtrl.Instance.setMeshActive(false);
+        DragUnitCtrl.Instance.CreatePreviewObj(preview);
+        DragUnitCtrl.Instance.transform.position = CMath.GetMouseWorldPos();
+        DragUnitCtrl.Instance.TargetCost = cost;
+    }
+
+    public void DeplyUnit(NFTsCard nftcard)
+    {
+        if (nftcard.EnergyCost <= CurrentEnergy)
         {
-            DeplyUnit(PlayerDeck[cardIndex]);
-        }
-    }
-    UnitDrag.setMeshActive(false);
-    DragingCard = -1;
-    SelectedCard = -1;
-    GameMng.UI.DeselectCards();
-}
-
-public void SetInControl(bool incontrol)
-{
-    InControl = incontrol;
-    if (!InControl)
-    {
-        UnitDrag.setMeshActive(false);
-        DragingCard = -1;
-    }
-}
-
-public void SetCanGenEnergy(bool can)
-{
-    CanGenEnergy = can;
-}
-
-public void AddEnergy(float value)
-{
-    if (!CanGenEnergy)
-        return;
-
-    if (CurrentEnergy < MaxEnergy)
-    {
-        CurrentEnergy += value;
-        GameMng.MT.AddEnergyGenerated(value);
-    }
-    else if (CurrentEnergy >= MaxEnergy)
-    {
-        CurrentEnergy = MaxEnergy;
-        GameMng.MT.AddEnergyWasted(value);
-    }
-    GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
-}
-
-public void RestEnergy(float value)
-{
-    CurrentEnergy -= value;
-    GameMng.MT.AddEnergyUsed(value);
-    GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
-}
-
-public bool IsPreparingDeploy()
-{
-    return DragingCard != -1 || SelectedCard != -1;
-}
-
-public void PrepareDeploy(Mesh mesh, Material mat, float cost)
-{
-    UnitDrag.setMeshActive(true);
-    UnitDrag.SetMeshAndTexture(mesh, mat);
-    UnitDrag.transform.position = CMath.GetMouseWorldPos();
-    UnitDrag.TargetCost = cost;
-}
-
-public void PrepareDeploy(GameObject preview, float cost)
-{
-    UnitDrag.setMeshActive(false);
-    UnitDrag.CreatePreviewObj(preview);
-    UnitDrag.transform.position = CMath.GetMouseWorldPos();
-    UnitDrag.TargetCost = cost;
-}
-
-public void DeplyUnit(NFTsCard nftcard)
-{
-    if (nftcard.EnergyCost <= CurrentEnergy)
-    {
-        if ((NFTClass)nftcard.EntType != NFTClass.Skill)
-        {
-            // First try to use the prefab from the NFTsCard directly
-            GameObject unitPrefab = nftcard.Prefab;
-            
-            // If not available, fall back to the deck prefab
-            if (unitPrefab == null && DeckUnits.ContainsKey(nftcard.KeyId))
+            if ((NFTClass)nftcard.EntType != NFTClass.Skill)
             {
-                unitPrefab = DeckUnits[nftcard.KeyId];
-            }
-            
-            if (unitPrefab != null)
-            {
-                Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId, ID);
-                if (MyCharacter != null)
+                // First try to use the prefab from the NFTsCard directly
+                GameObject unitPrefab = nftcard.Prefab;
+                
+                // If not available, fall back to the deck prefab
+                if (unitPrefab == null && DeckUnits.ContainsKey(nftcard.KeyId))
                 {
-                    MyCharacter.DeployUnit(unit);
+                    unitPrefab = DeckUnits[nftcard.KeyId];
                 }
-                RestEnergy(nftcard.EnergyCost);
-                GameMng.MT.AddDeploys(1);
-            }
-            else
-            {
-                Debug.LogWarning($"Attempted to deploy missing unit prefab for {nftcard.KeyId}");
-            }
-        }
-        else // If the card is a spell
-        {
-            // First try to use the prefab from the NFTsCard directly
-            GameObject spellPrefab = nftcard.Prefab;
-            
-            // If not available, fall back to the deck prefab
-            if (spellPrefab == null && DeckUnits.ContainsKey(nftcard.KeyId))
-            {
-                spellPrefab = DeckUnits[nftcard.KeyId];
-            }
-            
-            if (spellPrefab != null)
-            {
-                // Pass ID to create spell to ensure NFT data gets properly set
-                NFTsSpell spellCard = nftcard as NFTsSpell;
-                if (spellCard != null)
+                
+                if (unitPrefab != null)
                 {
-                    Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
-                    if (spell != null)
+                    Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId, ID);
+                    
+                    // No longer using GameCharacter for deployment
+                    
+                    RestEnergy(nftcard.EnergyCost);
+                    GameMng.MT.AddDeploys(1);
+                }
+                else
+                {
+                    Debug.LogWarning($"Attempted to deploy missing unit prefab for {nftcard.KeyId}");
+                }
+            }
+            else // If the card is a spell
+            {
+                // First try to use the prefab from the NFTsCard directly
+                GameObject spellPrefab = nftcard.Prefab;
+                
+                // If not available, fall back to the deck prefab
+                if (spellPrefab == null && DeckUnits.ContainsKey(nftcard.KeyId))
+                {
+                    spellPrefab = DeckUnits[nftcard.KeyId];
+                }
+                
+                if (spellPrefab != null)
+                {
+                    // Pass ID to create spell to ensure NFT data gets properly set
+                    NFTsSpell spellCard = nftcard as NFTsSpell;
+                    if (spellCard != null)
                     {
-                        spell.PlayerId = ID; // Ensure PlayerId is set to match the player
-                        if (MyCharacter != null)
+                        Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
+                        if (spell != null)
                         {
-                            MyCharacter.DeploySpell(spell);
+                            spell.PlayerId = ID; // Ensure PlayerId is set to match the player
+                            
+                            // No longer using GameCharacter for deployment
+                            
+                            RestEnergy(nftcard.EnergyCost);
                         }
-                        RestEnergy(nftcard.EnergyCost);
+                        else
+                        {
+                            Debug.LogError($"Failed to create spell from prefab for {nftcard.KeyId}. Make sure the prefab has a Spell component.");
+                        }
                     }
                     else
                     {
-                        Debug.LogError($"Failed to create spell from prefab for {nftcard.KeyId}. Make sure the prefab has a Spell component.");
+                        Debug.LogWarning($"Failed to cast NFTsCard to NFTsSpell for {nftcard.KeyId}");
                     }
                 }
                 else
                 {
-                    Debug.LogWarning($"Failed to cast NFTsCard to NFTsSpell for {nftcard.KeyId}");
+                    Debug.LogWarning($"Attempted to deploy missing spell prefab for {nftcard.KeyId}");
                 }
-            }
-            else
-            {
-                Debug.LogWarning($"Attempted to deploy missing spell prefab for {nftcard.KeyId}");
             }
         }
     }
-}
 
-public int GetVsTeamInt()
-{
-    return MyTeam == Team.Red ? 0 : 1;
-}
+    public int GetVsTeamInt()
+    {
+        return MyTeam == Team.Red ? 0 : 1;
+    }
 
-public Team GetVsTeam()
-{
-    return MyTeam == Team.Red ? Team.Blue : Team.Red;
-}
+    public Team GetVsTeam()
+    {
+        return MyTeam == Team.Red ? Team.Blue : Team.Red;
+    }
 
-public int GetVsId()
-{
-    return ID == 1 ? 2 : 1;
-}
+    public int GetVsId()
+    {
+        return ID == 1 ? 2 : 1;
+    }
 
-// Add a helper method for creating a simple mesh
-private Mesh CreatePrimitiveMesh()
-{
-    // Create a temporary cube and grab its mesh
-    GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
-    Mesh cubeMesh = tempCube.GetComponent<MeshFilter>().sharedMesh;
-    Destroy(tempCube);
-    return cubeMesh;
-}
+    // Add a helper method for creating a simple mesh
+    private Mesh CreatePrimitiveMesh()
+    {
+        // Create a temporary cube and grab its mesh
+        GameObject tempCube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        Mesh cubeMesh = tempCube.GetComponent<MeshFilter>().sharedMesh;
+        Destroy(tempCube);
+        return cubeMesh;
+    }
 }
 }

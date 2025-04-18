@@ -3,6 +3,7 @@
     using TMPro;
     using UnityEngine;
     using UnityEngine.UI;
+    using System.Collections;
 
     /*
      * This is the in-game UI controller
@@ -52,6 +53,9 @@
 
         Color EnemyHpBarColor;
         Color EnemyShieldBarColor;
+        
+        // Keep track of whether player UI has been initialized
+        private bool playerUIInitialized = false;
 
         private void Awake()
         {
@@ -67,6 +71,45 @@
 
         private void Start()
         {
+            // Start a coroutine to wait for GameMng.P to be set
+            StartCoroutine(WaitForPlayerInitialization());
+        }
+        
+        // Wait for player to be initialized before setting up player UI
+        private IEnumerator WaitForPlayerInitialization()
+        {
+            // Wait until GameMng.P is available (check every 0.1 seconds)
+            float waitTime = 5f; // Maximum wait time in seconds
+            float elapsedTime = 0f;
+            
+            while (GameMng.P == null && elapsedTime < waitTime)
+            {
+                yield return new WaitForSeconds(0.1f);
+                elapsedTime += 0.1f;
+            }
+            
+            // Initialize player UI only if GameMng.P is available
+            if (GameMng.P != null)
+            {
+                InitializePlayerUI();
+            }
+            else
+            {
+                Debug.LogWarning("Could not initialize player UI: GameMng.P is still null after waiting.");
+                // Use default player data as fallback
+                InitializeDefaultPlayerUI();
+            }
+        }
+        
+        // Initialize player UI with data from GameMng.P
+        public void InitializePlayerUI()
+        {
+            if (playerUIInitialized || GameMng.P == null || Players == null || Players.Length == 0)
+                return;
+            
+            // Ensure PlayerId is valid for array index
+            int playerIndex = Mathf.Clamp(GameMng.P.ID - 1, 0, Players.Length - 1);
+            
             // Hardcoded player data for now
             UserGeneral hardcodedPlayerData = new UserGeneral
             {
@@ -88,7 +131,45 @@
             };
 
             // Init the UI info of the player with hardcoded values
-            Players[GameMng.P.ID - 1].InitInfo(hardcodedPlayerData, hardcodedPlayerProgress, hardcodedPlayerCharacter);
+            if (Players[playerIndex] != null)
+            {
+                Players[playerIndex].InitInfo(hardcodedPlayerData, hardcodedPlayerProgress, hardcodedPlayerCharacter);
+                playerUIInitialized = true;
+            }
+        }
+        
+        // Fallback initialization with default values
+        private void InitializeDefaultPlayerUI()
+        {
+            if (playerUIInitialized || Players == null || Players.Length == 0)
+                return;
+                
+            // Hardcoded player data as fallback
+            UserGeneral hardcodedPlayerData = new UserGeneral
+            {
+                NikeName = "DefaultPlayer",
+                WalletId = "DefaultWallet",
+                Level = 1,
+                Xp = 0,
+                Avatar = 1
+            };
+
+            UserProgress hardcodedPlayerProgress = new UserProgress
+            {
+                // Default values
+            };
+
+            NFTsCharacter hardcodedPlayerCharacter = new NFTsCharacter
+            {
+                // Default values
+            };
+
+            // Init with default values for player index 0
+            if (Players[0] != null)
+            {
+                Players[0].InitInfo(hardcodedPlayerData, hardcodedPlayerProgress, hardcodedPlayerCharacter);
+                playerUIInitialized = true;
+            }
         }
 
         // Shows the game over screen
@@ -98,7 +179,7 @@
             DeckPanel.SetActive(false);
 
             ResultsScreen.SetActive(true);
-            if (winner == GameMng.P.MyTeam)
+            if (GameMng.P != null && winner == GameMng.P.MyTeam)
             {
                 VictoryScreen.SetActive(true);
             }
@@ -114,35 +195,57 @@
         // Init the UI Cards
         public void InitGameCards(NFTsCard[] nftCard)
         {
-            for (int i = 0; i < nftCard.Length; i++)
+            if (UIDeck == null || nftCard == null)
             {
-                UIDeck[i].SpIcon.sprite = nftCard[i].IconSprite;
-                UIDeck[i].EnergyCost = nftCard[i].EnergyCost;
-                UIDeck[i].TextCost.text = nftCard[i].EnergyCost.ToString();
+                Debug.LogWarning("Cannot initialize game cards: UIDeck or nftCard is null");
+                return;
+            }
+            
+            int maxCards = Mathf.Min(UIDeck.Length, nftCard.Length);
+            for (int i = 0; i < maxCards; i++)
+            {
+                if (UIDeck[i] != null && nftCard[i] != null)
+                {
+                    UIDeck[i].IdCardDeck = i; // Ensure index is set correctly
+                    UIDeck[i].SpIcon.sprite = nftCard[i].IconSprite;
+                    UIDeck[i].EnergyCost = nftCard[i].EnergyCost;
+                    UIDeck[i].TextCost.text = nftCard[i].EnergyCost.ToString();
+                }
             }
         }
 
         // Update the UI time
         public void UpdateTimeOut(string newtime)
         {
-            TimeOut.text = newtime;
+            if (TimeOut != null)
+                TimeOut.text = newtime;
         }
 
         // Shows a card as selected
         public void SelectCard(int idc)
         {
+            if (UIDeck == null || idc < 0 || idc >= UIDeck.Length || UIDeck[idc] == null)
+                return;
+                
             UIDeck[idc].SetSelection(true);
-            AreaDeploy.SetActive(true);
+            
+            if (AreaDeploy != null)
+                AreaDeploy.SetActive(true);
         }
 
         // Deselects all cards
         public void DeselectCards()
         {
+            if (UIDeck == null) return;
+            
             foreach (UIGameCard card in UIDeck)
             {
-                card.SetSelection(false);
+                if (card != null)
+                    card.SetSelection(false);
             }
-            AreaDeploy.SetActive(false);
+            
+            if (AreaDeploy != null)
+                AreaDeploy.SetActive(false);
         }
 
         // Update the energy bar and text
@@ -158,11 +261,14 @@
                 EnergyBar.fillAmount = energy / max;
             }
 
-            foreach (UIGameCard card in UIDeck)
+            if (UIDeck != null)
             {
-                if (card != null)
+                foreach (UIGameCard card in UIDeck)
                 {
-                    card.TextCost.color = energy >= card.EnergyCost ? Color.white : Color.red;
+                    if (card != null && card.TextCost != null)
+                    {
+                        card.TextCost.color = energy >= card.EnergyCost ? Color.white : Color.red;
+                    }
                 }
             }
         }
@@ -170,19 +276,21 @@
         // Update the results text panel with the game metrics
         public void UpdateResults()
         {
-            MTxtEnergyUsed.text = GameMng.MT.GetEnergyUsed().ToString();
-            MTxtEnergyGenerated.text = GameMng.MT.GetEnergyGenerated().ToString("F0");
-            MTxtEnergyWasted.text = GameMng.MT.GetEnergyWasted().ToString("F0");
-            MTxtEnergyChargeRatePerSec.text = GameMng.MT.GetEnergyChargeRatePerSec().ToString() + "/s";
+            if (GameMng.MT == null) return;
+            
+            if (MTxtEnergyUsed != null) MTxtEnergyUsed.text = GameMng.MT.GetEnergyUsed().ToString();
+            if (MTxtEnergyGenerated != null) MTxtEnergyGenerated.text = GameMng.MT.GetEnergyGenerated().ToString("F0");
+            if (MTxtEnergyWasted != null) MTxtEnergyWasted.text = GameMng.MT.GetEnergyWasted().ToString("F0");
+            if (MTxtEnergyChargeRatePerSec != null) MTxtEnergyChargeRatePerSec.text = GameMng.MT.GetEnergyChargeRatePerSec().ToString() + "/s";
 
-            MTxtXpEarned.text = "+" + GameMng.MT.GetScore().ToString();
+            if (MTxtXpEarned != null) MTxtXpEarned.text = "+" + GameMng.MT.GetScore().ToString();
 
-            MTxtDamage.text = GameMng.MT.GetDamage().ToString();
-            MTxtKills.text = GameMng.MT.GetKills().ToString();
-            MTxtDeploys.text = GameMng.MT.GetDeploys().ToString();
-            MTxtSecRemaining.text = GameMng.MT.GetSecRemaining().ToString() + " s";
+            if (MTxtDamage != null) MTxtDamage.text = GameMng.MT.GetDamage().ToString();
+            if (MTxtKills != null) MTxtKills.text = GameMng.MT.GetKills().ToString();
+            if (MTxtDeploys != null) MTxtDeploys.text = GameMng.MT.GetDeploys().ToString();
+            if (MTxtSecRemaining != null) MTxtSecRemaining.text = GameMng.MT.GetSecRemaining().ToString() + " s";
 
-            MTxtScore.text = GameMng.MT.GetScore().ToString();
+            if (MTxtScore != null) MTxtScore.text = GameMng.MT.GetScore().ToString();
         }
 
         // Returns the HP color for a unit

@@ -50,11 +50,6 @@ namespace Cosmicrafts
         public int Level = 1;
 
         [HideInInspector]
-        public bool IsBaseStation = false;
-        [HideInInspector]
-        MainStation MainStationData;
-
-        [HideInInspector]
         public bool IsInmortal = false;
         [HideInInspector]
         public bool flagShield = false;
@@ -93,8 +88,17 @@ namespace Cosmicrafts
 
         protected virtual void Start()
         {
-            MainStationData = GetComponent<MainStation>();
-            IsBaseStation = MainStationData != null;
+            // IMMEDIATE HEALTH CHECK - absolutely critical to prevent instant death
+            // Do this before ANYTHING else happens
+            if (HitPoints <= 0)
+            {
+                Debug.LogError($"CRITICAL: Unit {gameObject.name} started with {HitPoints} HP! Forcing to 10 HP to prevent death.");
+                HitPoints = 10;
+                SetMaxHitPoints(10);
+            }
+            
+            // Ensure the unit starts alive
+            IsDeath = false;
             LastImpact = Vector3.zero;
             MaxShield = Shield;
             MaxHp = HitPoints;
@@ -104,16 +108,66 @@ namespace Cosmicrafts
             TrigerBase = GetComponent<SphereCollider>();
             SolidBase = Mesh.GetComponent<SphereCollider>();
 
-            UI.Init(MaxHp - 1, MaxShield - 1);
-            UI.SetColorBars(!IsMyTeam(GameMng.P.MyTeam));
+            // Debug UI initialization
+            if (UI == null)
+            {
+                Debug.LogError($"UI component is null on {gameObject.name}!");
+            }
+            else
+            {
+                Debug.Log($"Initializing UI for {gameObject.name}, HP: {HitPoints}, MaxHP: {MaxHp}, Shield: {Shield}, MaxShield: {MaxShield}");
+                
+                // Make sure Canvas is active
+                if (UI.Canvas != null && !UI.Canvas.activeSelf)
+                {
+                    Debug.LogWarning($"UI Canvas was inactive on {gameObject.name}, activating it");
+                    UI.Canvas.SetActive(true);
+                }
+                
+                // Explicit UI initialization with current values
+                UI.Init(MaxHp, MaxShield);
+                UI.SetHPBar((float)HitPoints / (float)MaxHp);
+                UI.SetShieldBar((float)Shield / (float)MaxShield);
+            
+                // Add null check for GameMng.P
+                if (GameMng.P != null) {
+                    UI.SetColorBars(!IsMyTeam(GameMng.P.MyTeam));
+                } else {
+                    // Default behavior when player is not yet initialized
+                    UI.SetColorBars(MyTeam != Team.Blue);
+                }
+            }
+            
             MyOutline.OutlineParameters.Color = GameMng.GM.GetColorUnit(MyTeam, PlayerId);
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
             MyAnim = Mesh.GetComponent<Animator>();
-            Portal.transform.parent = null;
+            
+            // Make sure the animator is reset and not playing death animation
+            if (MyAnim != null)
+            {
+                MyAnim.ResetTrigger("Die");
+                MyAnim.SetBool("Idle", true);
+            }
+            
+            // FIXED: Don't modify the Portal prefab reference directly
+            if (Portal != null)
+            {
+                // Create a portal effect at spawn time
+                GameObject portalInstance = Instantiate(Portal, transform.position, Quaternion.identity);
+                Destroy(portalInstance, 3f);
+            }
+            
             transform.LookAt(CMath.LookToY(transform.position, GameMng.GM.GetDefaultTargetPosition(MyTeam)));
-            SA.SetActive(IsMyTeam(GameMng.P.MyTeam) && SpawnAreaSize > 0f);
-            Destroy(Portal, 3f);
+            
+            // Add null check for GameMng.P
+            if (GameMng.P != null) {
+                SA.SetActive(IsMyTeam(GameMng.P.MyTeam) && SpawnAreaSize > 0f);
+            } else {
+                // Default behavior when player is not yet initialized
+                SA.SetActive(MyTeam == Team.Blue && SpawnAreaSize > 0f);
+            }
+            
             GameMng.GM.AddUnit(this);
         }
 
@@ -232,9 +286,17 @@ namespace Cosmicrafts
 
         public virtual void Die()
         {
+            // Prevent multiple deaths or death on spawn
             if (IsDeath)
+            {
+                Debug.LogWarning($"Die() called on already dead unit: {gameObject.name}");
                 return;
+            }
 
+            // --- ADD STACK TRACE FOR DEBUGGING ---
+            Debug.LogError($"### DIE CALLED ### on {gameObject.name} - Team: {MyTeam}, HP: {HitPoints}\nStack Trace:\n" + Environment.StackTrace);
+            // --- END STACK TRACE --- 
+            
             HitPoints = 0;
             IsDeath = true;
 
@@ -242,27 +304,27 @@ namespace Cosmicrafts
             OnDeath?.Invoke(this);
             OnUnitDeath?.Invoke(this);
 
-            // Special handling for player base stations - don't hide UI or disable colliders
-            if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
+            // Special handling for player's controllable character
+            // Check if this unit belongs to the player instance referenced by GameMng.P
+            bool isPlayerCharacter = (GameMng.P != null && GameMng.P.GetComponent<Unit>() == this);
+
+            if (isPlayerCharacter)
             {
-                // Don't hide UI or disable anything
-               // Debug.Log($"Player base station 'died' but keeping visuals active");
+                // Don't hide UI or disable SolidBase for player's character
+                // Respawn logic in GameMng will handle its state.
+                Debug.Log($"Player character '{name}' died, but keeping visuals active for respawn.");
+                // Note: OnUnitDeath event is still invoked, which triggers GameMng.HandlePlayerBaseStationDeath
             }
             else
             {
-                // Regular death handling for other units
+                // Regular death handling for other units (including enemy bases)
                 UI.HideUI();
                 SA.SetActive(false);
-                MyAnim.SetTrigger("Die");
-                SolidBase.enabled = false;
-            }
+                if (MyAnim != null) MyAnim.SetTrigger("Die");
+                if (SolidBase != null) SolidBase.enabled = false;
 
-            // Don't automatically destroy if it's the player's base station
-            // GameMng.HandlePlayerBaseStationDeath will handle it instead
-            if (!IsBaseStation || MyTeam != GameMng.P.MyTeam)
-            {
-                // For non-player base stations, destroy normally
-                Destroy(gameObject, 2f); // Give time for death animation to play
+                // Destroy non-player units after a delay
+                Destroy(gameObject, 2f); // Give time for death animation
             }
         }
 
@@ -318,9 +380,10 @@ namespace Cosmicrafts
 
         public virtual void DestroyUnit()
         {
-            // If it's the player's base station, let GameMng handle it instead
-            // This prevents actual destruction of the player's base
-            if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
+            // If it's the player's controllable character, let GameMng handle it instead
+            // This prevents actual destruction of the player's character
+            bool isPlayerUnit = (GameMng.P != null && GameMng.P.GetComponent<Unit>() == this);
+            if (isPlayerUnit)
             {
                 // GameMng.HandlePlayerBaseStationDeath will be called through the OnUnitDeath event
                 // which will handle respawning without destroying the base station
@@ -329,22 +392,8 @@ namespace Cosmicrafts
 
             GameMng.GM.DeleteUnit(this);
 
-            if (!GameMng.GM.IsGameOver() && IsBaseStation)
-            {
-                if (WaveController.instance != null && MyTeam == Team.Red)
-                {
-                    WaveController.instance.OnBaseDestroyed();
-                }
-                else if (MyTeam == Team.Red)
-                {
-                    // Enemy base station is destroyed - player wins
-                    GameMng.GM.EndGame(Team.Blue);
-                }
-                // Player base station destruction is now handled by GameMng.HandlePlayerBaseStationDeath
-                // We don't immediately end the game here
-            }
-
-            if (!IsMyTeam(GameMng.P.MyTeam))
+            // For non-player units, still track kills
+            if (GameMng.P != null && !IsMyTeam(GameMng.P.MyTeam))
             {
                 GameMng.MT.AddKills(1);
             }
@@ -354,6 +403,12 @@ namespace Cosmicrafts
 
         public void BlowUpEffect()
         {
+            if (Explosion == null)
+            {
+                Debug.LogWarning($"Cannot create explosion effect for {gameObject.name} - Explosion prefab reference is missing");
+                return;
+            }
+            
             GameObject explosion = Instantiate(Explosion, transform.position, Quaternion.identity);
             explosion.transform.localScale = transform.localScale * 1.8f;
             Destroy(explosion, 4f);
@@ -503,7 +558,7 @@ namespace Cosmicrafts
             // Reset UI elements
             if (UI != null) {
                 UI.SetHPBar(1f);
-                UI.SetShieldBar((float)Shield / (float)MaxShield);
+                UI.SetShieldBar(MaxShield > 0 ? (float)Shield / (float)GetMaxShield() : 0f);
                 // Show UI
                 if (UI.Canvas != null)
                     UI.Canvas.SetActive(true);
@@ -511,8 +566,20 @@ namespace Cosmicrafts
             
             // Reset animation state if needed
             if (MyAnim != null) {
-                MyAnim.ResetTrigger("Die");
-                MyAnim.SetBool("Idle", true);
+                // Ensure animator controller is valid before resetting triggers
+                if (MyAnim.runtimeAnimatorController != null) {
+                    // Force a complete reset of the animator state
+                    MyAnim.Rebind();
+                    MyAnim.Update(0f);
+                    
+                    // Clear death trigger and set idle
+                    MyAnim.ResetTrigger("Die");
+                    MyAnim.SetBool("Idle", true);
+                    
+                    Debug.Log($"Completely reset animator for {gameObject.name}");
+                } else {
+                    //Debug.LogWarning($"Animator on {gameObject.name} has no controller.");
+                }
             }
             
             // Reset any ship-specific components

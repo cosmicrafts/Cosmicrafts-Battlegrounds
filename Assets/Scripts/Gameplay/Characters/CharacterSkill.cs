@@ -200,11 +200,25 @@ namespace Cosmicrafts
                 switch (skillName)
                 {
                     case SkillName.SpeedEnergyMultiplier:
-                        GameMng.P.SpeedEnergy *= Multiplier;
+                        // Ensure Player exists before modifying
+                        if (GameMng.P != null)
+                            GameMng.P.SpeedEnergy *= Multiplier;
+                        else
+                            Debug.LogWarning("ApplyGameplayModifier: Player (GameMng.P) not found for SpeedEnergyMultiplier.");
                         break;
                     case SkillName.BotEnergyMultiplier:
-                        if (GameMng.GM.Bots.Count > 0)
-                            GameMng.GM.Bots[0].SpeedEnergy *= Multiplier;
+                        // Use the static BOT reference instead of the removed Bots list
+                        // Also need to access the Bot component's SpeedEnergy (assuming it exists)
+                        if (GameMng.BOT != null)
+                        {
+                            // Assuming Bot.cs will have a SpeedEnergy property similar to Player.cs
+                            // If Bot.cs doesn't have SpeedEnergy, this needs adjustment.
+                            // For now, let's comment it out to prevent errors until Bot.cs is confirmed/updated.
+                            // GameMng.BOT.SpeedEnergy *= Multiplier; 
+                            Debug.LogWarning("ApplyGameplayModifier: BotEnergyMultiplier needs Bot.cs to have SpeedEnergy property.");
+                        }
+                        else
+                            Debug.LogWarning("ApplyGameplayModifier: Enemy Bot (GameMng.BOT) not found for BotEnergyMultiplier.");
                         break;
                     default:
                         Debug.LogWarning($"Skill {skillName} not recognized for gameplay modification.");

@@ -4,10 +4,14 @@ using EPOOutline;
 
 /*
  * This script controls and validates the draging cards to deploy them (in-game)
+ * Should be attached to a UI GameObject
  */
 
 public class DragUnitCtrl : MonoBehaviour
 {
+    // Static instance that can be accessed from any script
+    public static DragUnitCtrl Instance { get; private set; }
+
     //The number of valid detected areas for deploying
     int areas;
     //The enemy base position
@@ -16,7 +20,7 @@ public class DragUnitCtrl : MonoBehaviour
     //The preview 3d model and effects of the card to deploy
     public MeshRenderer MyMesh;
     public MeshFilter MyMeshFilter;
-   public Outlinable Outline;
+    public Outlinable Outline;
     GameObject currentPreview;
 
     //The energy cost of the current draging card
@@ -25,31 +29,64 @@ public class DragUnitCtrl : MonoBehaviour
     //The default outline color of the model
     Color DefaultColor;
 
-    //The player data reference
-    Player player;
+    private void Awake()
+    {
+        // Set static instance - handle duplicate instances
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("Multiple DragUnitCtrl instances detected. Destroying duplicate.");
+            Destroy(gameObject);
+            return;
+        }
+        
+        Instance = this;
+    }
 
     private void Start()
     {
         //Initialize variables
         areas = 0;
-       // SetStatusColor(Color.red);
-        target = GameMng.GM.GetDefaultTargetPosition(GameMng.P.MyTeam);
+        
+        // Get player reference and targets from GameMng
+        if (GameMng.P != null && GameMng.GM != null)
+        {
+            target = GameMng.GM.GetDefaultTargetPosition(GameMng.P.MyTeam);
+        }
+        else
+        {
+            Debug.LogWarning("DragUnitCtrl: GameMng.P or GameMng.GM is null. Using default target position.");
+            target = Vector3.zero;
+        }
+        
         DefaultColor = Color.green;
-        player = GameMng.P;
+        
+        // Ensure the drag visual is initially inactive
+        if (MyMesh != null && MyMesh.gameObject != null)
+        {
+            MyMesh.gameObject.SetActive(false);
+        }
     }
 
     private void Update()
     {
         //Update the outline color (green when the draging card can be deployed on the current position)
-       // DefaultColor = TargetCost > player.CurrentEnergy ? Color.blue : Color.green;
-       // SetStatusColor(areas > 0 ? DefaultColor : Color.red);
+        if (GameMng.P != null && Outline != null)
+        {
+            DefaultColor = TargetCost > GameMng.P.CurrentEnergy ? Color.blue : Color.green;
+            SetStatusColor(areas > 0 ? DefaultColor : Color.red);
+        }
     }
 
     private void FixedUpdate()
     {
         //Update the position and rotation of the draging card
         transform.position = CMath.GetMouseWorldPos();
-        transform.LookAt(CMath.LookToY(transform.position, target));
+        
+        // Make the preview face the target
+        if (target != null)
+        {
+            transform.LookAt(CMath.LookToY(transform.position, target));
+        }
     }
 
     //spawnable area detected
@@ -79,31 +116,55 @@ public class DragUnitCtrl : MonoBehaviour
     //Set the current draging status color
     void SetStatusColor(Color color)
     {
-       Outline.OutlineParameters.Color = color;
+        if (Outline != null)
+        {
+            Outline.OutlineParameters.Color = color;
+        }
     }
 
     //Set the current preview from a mesh and material
     public void SetMeshAndTexture(Mesh mesh, Material mat)
     {
-        MyMesh.material = mat;
-        MyMeshFilter.mesh = mesh;
+        if (MyMesh != null && MyMeshFilter != null)
+        {
+            MyMesh.material = mat;
+            MyMeshFilter.mesh = mesh;
+        }
     }
 
     //Shows and hides the current preview game object
     public void setMeshActive(bool active)
     {
-        MyMesh.gameObject.SetActive(active);
+        if (MyMesh != null && MyMesh.gameObject != null)
+        {
+            MyMesh.gameObject.SetActive(active);
+        }
+        
         if (!active && currentPreview != null)
         {
             Destroy(currentPreview);
+            currentPreview = null;
         }
     }
 
     //Set the current preview from a game object
     public void CreatePreviewObj(GameObject preview)
     {
+        if (preview == null)
+        {
+            Debug.LogWarning("DragUnitCtrl: Attempted to create preview from null GameObject");
+            return;
+        }
+        
+        // Destroy previous preview if it exists
+        if (currentPreview != null)
+        {
+            Destroy(currentPreview);
+        }
+        
         currentPreview = Instantiate(preview, transform);
 
+        // Remove any components that could interfere with the preview
         UnitAnimLis unitAnimLis = currentPreview.GetComponent<UnitAnimLis>();
         if(unitAnimLis != null) { DestroyImmediate(unitAnimLis, true);}
 

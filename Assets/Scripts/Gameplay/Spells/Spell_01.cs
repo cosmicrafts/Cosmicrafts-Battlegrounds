@@ -8,7 +8,7 @@ using UnityEngine;
  * Spell 01 - Laser Beam
  * 
  * This spell demonstrates how to create a beam weapon that:
- * 1. Finds the player's MainStation using SpellUtils.FindPlayerMainStation
+ * 1. Finds the player's character using SpellUtils.FindPlayerCharacter
  * 2. Creates a visible beam using SpellUtils rendering utilities
  * 3. Detects and damages enemy units in the beam path
  * 
@@ -45,7 +45,7 @@ public class Spell_01 : Spell
     public bool createPenetrationEffects = true;
     
     // Tracking references
-    private Unit _mainStationUnit;
+    private Unit _playerUnit;
     private List<Unit> _targetsInBeam = new List<Unit>();
     private float _damageTimer;
     private Vector3[] _laserPositions = new Vector3[2];
@@ -64,9 +64,8 @@ public class Spell_01 : Spell
         // Calculate base damage per tick based on DPS
         _baseDamagePerTick = Mathf.RoundToInt(damagePerSecond * damageInterval);
         
-        // Find the MainStation for the appropriate team using the utility
-        var (mainStation, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
-        _mainStationUnit = mainStationUnit;
+        // Find the player character for the appropriate team using the utility
+        _playerUnit = SpellUtils.FindPlayerCharacter(MyTeam, PlayerId);
         
         // Setup the layer mask for target detection
         _targetLayerMask = LayerMask.GetMask("Unit", "Default");
@@ -116,15 +115,14 @@ public class Spell_01 : Spell
     {
         base.Update();
         
-        // Check if MainStation is still valid
-        if (_mainStationUnit == null || _mainStationUnit.GetIsDeath())
+        // Check if player unit is still valid
+        if (_playerUnit == null || _playerUnit.GetIsDeath())
         {
-            // If MainStation is destroyed, try to find it again using SpellUtils
-            var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
-            _mainStationUnit = mainStationUnit;
+            // If player unit is destroyed, try to find it again using SpellUtils
+            _playerUnit = SpellUtils.FindPlayerCharacter(MyTeam, PlayerId);
         }
         
-        // Update laser beam position based on MainStation
+        // Update laser beam position based on player unit
         UpdateLaserBeam();
         
         // Find targets in the beam path
@@ -144,39 +142,39 @@ public class Spell_01 : Spell
     
     private void UpdateLaserBeam()
     {
-        Vector3 stationPosition;
-        Quaternion stationRotation;
+        Vector3 playerPosition;
+        Quaternion playerRotation;
         
-        // Get position from MainStation if available
-        if (_mainStationUnit != null)
+        // Get position from player unit if available
+        if (_playerUnit != null)
         {
-            stationPosition = _mainStationUnit.transform.position;
-            stationRotation = _mainStationUnit.transform.rotation;
+            playerPosition = _playerUnit.transform.position;
+            playerRotation = _playerUnit.transform.rotation;
         }
         else
         {
-            // Use fallback position if no MainStation is found
-            stationPosition = new Vector3(30, 0, 20);
-            stationRotation = Quaternion.identity;
+            // Use fallback position if no player unit is found
+            playerPosition = new Vector3(30, 0, 20);
+            playerRotation = Quaternion.identity;
         }
         
         // Get direction toward enemy base
-        Vector3 direction = SpellUtils.GetDirectionToEnemyBase(stationPosition, MyTeam);
+        Vector3 direction = SpellUtils.GetDirectionToEnemyBase(playerPosition, MyTeam);
         
         // If direction is roughly Vector3.forward (indicates no enemy found), use a more interesting direction
         if (Vector3.Distance(direction.normalized, Vector3.forward) < 0.1f)
         {
-            // Use the rotation of the station + a time-based offset for movement
+            // Use the rotation of the player + a time-based offset for movement
             float angle = Time.time * 20f; // Rotate 20 degrees per second
-            direction = Quaternion.Euler(0, angle, 0) * stationRotation * Vector3.forward;
+            direction = Quaternion.Euler(0, angle, 0) * playerRotation * Vector3.forward;
         }
         
-        // Move this GameObject to follow the MainStation
-        transform.position = stationPosition;
+        // Move this GameObject to follow the player
+        transform.position = playerPosition;
         transform.rotation = Quaternion.LookRotation(direction);
         
-        // Calculate laser start position (at the station position)
-        _laserPositions[0] = stationPosition + Vector3.up * 2.0f; // Increased height offset for better visibility
+        // Calculate laser start position (at the player position)
+        _laserPositions[0] = playerPosition + Vector3.up * 2.0f; // Increased height offset for better visibility
         
         // IMPORTANT CHANGE: Always use full beam length - don't stop at first hit
         _laserPositions[1] = _laserPositions[0] + (direction * beamLength);
@@ -184,38 +182,21 @@ public class Spell_01 : Spell
         // Set positions directly on the line renderer
         if (laserLineRenderer != null)
         {
-            // Force line renderer to use world space
-            laserLineRenderer.useWorldSpace = true;
-            
-            // Update positions
-            laserLineRenderer.SetPositions(_laserPositions);
-            
-            // Make the effect stronger by adding width variation
-            laserLineRenderer.startWidth = beamWidth * 1.5f; // Increased width at start
-            laserLineRenderer.endWidth = beamWidth * 0.5f;  // Narrower at end
-            
-            // Set glow parameter if using Standard Unlit shader
-            if (laserLineRenderer.material.HasProperty("_Glow"))
-                laserLineRenderer.material.SetFloat("_Glow", 1.5f);
-        }
-        else
-        {
-            SetupLineRenderer(); // Try to recreate it
+            laserLineRenderer.SetPosition(0, _laserPositions[0]);
+            laserLineRenderer.SetPosition(1, _laserPositions[1]);
         }
         
-        // Position the VFX objects
+        // Update VFX positions
         if (laserStartVFX != null)
         {
             laserStartVFX.transform.position = _laserPositions[0];
-            laserStartVFX.transform.localScale = Vector3.one * beamWidth * 1.2f; // Scale up
-            laserStartVFX.SetActive(true); // Ensure it's active
+            laserStartVFX.transform.rotation = Quaternion.LookRotation(direction);
         }
         
         if (laserEndVFX != null)
         {
             laserEndVFX.transform.position = _laserPositions[1];
-            laserEndVFX.transform.localScale = Vector3.one * beamWidth * 0.8f; // Scale up
-            laserEndVFX.SetActive(true); // Ensure it's active
+            laserEndVFX.transform.rotation = Quaternion.LookRotation(-direction);
         }
     }
     
@@ -237,8 +218,8 @@ public class Spell_01 : Spell
             if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
                 continue;
                 
-            // Skip MainStation units (they're not damage targets)
-            if (unit.GetComponent<MainStation>() != null)
+            // Skip base station units (they're not damage targets) - use GameMng.Targets check instead
+            if (GameMng.GM != null && GameMng.GM.Targets != null && System.Array.IndexOf(GameMng.GM.Targets, unit) >= 0)
                 continue;
                 
             // Check if unit is in beam path

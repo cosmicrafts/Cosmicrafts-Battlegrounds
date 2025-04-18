@@ -62,6 +62,19 @@
         protected override void Start()
         {
             base.Start();
+            
+            // Make sure we're not in death state at spawn
+            if (MyAnim != null && !IsDeath)
+            {
+                // Force a complete animation reset
+                MyAnim.Rebind();
+                MyAnim.Update(0f);
+                MyAnim.ResetTrigger("Die");
+                MyAnim.SetBool("Idle", true);
+                
+                Debug.Log($"Ship {gameObject.name} ensuring animations are in non-death state");
+            }
+            
             Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
             MySt.Destination = Target.position;
             MySt.StoppingDistance = StoppingDistance;

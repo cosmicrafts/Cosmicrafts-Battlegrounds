@@ -1,10 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using Cosmicrafts;
 /*
  * This code represents a in the game card instance
  * The card has the UI refrences from the inspector, to show the Icon and energy cost NFT data
  */
-public class UIGameCard : MonoBehaviour
+public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IEndDragHandler
 {
     //The UI card in game
 
@@ -23,5 +25,24 @@ public class UIGameCard : MonoBehaviour
     public void SetSelection(bool selected)
     {
         Selection.SetActive(selected);
+    }
+    
+    // Implement UI event interfaces
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        // Call the static method in Player when the card is clicked
+        Player.OnUICardClick(IdCardDeck);
+    }
+    
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        // Call the static method in Player when drag begins
+        Player.OnUICardDragStart(IdCardDeck);
+    }
+    
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        // Call the static method in Player when drag ends
+        Player.OnUICardDragEnd();
     }
 }

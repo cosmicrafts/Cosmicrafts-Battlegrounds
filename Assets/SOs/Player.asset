@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   baseMoveSpeed: 5
   baseRotationSpeed: 10
-  characterIcon: {fileID: 21300000, guid: 0ebbecae43fff4749a1a677ab9e6228c, type: 3}
-  basePrefab: {fileID: 2198226034328220048, guid: 48702580a18d34942acecf00b1aeb5d6, type: 3}
-  hpOverride: 746
-  shieldOverride: 1756
+  characterIcon: {fileID: 21300000, guid: 44a054df1702e39458b7072b08d0f212, type: 3}
+  basePrefab: {fileID: 2198226034328220048, guid: 307a767ca9c6bca468199bea4457c637, type: 3}
+  hpOverride: 4596
+  shieldOverride: 3493
   bulletDamageOverride: 25
   levelOverride: 2
   skills:

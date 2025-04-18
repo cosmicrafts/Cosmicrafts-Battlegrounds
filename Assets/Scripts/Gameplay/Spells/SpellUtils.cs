@@ -6,63 +6,69 @@ using System.Collections.Generic;
 /*
  * SpellUtils - Utility class for Spell scripts
  * 
- * Contains helper methods for finding game objects like player stations,
+ * Contains helper methods for finding game objects like player's character,
  * targeting enemies, and other common operations needed by spells.
  */
 public static class SpellUtils
 {
     /// <summary>
-    /// Finds the player's MainStation based on team and player ID.
+    /// Finds the player's character based on team and player ID.
     /// </summary>
-    /// <param name="team">The team to find the station for</param>
-    /// <param name="playerId">The player ID to find the station for</param>
-    /// <returns>A tuple containing (MainStation, Unit) - either can be null if not found</returns>
-    public static (MainStation station, Unit unit) FindPlayerMainStation(Team team, int playerId)
+    /// <param name="team">The team to find the player for</param>
+    /// <param name="playerId">The player ID to find the player for</param>
+    /// <returns>The player's Unit component, or null if not found</returns>
+    public static Unit FindPlayerCharacter(Team team, int playerId)
     {
-        // First try to find exact match with both team and playerID
-        MainStation[] allStations = GameObject.FindObjectsByType<MainStation>(FindObjectsSortMode.None);
-        
-        // Search for exact match (team + playerId)
-        foreach (MainStation station in allStations)
+        // OPTION 1: Use GameMng.P first (fastest and most direct)
+        if (GameMng.P != null && GameMng.P.MyTeam == team && GameMng.P.ID == playerId)
         {
-            Unit stationUnit = station.GetComponent<Unit>();
-            
-            if (stationUnit != null && 
-                stationUnit.IsMyTeam(team) && 
-                stationUnit.PlayerId == playerId)
+            Unit playerUnit = GameMng.P.GetComponent<Unit>();
+            if (playerUnit != null)
             {
-                // Debug.Log($"[SpellUtils] Found exact MainStation match: Team={team}, PlayerId={playerId}, UnitId={stationUnit.getId()}");
-                return (station, stationUnit);
+                return playerUnit;
             }
         }
         
-        // If no exact match, try team-only match
-        foreach (MainStation station in allStations)
+        // OPTION 2: Look for any Unit with Player component that matches criteria
+        Player[] allPlayers = GameObject.FindObjectsByType<Player>(FindObjectsSortMode.None);
+        foreach (Player player in allPlayers)
         {
-            Unit stationUnit = station.GetComponent<Unit>();
-            
-            if (stationUnit != null && stationUnit.IsMyTeam(team))
+            if (player.MyTeam == team && player.ID == playerId)
             {
-                // Debug.Log($"[SpellUtils] Found team-only MainStation match: Team={team}, PlayerId={stationUnit.PlayerId}, UnitId={stationUnit.getId()}");
-                return (station, stationUnit);
+                Unit playerUnit = player.GetComponent<Unit>();
+                if (playerUnit != null)
+                {
+                    return playerUnit;
+                }
             }
         }
         
-        // Fallback to GameMng targets
+        // OPTION 3: Fallback to GameMng targets
         if (GameMng.GM != null && GameMng.GM.MainStationsExist())
         {
             int stationIndex = team == Team.Blue ? 1 : 0;
             if (GameMng.GM.Targets[stationIndex] != null)
             {
                 Unit targetUnit = GameMng.GM.Targets[stationIndex];
-                // Debug.Log($"[SpellUtils] Using GameMng Target as fallback: Team={targetUnit.MyTeam}, PlayerId={targetUnit.PlayerId}");
-                return (null, targetUnit);
+                if (targetUnit.MyTeam == team && (playerId < 0 || targetUnit.PlayerId == playerId))
+                {
+                    return targetUnit;
+                }
             }
         }
         
         // Nothing found
-        Debug.LogWarning($"[SpellUtils] No MainStation found for Team={team}, PlayerId={playerId}");
-        return (null, null);
+        Debug.LogWarning($"[SpellUtils] No player found for Team={team}, PlayerId={playerId}");
+        return null;
+    }
+    
+    // COMPATIBILITY METHOD: For backward compatibility with existing code
+    // Redirects to new FindPlayerCharacter method
+    public static (Unit station, Unit unit) FindPlayerMainStation(Team team, int playerId)
+    {
+        Unit unit = FindPlayerCharacter(team, playerId);
+        // Return the same unit for both values in the tuple to maintain compatibility
+        return (unit, unit);
     }
     
     /// <summary>
@@ -130,8 +136,8 @@ public static class SpellUtils
             if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(team))
                 continue;
             
-            // Skip MainStation units (they're not damage targets)
-            if (unit.GetComponent<MainStation>() != null)
+            // Skip base station units - use a different check now (GameMng.GM.Targets)
+            if (GameMng.GM != null && GameMng.GM.Targets != null && System.Array.IndexOf(GameMng.GM.Targets, unit) >= 0)
                 continue;
                 
             // Instead of just checking position, check multiple points on the unit's collider if available

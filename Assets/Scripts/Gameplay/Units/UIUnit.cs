@@ -127,8 +127,34 @@
 
         public void Init(int maxhp, int maxshield)
         {
-            GhostHp = maxhp;
-            GhostSH = maxshield;
+            // Set initial values for both the real and ghost bars
+            if (Hp != null) Hp.fillAmount = 1.0f;
+            if (Shield != null) Shield.fillAmount = 1.0f;
+            
+            GhostHp = 1.0f;
+            GhostSH = 1.0f;
+            
+            // Initialize previous values
+            previousHp = 1.0f;
+            previousShield = 1.0f;
+            
+            // Set the level text if available
+            Unit unit = GetComponentInParent<Unit>();
+            if (LevelText != null && unit != null)
+            {
+                LevelText.text = unit.GetLevel().ToString();
+            }
+            
+            // Make sure Canvas is active
+            if (Canvas != null && !Canvas.activeSelf)
+            {
+                Canvas.SetActive(true);
+            }
+            
+            // Reset animation triggered flag
+            animationTriggered = false;
+            
+            Debug.Log($"UIUnit initialized with maxhp: {maxhp}, maxshield: {maxshield}");
         }
 
         public void SetHPBar(float percent)

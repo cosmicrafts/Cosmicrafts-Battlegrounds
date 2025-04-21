@@ -76,9 +76,7 @@
                     GHp.color = Player2DifHpColor;
                     GShield.color = Player2DifShieldColor;
 
-                    // Flip the UI horizontally if it's the Blue team
-                    RectTransform rectTransform = GetComponent<RectTransform>();
-                    rectTransform.localScale = new Vector3(-Mathf.Abs(rectTransform.localScale.x), rectTransform.localScale.y, rectTransform.localScale.z);
+                    // No flipping – just colour adjustment
                 }
                 else if (unit.MyTeam == Team.Red)
                 {
@@ -101,10 +99,13 @@
             previousShield = Shield.fillAmount;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            // The UI always looks at the camera
-            transform.rotation = mainCamera.transform.rotation * originalRotation;
+            if (mainCamera == null) return;
+
+            // Make the UI face the camera regardless of spawn orientation
+            // Using billboard logic that is less sensitive to initial rotation
+            transform.rotation = Quaternion.LookRotation(mainCamera.transform.forward, mainCamera.transform.up);
 
             // Detect damage by comparing the current HP and Shield with the previous state
             if (!animationTriggered && (Hp.fillAmount < previousHp || Shield.fillAmount < previousShield))

@@ -122,22 +122,9 @@ public class Player : MonoBehaviour
             dragCtrl.MyMesh = meshRenderer;
             dragCtrl.MyMeshFilter = dragCtrlObj.GetComponent<MeshFilter>();
             
-            // Try to add Outlinable component if the class exists
-            try {
-                // Use reflection to check if the Outlinable type exists
-                System.Type outlinableType = System.Type.GetType("EPOOutline.Outlinable, Assembly-CSharp");
-                if (outlinableType != null) {
-                    Component outlineComp = visualObj.AddComponent(outlinableType);
-                    // Use reflection to set the Outlinable property
-                    System.Reflection.FieldInfo fieldInfo = typeof(DragUnitCtrl).GetField("Outline");
-                    if (fieldInfo != null) {
-                        fieldInfo.SetValue(dragCtrl, outlineComp);
-                    }
-                }
-            }
-            catch (System.Exception e) {
-                Debug.LogWarning("Could not add Outlinable component: " + e.Message);
-            }
+            // Add lightweight outline controller
+            OutlineController outlineComp = visualObj.AddComponent<OutlineController>();
+            dragCtrl.Outline = outlineComp;
             
             Debug.Log("Created DragUnitCtrl GameObject automatically");
         }

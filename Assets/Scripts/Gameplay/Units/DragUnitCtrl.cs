@@ -1,6 +1,5 @@
 ﻿namespace Cosmicrafts {
 using UnityEngine;
-using EPOOutline;
 
 /*
  * This script controls and validates the draging cards to deploy them (in-game)
@@ -20,7 +19,7 @@ public class DragUnitCtrl : MonoBehaviour
     //The preview 3d model and effects of the card to deploy
     public MeshRenderer MyMesh;
     public MeshFilter MyMeshFilter;
-    public Outlinable Outline;
+    public OutlineController Outline;
     GameObject currentPreview;
 
     //The energy cost of the current draging card
@@ -118,7 +117,7 @@ public class DragUnitCtrl : MonoBehaviour
     {
         if (Outline != null)
         {
-            Outline.OutlineParameters.Color = color;
+            Outline.SetColor(color);
         }
     }
 

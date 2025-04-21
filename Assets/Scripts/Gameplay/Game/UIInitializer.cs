@@ -96,7 +96,7 @@ namespace Cosmicrafts
             // Add required components
             MeshFilter meshFilter = meshObject.AddComponent<MeshFilter>();
             MeshRenderer meshRenderer = meshObject.AddComponent<MeshRenderer>();
-            EPOOutline.Outlinable outlinable = meshObject.AddComponent<EPOOutline.Outlinable>();
+            OutlineController outlinable = meshObject.AddComponent<OutlineController>();
             
             // Assign components to DragUnitCtrl
             dragUnitControl.MyMesh = meshRenderer;

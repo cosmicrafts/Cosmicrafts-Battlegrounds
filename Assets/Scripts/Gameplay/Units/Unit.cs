@@ -4,7 +4,6 @@ using Unity.Burst;
 using UnityEngine;
 using System.Linq;
 using System.Collections;
-using EPOOutline;
 using System;
 
 namespace Cosmicrafts
@@ -71,7 +70,7 @@ namespace Cosmicrafts
         public GameObject Portal;
         public GameObject ShieldGameObject;
         public UIUnit UI;
-        protected Outlinable MyOutline;
+        protected OutlineController MyOutline;
         [SerializeField]
         protected Animator MyAnim;
         protected AnimationClip[] MyClips;
@@ -104,7 +103,11 @@ namespace Cosmicrafts
             MaxHp = HitPoints;
             Level = Mathf.Clamp(Level, 1, 999);
             MyRb = GetComponent<Rigidbody>();
-            MyOutline = Mesh.GetComponent<Outlinable>();
+            MyOutline = Mesh.GetComponent<OutlineController>();
+            if (MyOutline == null)
+            {
+                MyOutline = Mesh.AddComponent<OutlineController>();
+            }
             TrigerBase = GetComponent<SphereCollider>();
             SolidBase = Mesh.GetComponent<SphereCollider>();
 
@@ -138,7 +141,11 @@ namespace Cosmicrafts
                 }
             }
             
-            MyOutline.OutlineParameters.Color = GameMng.GM.GetColorUnit(MyTeam, PlayerId);
+            if (MyOutline != null)
+            {
+                MyOutline.SetColor(GameMng.GM.GetColorUnit(MyTeam, PlayerId));
+                MyOutline.SetThickness(Size * 0.0002f);
+            }
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
             MyAnim = Mesh.GetComponent<Animator>();
@@ -292,10 +299,6 @@ namespace Cosmicrafts
                 Debug.LogWarning($"Die() called on already dead unit: {gameObject.name}");
                 return;
             }
-
-            // --- ADD STACK TRACE FOR DEBUGGING ---
-            Debug.LogError($"### DIE CALLED ### on {gameObject.name} - Team: {MyTeam}, HP: {HitPoints}\nStack Trace:\n" + Environment.StackTrace);
-            // --- END STACK TRACE --- 
             
             HitPoints = 0;
             IsDeath = true;

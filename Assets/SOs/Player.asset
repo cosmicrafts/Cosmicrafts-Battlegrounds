@@ -16,8 +16,8 @@ MonoBehaviour:
   baseRotationSpeed: 10
   characterIcon: {fileID: 21300000, guid: 44a054df1702e39458b7072b08d0f212, type: 3}
   basePrefab: {fileID: 2198226034328220048, guid: 307a767ca9c6bca468199bea4457c637, type: 3}
-  hpOverride: 4596
-  shieldOverride: 3493
+  hpOverride: 2537
+  shieldOverride: 1655
   bulletDamageOverride: 25
   levelOverride: 2
   skills:

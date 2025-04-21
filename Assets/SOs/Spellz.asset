@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Spellz
   m_EditorClassIdentifier: 
   Prefab: {fileID: 169654, guid: 3b7f8b2e446b1b0439c69edb635440a5, type: 3}
-  IconSprite: {fileID: 21300000, guid: 0ebbecae43fff4749a1a677ab9e6228c, type: 3}
+  IconSprite: {fileID: 21300000, guid: d1a457f99688f2c41b46d9588c189521, type: 3}
   Name: Spellzuru
   LocalID: 33
   Faction: 0

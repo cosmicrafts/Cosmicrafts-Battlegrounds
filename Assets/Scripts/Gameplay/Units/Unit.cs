@@ -403,14 +403,25 @@ namespace Cosmicrafts
 
         public void BlowUpEffect()
         {
-            if (Explosion == null)
+            // Prefer using the pooled VFX system if available
+            float scaleMultiplier = transform.localScale.x * 1.8f;
+
+            if (VFXPool.Instance != null)
             {
-                Debug.LogWarning($"Cannot create explosion effect for {gameObject.name} - Explosion prefab reference is missing");
+                // This will play a random explosion effect from the pool's configured "Explosions" category
+                VFXPool.Instance.PlayExplosion(transform.position, scaleMultiplier);
                 return;
             }
-            
+
+            // Fallback to the old behaviour if VFXPool is missing (e.g., in editor tests)
+            if (Explosion == null)
+            {
+                Debug.LogWarning($"Cannot create explosion effect for {gameObject.name} - Explosion prefab reference is missing and VFXPool not found.");
+                return;
+            }
+
             GameObject explosion = Instantiate(Explosion, transform.position, Quaternion.identity);
-            explosion.transform.localScale = transform.localScale * 1.8f;
+            explosion.transform.localScale = Vector3.one * scaleMultiplier;
             Destroy(explosion, 4f);
         }
 

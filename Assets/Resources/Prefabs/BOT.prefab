@@ -276,7 +276,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
   CanAttack: 1
-  RangeDetector: 52
+  RangeDetector: 59.4
   CoolDown: 0.2
   BulletSpeed: 99
   BulletDamage: 4
@@ -288,7 +288,6 @@ MonoBehaviour:
   Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   Cannons:
   - {fileID: 687067266193771118}
-  targetValidationRate: 1
 --- !u!135 &2198226034328220042
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -501,8 +500,8 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -6.123234e-17, z: 1, w: 0}
   m_LocalPosition: {x: 0.046250526, y: -0.253125, z: 3.457185}
-  m_LocalScale: {x: 1.71822, y: 1.71822, z: 1.71822}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 2674081211687207417}
   m_Father: {fileID: 2198226034328220055}
@@ -558,6 +557,22 @@ PrefabInstance:
     - target: {fileID: 3686315682025668043, guid: da39e66e40eb74de295a0ef95a72d30c, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3686315682025678975, guid: da39e66e40eb74de295a0ef95a72d30c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3686315682025678975, guid: da39e66e40eb74de295a0ef95a72d30c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3686315682025678975, guid: da39e66e40eb74de295a0ef95a72d30c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3686315682025678975, guid: da39e66e40eb74de295a0ef95a72d30c, type: 3}
+      propertyPath: m_ConstrainProportionsScale
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -259,7 +259,7 @@ MonoBehaviour:
   EnemyDetector: {fileID: 2198226032576818155}
   CanAttack: 1
   RangeDetector: 26.7
-  CoolDown: 1.5
+  CoolDown: 0.25
   BulletSpeed: 99
   BulletDamage: 4
   criticalStrikeChance: 0.2

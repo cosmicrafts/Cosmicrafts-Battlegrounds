@@ -18,15 +18,6 @@ namespace Cosmicrafts
         [Range(1f, 10f)] public float rotationSpeed = 5f;
         public GameObject Bullet;
         public Transform[] Cannons;
-        [Tooltip("How often to check if a target is still valid (seconds)")]
-        public float targetValidationRate = 1.0f;
-        [Header("Aggro Settings")]
-        [Tooltip("How far the unit can detect enemies to start chasing (must be >= RangeDetector)")]
-        [Range(1, 200)] public float AggroRange = 5f;
-        [Tooltip("How often to scan for aggro targets (seconds)")]
-        public float aggroScanRate = 0.5f;
-        [Header("Debugging")]
-        public bool EnableDebugLogs = false;
 
         private ParticleSystem[] MuzzleFlash;
         private float DelayShoot = 0f;
@@ -34,9 +25,6 @@ namespace Cosmicrafts
         private Unit MyUnit;
         private HashSet<Unit> InRange;  // ✅ Use HashSet for O(1) lookups
         private Unit Target;
-        private float lastTargetCheckTime = 0f;
-        private bool wasTargetNull = true;
-        private float lastAggroScanTime = 0f;
 
         private void Awake()
         {
@@ -49,15 +37,20 @@ namespace Cosmicrafts
                     EnemyDetector = GetComponentInChildren<SphereCollider>();
                 }
             }
-            if (EnableDebugLogs) Debug.Log($"[Shooter] Awake on {gameObject.name}. Detector set to {EnemyDetector}.");
-        }
 
-        void Start()
-        {
-            InRange = new HashSet<Unit>();  // ✅ HashSet is more efficient for Contains()
-            EnemyDetector.radius = RangeDetector;
-            MyShip = GetComponent<Ship>();
-            MyUnit = GetComponent<Unit>();
+            // Ensure collections and references are ready before any trigger events
+            if (InRange == null)
+            {
+                InRange = new HashSet<Unit>();
+            }
+
+            // Cache common components early (they won't change)
+            if (MyUnit == null) MyUnit = GetComponent<Unit>();
+            if (MyShip == null) MyShip = GetComponent<Ship>();
+
+            // Sync detector radius at startup
+            if (EnemyDetector != null) EnemyDetector.radius = RangeDetector;
+
             MuzzleFlash = new ParticleSystem[Cannons.Length];
 
             for (int i = 0; i < Cannons.Length; i++)
@@ -68,90 +61,30 @@ namespace Cosmicrafts
                 }
             }
             if (CoolDown <= 0f) CoolDown = 0.1f;
-            if (EnableDebugLogs) Debug.Log($"[Shooter] Start on {gameObject.name}. Range {RangeDetector} / Aggro {AggroRange}.");
+        }
+
+        void Start()
+        {
+            // ✅ HashSet is more efficient for Contains()
+            // ✅ HashSet is more efficient for Contains()
         }
 
         void Update()
         {
-            // Ensure the detector radius always matches the configured range (this may be
-            // modified at runtime by skills, NFTs, etc.)
-            if (EnemyDetector != null && Mathf.Abs(EnemyDetector.radius - RangeDetector) > 0.01f)
-            {
-                EnemyDetector.radius = RangeDetector;
-            }
-
             if (!MyUnit.GetIsDeath() && CanAttack && MyUnit.InControl())
             {
-                ValidateTarget();
+                // Quick validation: if target died, immediately clear and choose another
+                if (Target == null || Target.GetIsDeath())
+                {
+                    Target = null;
+                    FindNewTarget();
+                }
                 
-                // Only try to shoot if we have a target
+                // Only try to shoot if we have a valid target
                 if (Target != null)
                 {
                     ShootTarget();
-                    // Track that we had a target last frame
-                    wasTargetNull = false;
                 }
-                else if (!wasTargetNull)
-                {
-                    // We just lost our target this frame
-                    if (MyShip != null && StopToAttack)
-                    {
-                        MyShip.ResetDestination();
-                    }
-                    wasTargetNull = true;
-                }
-                
-                // Periodically check for targets that might have moved too far away
-                if (Time.time - lastTargetCheckTime > targetValidationRate)
-                {
-                    PerformDistanceCheck();
-                    lastTargetCheckTime = Time.time;
-                }
-
-                // Actively look for new enemies within aggro range if we have no target
-                if (Target == null && Time.time - lastAggroScanTime > aggroScanRate)
-                {
-                    SearchForAggroTargets();
-                    lastAggroScanTime = Time.time;
-                }
-            }
-
-            if (EnableDebugLogs && Target != null)
-            {
-                Debug.Log($"[Shooter] Target in sight: {Target.gameObject.name} distance {Vector3.Distance(transform.position, Target.transform.position):F2}");
-            }
-        }
-
-        /// <summary>
-        /// Check if the target is too far away - they might have moved but not triggered the exit event
-        /// </summary>
-        private void PerformDistanceCheck()
-        {
-            if (Target != null)
-            {
-                float distanceToTarget = Vector3.Distance(transform.position, Target.transform.position);
-                if (distanceToTarget > RangeDetector * 1.2f) // Add a small buffer
-                {
-                    RemoveEnemy(Target);
-                }
-            }
-        }
-
-        /// ✅ **Only runs when needed, instead of every frame**
-        private void ValidateTarget()
-        {
-            if (Target == null || Target.GetIsDeath())
-            {
-                Target = null;
-                FindNewTarget();
-                return;
-            }
-
-            // Drop the target if it moved too far beyond aggro range
-            float distToTarget = Vector3.Distance(transform.position, Target.transform.position);
-            if (distToTarget > AggroRange * 1.2f)
-            {
-                RemoveEnemy(Target);
             }
         }
 
@@ -179,6 +112,9 @@ namespace Cosmicrafts
                 FireProjectiles();
                 DelayShoot = CoolDown;
                 MyUnit.GetAnimator().SetTrigger("Attack");
+
+                // After shooting, see if someone else became closer (enemies might cluster)
+                FindNewTarget();
             }
             else
             {
@@ -188,7 +124,6 @@ namespace Cosmicrafts
 
         private void FireProjectiles()
         {
-            if (EnableDebugLogs) Debug.Log($"[Shooter] {gameObject.name} firing {Cannons.Length} bullets at {Target?.gameObject?.name}");
             foreach (Transform cannon in Cannons)
             {
                 GameObject bulletPrefab = Instantiate(Bullet, cannon.position, cannon.rotation);
@@ -214,12 +149,23 @@ namespace Cosmicrafts
 
         public void AddEnemy(Unit enemy)
         {
+            if (enemy == null || enemy.GetIsDeath()) return;
+
             if (InRange.Add(enemy))
             {
-                if (EnableDebugLogs) Debug.Log($"[Shooter] {gameObject.name} detected enemy {enemy.gameObject.name} (total {InRange.Count})");
+                // If we have no target OR this enemy is closer than current target, switch.
                 if (Target == null)
                 {
-                    FindNewTarget(); // ✅ Only find a target when a new enemy is added
+                    SetTarget(enemy);
+                }
+                else
+                {
+                    float currentDist = Vector3.Distance(transform.position, Target.transform.position);
+                    float newDist     = Vector3.Distance(transform.position, enemy.transform.position);
+                    if (newDist < currentDist)
+                    {
+                        SetTarget(enemy);
+                    }
                 }
             }
         }
@@ -228,7 +174,6 @@ namespace Cosmicrafts
         {
             if (InRange.Remove(enemy))
             {
-                if (EnableDebugLogs) Debug.Log($"[Shooter] {gameObject.name} lost enemy {enemy?.gameObject?.name}. Remaining {InRange.Count}");
                 if (Target == enemy)
                 {
                     Target = null;
@@ -280,53 +225,8 @@ namespace Cosmicrafts
             Target = null;
             InRange.Clear();
             
-            // Reset validation timer
-            lastTargetCheckTime = 0f;
-            wasTargetNull = true;
-            
             // Reset detection range in case it was modified
             EnemyDetector.radius = RangeDetector;
-        }
-
-        /// <summary>
-        /// Scan for the closest enemy within AggroRange and set it as the current target.
-        /// This is used when we don't have any attack-range targets but still want to chase enemies.
-        /// </summary>
-        private void SearchForAggroTargets()
-        {
-            if (EnableDebugLogs) Debug.Log($"[Shooter] {gameObject.name} scanning for aggro targets");
-            Collider[] hits = Physics.OverlapSphere(transform.position, AggroRange);
-            Unit closest = null;
-            float closestDist = float.MaxValue;
-
-            foreach (var hit in hits)
-            {
-                if (!hit.CompareTag("Unit")) continue;
-                Unit candidate = hit.GetComponent<Unit>();
-                if (candidate == null || candidate.GetIsDeath() || candidate.IsMyTeam(MyUnit.MyTeam)) continue;
-
-                float d = Vector3.Distance(transform.position, candidate.transform.position);
-                if (d < closestDist)
-                {
-                    closest = candidate;
-                    closestDist = d;
-                }
-            }
-
-            if (closest != null)
-            {
-                // Ensure this enemy is tracked and pursue it
-                AddEnemy(closest);
-                SetTarget(closest);
-            }
-        }
-
-        void OnDrawGizmosSelected()
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(transform.position, RangeDetector);
-            Gizmos.color = Color.yellow;
-            Gizmos.DrawWireSphere(transform.position, AggroRange);
         }
     }
 }

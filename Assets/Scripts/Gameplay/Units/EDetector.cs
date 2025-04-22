@@ -4,45 +4,80 @@
 
     /*
      * This is the unit enemy detector
+     * Detects potential targets for the unit's shooter component
      */
 
     public class EDetector : MonoBehaviour
     {
-        //Unit data reference
+        // Unit data reference
         public Unit MyUnit;
 
-        //Shooter script reference
+        // Shooter script reference
         public Shooter MyShooter;
 
-        //New enemy detected (add to enemys list)
-        private void OnTriggerEnter(Collider other)
+        private void Start()
         {
-            //Check if the detected object is an unit or player
-            if (other.CompareTag("Unit") || other.CompareTag("Player"))
+            // Safety check for references
+            if (MyUnit == null)
             {
-                //Check if the unit is an enemy unit and still alive
-                Unit OtherUnit = other.gameObject.GetComponent<Unit>();
-                if (OtherUnit != null && MyUnit.IsEnemy(OtherUnit) && !OtherUnit.GetIsDeath())
+                MyUnit = GetComponentInParent<Unit>();
+                if (MyUnit == null)
                 {
-                    //Add the unit to the enemys list
-                    MyShooter.AddEnemy(OtherUnit);
+                    Debug.LogError($"EDetector on {gameObject.name} has no Unit reference!", this);
+                    enabled = false;
+                }
+            }
+
+            if (MyShooter == null)
+            {
+                MyShooter = GetComponentInParent<Shooter>();
+                if (MyShooter == null)
+                {
+                    Debug.LogError($"EDetector on {gameObject.name} has no Shooter reference!", this);
+                    enabled = false;
                 }
             }
         }
 
-        //Enemy out of range (delete from enemys list)
+        // New enemy detected (add to enemies list)
+        private void OnTriggerEnter(Collider other)
+        {
+            // Skip if references are missing
+            if (MyUnit == null || MyShooter == null || !MyShooter.CanAttack) return;
+
+            // Try to get a Unit component from the collider
+            Unit otherUnit = other.GetComponent<Unit>();
+            if (otherUnit == null)
+            {
+                // If no Unit on this object, try to find one in the parent
+                otherUnit = other.GetComponentInParent<Unit>();
+            }
+
+            // Process unit if found and is an enemy
+            if (otherUnit != null && !otherUnit.GetIsDeath() && MyUnit.IsEnemy(otherUnit))
+            {
+                MyShooter.AddEnemy(otherUnit);
+            }
+        }
+
+        // Enemy out of range (delete from enemies list)
         private void OnTriggerExit(Collider other)
         {
-            //Check if the detected object is an unit or player
-            if (other.CompareTag("Unit") || other.CompareTag("Player"))
+            // Skip if references are missing
+            if (MyUnit == null || MyShooter == null) return;
+
+            // Try to get a Unit component from the collider
+            Unit otherUnit = other.GetComponent<Unit>();
+            if (otherUnit == null)
             {
-                //Check if the unit is an enemy unit
-                Unit OtherUnit = other.gameObject.GetComponent<Unit>();
-                if (OtherUnit != null && MyUnit.IsEnemy(OtherUnit))
-                {
-                    //Delete the unit from the enemys list
-                    MyShooter.RemoveEnemy(OtherUnit);
-                }
+                // If no Unit on this object, try to find one in the parent
+                otherUnit = other.GetComponentInParent<Unit>();
+            }
+
+            // Remove unit from enemies list if it's an enemy
+            if (otherUnit != null && MyUnit.IsEnemy(otherUnit))
+            {
+                MyShooter.RemoveEnemy(otherUnit);
             }
         }
     }

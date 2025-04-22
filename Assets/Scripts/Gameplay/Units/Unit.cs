@@ -198,7 +198,7 @@ namespace Cosmicrafts
             }
             else
             {
-                Debug.Log($"Initializing UI for {gameObject.name}, HP: {HitPoints}, MaxHP: {MaxHp}, Shield: {Shield}, MaxShield: {MaxShield}");
+              //  Debug.Log($"Initializing UI for {gameObject.name}, HP: {HitPoints}, MaxHP: {MaxHp}, Shield: {Shield}, MaxShield: {MaxShield}");
                 
                 // Make sure Canvas is active
                 if (UI.Canvas != null && !UI.Canvas.activeSelf)
@@ -393,35 +393,30 @@ namespace Cosmicrafts
                 shieldVisualTimer = 0f;
             }
 
-            // Broadcast the death event
+            // Broadcast the death event - this will trigger GameMng.HandlePlayerBaseStationDeath for player
             OnDeath?.Invoke(this);
             OnUnitDeath?.Invoke(this);
 
-            // Special handling for player's controllable character
-            // Check if this unit belongs to the player instance referenced by GameMng.P
-            bool isPlayerCharacter = (GameMng.P != null && GameMng.P.GetComponent<Unit>() == this);
-
-            if (isPlayerCharacter)
-            {
-                // Don't hide UI or disable SolidBase for player's character
-                // Respawn logic in GameMng will handle its state.
-                Debug.Log($"Player character '{name}' died, but keeping visuals active for respawn.");
-                // Note: OnUnitDeath event is still invoked, which triggers GameMng.HandlePlayerBaseStationDeath
-            }
-            else
-            {
-                // Regular death handling for other units (including enemy bases)
-                UI.HideUI();
-                SA.SetActive(false);
-                if (MyAnim != null) MyAnim.SetTrigger("Die");
-                if (SolidBase != null) SolidBase.enabled = false;
-
-                // Destroy non-player units after a delay
-                Destroy(gameObject, 2f); // Give time for death animation
-            }
+            // Standard death handling for all units, including player
+            UI.HideUI();
+            if (SA != null) SA.SetActive(false);
+            if (MyAnim != null) MyAnim.SetTrigger("Die");
+            if (SolidBase != null) SolidBase.enabled = false;
             
             // Handle companion death/destruction
             DestroyCompanions();
+            
+            // For non-player units, destroy after animation time
+            // Player will be respawned by GameMng through the OnUnitDeath event
+            bool isPlayerCharacter = (GameMng.P != null && GameMng.P.GetComponent<Unit>() == this);
+            if (!isPlayerCharacter)
+            {
+                Destroy(gameObject, 2f); // Give time for death animation
+            }
+            else
+            {
+                Debug.Log($"PLAYER DEATH HANDLED: {name} - control handed to GameMng.HandlePlayerBaseStationDeath");
+            }
         }
 
         public virtual void DisableUnit()
@@ -710,7 +705,7 @@ namespace Cosmicrafts
                     MyAnim.ResetTrigger("Die");
                     MyAnim.SetBool("Idle", true);
                     
-                    Debug.Log($"Completely reset animator for {gameObject.name}");
+                  //  Debug.Log($"Completely reset animator for {gameObject.name}");
                 } else {
                     //Debug.LogWarning($"Animator on {gameObject.name} has no controller.");
                 }

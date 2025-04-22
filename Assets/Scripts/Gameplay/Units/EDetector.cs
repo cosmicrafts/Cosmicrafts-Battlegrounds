@@ -17,7 +17,7 @@
 
         private void Start()
         {
-            // Safety check for references
+            // Safety check for references 
             if (MyUnit == null)
             {
                 MyUnit = GetComponentInParent<Unit>();

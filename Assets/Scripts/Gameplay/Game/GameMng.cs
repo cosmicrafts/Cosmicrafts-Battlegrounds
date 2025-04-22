@@ -205,7 +205,7 @@
             Debug.Log($"Enemy base spawned: {enemyUnit.gameObject.name} | HP: {enemyUnit.HitPoints}/{enemyUnit.GetMaxHitPoints()} | Shield: {enemyUnit.Shield}/{enemyUnit.GetMaxShield()} | Bot Component: N/A");
         }
 
-        // Handle player base station death
+        // Handle player base station death - make this much more direct and aggressive
         private void HandlePlayerBaseStationDeath(Unit baseStation)
         {
             if (P == null || baseStation.GetComponent<Player>() != P || isRespawning)
@@ -215,10 +215,15 @@
             }
 
             Debug.Log("Player base station destroyed - initiating reset...");
+            
+            // IMMEDIATELY deactivate the player - don't wait for animation
+            baseStation.gameObject.SetActive(false);
+            
+            // Start the reset process
             StartCoroutine(ResetPlayerCharacter(baseStation));
         }
 
-        // Renamed from ResetPlayerBaseStation - Resets the player character instance
+        // Completely rewrite the player reset function - make it direct and immediate
         private IEnumerator ResetPlayerCharacter(Unit playerUnit)
         {
             isRespawning = true;
@@ -228,7 +233,7 @@
             int playerBaseIndex = playerTeam == Team.Blue ? 1 : 0;
             Vector3 respawnPosition = BS_Positions[playerBaseIndex];
 
-            // Wait for respawn delay
+            // Wait for respawn delay with object disabled
             yield return new WaitForSeconds(respawnDelay);
 
             if (GameOver) // Check if game ended during delay
@@ -241,21 +246,67 @@
             if (respawnEffectPrefab != null)
             {
                 GameObject effect = Instantiate(respawnEffectPrefab, respawnPosition, Quaternion.identity);
-                Destroy(effect, 3f); // Destroy effect after 3 seconds
+                Destroy(effect, 3f);
+            }
+            
+            // Force teleport to respawn position BEFORE activating
+            playerUnit.transform.position = respawnPosition;
+            playerUnit.transform.rotation = Quaternion.identity;
+
+            // Reset health, shield, and state flags
+            playerUnit.IsDeath = false;
+            playerUnit.HitPoints = playerUnit.GetMaxHitPoints();
+            playerUnit.Shield = playerUnit.GetMaxShield();
+            
+            // Reset visual elements and components
+            if (playerUnit.UI != null && playerUnit.UI.Canvas != null) 
+            {
+                playerUnit.UI.Canvas.SetActive(true);
+                playerUnit.UI.SetHPBar(1f);
+                playerUnit.UI.SetShieldBar((float)playerUnit.Shield / (float)playerUnit.GetMaxShield());
+            }
+            
+            // Reset shield visual
+            if (playerUnit.ShieldGameObject != null)
+            {
+                playerUnit.ShieldGameObject.SetActive(false);
+            }
+            
+            // Make sure ALL colliders are enabled
+            Collider[] colliders = playerUnit.GetComponentsInChildren<Collider>(true);
+            foreach (var col in colliders)
+            {
+                col.enabled = true;
+            }
+            
+            // Reset shooter
+            Shooter shooter = playerUnit.GetComponent<Shooter>();
+            if (shooter != null)
+            {
+                shooter.CanAttack = true;
+                shooter.ResetShooter();
+            }
+            
+            // Reset animator
+            if (playerUnit.GetAnimator() != null)
+            {
+                Animator anim = playerUnit.GetAnimator();
+                anim.Rebind();
+                anim.Update(0f);
+                anim.ResetTrigger("Die");
+                anim.SetBool("Idle", true);
+            }
+            
+            // Make mesh visible
+            if (playerUnit.Mesh != null)
+            {
+                playerUnit.Mesh.SetActive(true);
             }
 
-            // Reset the unit's state (health, status flags, etc.)
-            playerUnit.ResetUnit(); // Assuming Unit.cs has a ResetUnit method
-
-            // Force position using teleport
-            playerUnit.transform.SetPositionAndRotation(respawnPosition, Quaternion.identity);
-
-            // Ensure the unit is visually active again if disabled earlier
-            if (!playerUnit.gameObject.activeSelf)
-                 playerUnit.gameObject.SetActive(true);
-
-            Debug.Log($"[Reset] Player character reset complete at {playerUnit.transform.position}");
-
+            // AFTER everything is set up, activate the player object
+            playerUnit.gameObject.SetActive(true);
+            
+            Debug.Log($"PLAYER RESET COMPLETE - HP: {playerUnit.HitPoints}/{playerUnit.GetMaxHitPoints()}");
             isRespawning = false;
         }
 

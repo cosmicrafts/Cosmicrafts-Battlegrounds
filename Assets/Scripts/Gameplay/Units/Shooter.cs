@@ -328,23 +328,47 @@ namespace Cosmicrafts
 
         private void FireProjectiles()
         {
-             if (Bullet == null) 
-             { 
-                 Debug.LogWarning($"Shooter on {gameObject.name} has no Bullet prefab assigned!", this);
-                 return; 
-             }
+            if (Bullet == null) 
+            { 
+                Debug.LogWarning($"Shooter on {gameObject.name} has no Bullet prefab assigned!", this);
+                return; 
+            }
              
             foreach(var cannon in Cannons)
             {
                 if (cannon == null) continue; // Skip if cannon transform is missing
                 
-                GameObject bulletPrefab = Instantiate(Bullet, cannon.position, cannon.rotation);
-                Projectile bullet = bulletPrefab.GetComponent<Projectile>();
+                // Use VFXPool to get a pooled projectile instead of instantiating
+                GameObject bulletObj = null;
+                
+                if (VFXPool.Instance != null)
+                {
+                    // Get projectile from pool
+                    bulletObj = VFXPool.Instance.GetProjectile(Bullet);
+                    
+                    if (bulletObj != null)
+                    {
+                        // Position at cannon
+                        bulletObj.transform.position = cannon.position;
+                        bulletObj.transform.rotation = cannon.rotation;
+                        bulletObj.SetActive(true);
+                    }
+                }
+                else
+                {
+                    // Fallback to instantiation if pool doesn't exist
+                    bulletObj = Instantiate(Bullet, cannon.position, cannon.rotation);
+                }
+                
+                if (bulletObj == null) continue;
+                
+                Projectile bullet = bulletObj.GetComponent<Projectile>();
                 
                 if (bullet != null)
                 {
-                    // Set the faction property directly
+                    // Set projectile properties
                     bullet.MyFaction = MyUnit.MyFaction;
+                    bullet.PrefabReference = Bullet; // Store reference to original prefab for pool return
                     
                     // Double check target validity just before firing
                     if (Target != null && Target.gameObject != null && !Target.GetIsDeath()) 
@@ -353,23 +377,39 @@ namespace Cosmicrafts
                     }
                     else
                     {
-                        Destroy(bulletPrefab); // Invalid target at fire time
+                        // Return to pool or destroy if target is invalid
+                        if (VFXPool.Instance != null)
+                        {
+                            VFXPool.Instance.ReturnProjectile(bulletObj, Bullet);
+                        }
+                        else
+                        {
+                            Destroy(bulletObj);
+                        }
                         continue; // Skip this bullet
                     }
                     
                     bullet.Speed = BulletSpeed;
-                    bullet.Dmg = Random.value < criticalStrikeChance ? (int)(BulletDamage * criticalStrikeMultiplier) : BulletDamage;
+                    bullet.Dmg = Random.value < criticalStrikeChance ? 
+                        (int)(BulletDamage * criticalStrikeMultiplier) : BulletDamage;
 
-                    // ✅ Play muzzle flash
-                    // Find ParticleSystem safely
+                    // Play muzzle flash
                     ParticleSystem flash = null;
                     if (cannon.childCount > 0) flash = cannon.GetChild(0).GetComponent<ParticleSystem>();
                     flash?.Play();
                 }
                 else
                 {
-                    Debug.LogWarning($"Instantiated bullet from {gameObject.name} is missing Projectile component!", bulletPrefab);
-                    Destroy(bulletPrefab); // Clean up invalid bullet
+                    Debug.LogWarning($"Pooled/instantiated bullet from {gameObject.name} is missing Projectile component!", bulletObj);
+                    // Clean up invalid bullet
+                    if (VFXPool.Instance != null)
+                    {
+                        VFXPool.Instance.ReturnProjectile(bulletObj, Bullet);
+                    }
+                    else
+                    {
+                        Destroy(bulletObj);
+                    }
                 }
             }
         }

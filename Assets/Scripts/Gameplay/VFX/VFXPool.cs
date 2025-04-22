@@ -9,9 +9,8 @@ using System.IO;
 namespace Cosmicrafts
 {
     /// <summary>
-    ///  Minimal, high‑performance pool dedicated *only* to the Explosion effects
-    ///  listed in AllIn1VfxToolkitEffects.md. The list is auto‑populated in the
-    ///  editor so no manual drag‑and‑drop is required.
+    ///  Unified pooling system for VFX, projectiles, and impact effects
+    ///  to improve performance and solve cleanup issues.
     /// </summary>
     public class VFXPool : MonoBehaviour
     {
@@ -20,9 +19,14 @@ namespace Cosmicrafts
         [Header("Explosion Prefabs (Auto‑populated)")]
         public List<GameObject> explosionPrefabs = new List<GameObject>();
 
+        [Header("Projectile & Impact Prefabs")]
+        public List<GameObject> projectilePrefabs = new List<GameObject>();
+        public List<GameObject> impactPrefabs = new List<GameObject>();
+
         [Header("Pool Settings")]
         [Range(1, 50)] public int poolSizePerPrefab = 10;
         [Range(0.5f, 10f)] public float defaultLifetime = 3f;
+        [Range(0.1f, 2f)] public float impactLifetime = 0.5f;
 
         // Internal pools mapped by prefab reference
         private readonly Dictionary<GameObject, Queue<GameObject>> _pools = new();
@@ -75,7 +79,19 @@ namespace Cosmicrafts
 
         private void InitializePools()
         {
-            foreach (var prefab in explosionPrefabs)
+            // Initialize explosion pools
+            InitializePoolForPrefabs(explosionPrefabs);
+            
+            // Initialize projectile pools
+            InitializePoolForPrefabs(projectilePrefabs);
+            
+            // Initialize impact pools
+            InitializePoolForPrefabs(impactPrefabs);
+        }
+        
+        private void InitializePoolForPrefabs(List<GameObject> prefabs)
+        {
+            foreach (var prefab in prefabs)
             {
                 if (prefab == null) continue;
 
@@ -107,7 +123,7 @@ namespace Cosmicrafts
         }
 
         /// <summary>
-        /// Plays a random explosion at the specified position.  Scale multiplier is applied uniformly.
+        /// Plays a random explosion at the specified position. Scale multiplier is applied uniformly.
         /// </summary>
         public GameObject PlayExplosion(Vector3 position, float scale = 1f)
         {
@@ -138,6 +154,85 @@ namespace Cosmicrafts
             }
 
             StartCoroutine(ReturnToPoolAfterLifetime(instance, prefab, defaultLifetime));
+            return instance;
+        }
+        
+        /// <summary>
+        /// Gets a projectile from the pool.
+        /// </summary>
+        public GameObject GetProjectile(GameObject prefab)
+        {
+            if (prefab == null) return null;
+            
+            if (!projectilePrefabs.Contains(prefab))
+            {
+                // Add prefab to list if it's not already there
+                projectilePrefabs.Add(prefab);
+            }
+            
+            var instance = GetFromPool(prefab);
+            if (instance == null) return null;
+            
+            // Reset the projectile
+            var projectile = instance.GetComponent<Projectile>();
+            if (projectile != null)
+            {
+                // Reset any projectile-specific state here
+                projectile.ResetProjectile();
+            }
+            
+            return instance;
+        }
+        
+        /// <summary>
+        /// Returns a projectile to the pool.
+        /// </summary>
+        public void ReturnProjectile(GameObject projectileInstance, GameObject prefab)
+        {
+            if (projectileInstance == null || prefab == null) return;
+            
+            projectileInstance.SetActive(false);
+            projectileInstance.transform.SetParent(transform);
+            
+            // Re-enqueue
+            if (!_pools.TryGetValue(prefab, out var queue))
+            {
+                queue = new Queue<GameObject>();
+                _pools[prefab] = queue;
+            }
+            queue.Enqueue(projectileInstance);
+        }
+        
+        /// <summary>
+        /// Plays an impact effect at the specified position and returns it to the pool after a short duration.
+        /// </summary>
+        public GameObject PlayImpact(GameObject impactPrefab, Vector3 position, Quaternion rotation, float scale = 1f)
+        {
+            if (impactPrefab == null) return null;
+            
+            if (!impactPrefabs.Contains(impactPrefab))
+            {
+                // Add prefab to list if it's not already there
+                impactPrefabs.Add(impactPrefab);
+            }
+            
+            var instance = GetFromPool(impactPrefab);
+            if (instance == null) return null;
+            
+            instance.transform.position = position;
+            instance.transform.rotation = rotation;
+            instance.transform.localScale = Vector3.one * scale;
+            instance.SetActive(true);
+            
+            // Restart particle system if present
+            var ps = instance.GetComponent<ParticleSystem>();
+            if (ps != null)
+            {
+                ps.Clear();
+                ps.Play();
+            }
+            
+            StartCoroutine(ReturnToPoolAfterLifetime(instance, impactPrefab, impactLifetime));
             return instance;
         }
 

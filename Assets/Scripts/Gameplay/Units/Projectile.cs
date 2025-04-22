@@ -7,25 +7,29 @@
         [HideInInspector]
         public Faction MyFaction = Faction.Player;
         
-        // Keep for backwards compatibility
-        [System.Obsolete("Use MyFaction instead")]
-        public Team MyTeam
-        {
-            get { return MyFaction == Faction.Player ? Team.Blue : Team.Red; }
-            set { MyFaction = value == Team.Blue ? Faction.Player : Faction.Enemy; }
-        }
-
-        GameObject Target;
+        // Reference to the original prefab for pool return
         [HideInInspector]
-        public float Speed;
-        [HideInInspector]
-        public int Dmg;
+        public GameObject PrefabReference;
 
-        public GameObject canvasDamageRef;
+        // Target tracking
+        private GameObject _target;
+        private Vector3 _lastTargetPosition;
+        private bool _isReturningToPool = false;
+
+        // Movement parameters
+        [HideInInspector]
+        public float Speed = 10f;
+        [HideInInspector]
+        public int Dmg = 1;
+
+        // Visual effects
         public GameObject impact;
-        Vector3 LastTargetPosition;
+        
+        // Explosion effect
+        [HideInInspector]
+        public GameObject explosionEffect;
 
-        // Enum for different trajectory types
+        // Projectile behavior
         public enum TrajectoryType
         {
             Straight,
@@ -38,56 +42,75 @@
         public TrajectoryType trajectoryType = TrajectoryType.Straight;
 
         // Fields for Wavering Movement
-        public float WaveringAmplitude = 0.5f; // How far it moves from the center
-        public float WaveringFrequency = 2f; // How fast it oscillates
+        public float WaveringAmplitude = 0.5f;
+        public float WaveringFrequency = 2f;
 
         // Fields for Zigzag Movement
-        public float ZigzagAmplitude = 0.5f; // Amplitude of the zigzag
-        public float ZigzagFrequency = 2f; // Frequency of the zigzag
+        public float ZigzagAmplitude = 0.5f;
+        public float ZigzagFrequency = 2f;
 
         // Fields for Circular Movement
-        public float CircularRadius = 1f; // Radius of the circular path
-        public float CircularSpeed = 2f; // Speed of circular movement
+        public float CircularRadius = 1f;
+        public float CircularSpeed = 2f;
 
-        private Vector3 initialPosition;
-        private float timeSinceStart;
+        // Movement tracking
+        private Vector3 _initialPosition;
+        private float _timeSinceStart;
+        private float _timeAlive = 0f;
 
-        public bool IsAoE = false;  // Checkmark in Inspector
-        public float AoERadius = 5f;  // Radius of AoE damage
+        // Area of Effect settings
+        public bool IsAoE = false;
+        public float AoERadius = 5f;
 
-        // Make maxLifespan public to customize in Inspector
-        public float maxLifespan = 1f; // Maximum life of projectile
+        // Lifecycle settings
+        public float maxLifespan = 2f;
 
-        private float timeAlive = 0f;
-
-        // Add these fields at the top of the class after the existing declarations
-        private bool isDestroyed = false;
-        public bool HitEffectsEnabled = true;
-
-        private void Start()
+        private void OnEnable()
         {
-            initialPosition = transform.position;
+            // Reset state when enabled from pool
+            _timeAlive = 0f;
+            _timeSinceStart = 0f;
+            _isReturningToPool = false;
+            
+            // Initialize position reference
+            _initialPosition = transform.position;
+        }
+        
+        /// <summary>
+        /// Resets the projectile state for reuse from pool
+        /// </summary>
+        public void ResetProjectile()
+        {
+            _timeAlive = 0f;
+            _timeSinceStart = 0f;
+            _isReturningToPool = false;
+            _target = null;
+            
+            // Any other state initialization
         }
 
         private void FixedUpdate()
         {
-            timeAlive += Time.fixedDeltaTime;
-            timeSinceStart += Time.fixedDeltaTime;
+            if (_isReturningToPool) return;
+            
+            _timeAlive += Time.fixedDeltaTime;
+            _timeSinceStart += Time.fixedDeltaTime;
 
-            // Check if the projectile has exceeded its maximum lifespan
-            if (timeAlive >= maxLifespan)
+            // Check for maximum lifespan
+            if (_timeAlive >= maxLifespan)
             {
-                HandleImpact(null); // Impact at the last known target position if lifespan exceeded
+                HandleImpact(null);
                 return;
             }
 
-            // Check if the target is destroyed or null
-            if (Target == null || (Target != null && Target.GetComponent<Unit>() != null && Target.GetComponent<Unit>().IsDeath))
+            // Check if the target is valid
+            if (_target == null || (_target != null && _target.GetComponent<Unit>() != null && _target.GetComponent<Unit>().IsDeath))
             {
-                Target = null; // Target destroyed or null, continue to last known position
+                _target = null; // Clear invalid target
             }
 
-            if (Target == null)
+            // Move based on target state
+            if (_target == null)
             {
                 MoveToLastPositionOrDestroy();
             }
@@ -118,113 +141,108 @@
 
         private void MoveStraight()
         {
-            if (Target != null)
+            if (_target != null)
             {
-                LastTargetPosition = Target.transform.position;
-                RotateTowards(LastTargetPosition);
+                _lastTargetPosition = _target.transform.position;
+                RotateTowards(_lastTargetPosition);
             }
 
-            transform.position = Vector3.MoveTowards(transform.position, LastTargetPosition, Speed * Time.fixedDeltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, _lastTargetPosition, Speed * Time.fixedDeltaTime);
 
-            // Check if the projectile has reached the last known position of the target
-            if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
+            // Check if reached target position
+            if (Vector3.Distance(transform.position, _lastTargetPosition) <= 0.1f)
             {
-                HandleImpact(null); // Impact at the last known position
+                HandleImpact(null);
             }
         }
 
         private void MoveWavering()
         {
-            if (Target != null)
+            if (_target != null)
             {
-                LastTargetPosition = Target.transform.position;
-                RotateTowards(LastTargetPosition);
+                _lastTargetPosition = _target.transform.position;
+                RotateTowards(_lastTargetPosition);
             }
 
             Vector3 forwardMove = transform.forward * Speed * Time.fixedDeltaTime;
-            Vector3 waveringOffset = transform.right * Mathf.Sin(timeSinceStart * WaveringFrequency) * WaveringAmplitude;
+            Vector3 waveringOffset = transform.right * Mathf.Sin(_timeSinceStart * WaveringFrequency) * WaveringAmplitude;
             transform.position += forwardMove + waveringOffset;
 
-            // Check if the projectile has reached the last known position of the target
-            if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
+            // Check if reached target position
+            if (Vector3.Distance(transform.position, _lastTargetPosition) <= 0.1f)
             {
-                HandleImpact(null); // Impact at the last known position
+                HandleImpact(null);
             }
         }
 
         private void MoveZigzag()
         {
-            if (Target != null)
+            if (_target != null)
             {
-                LastTargetPosition = Target.transform.position;
-                RotateTowards(LastTargetPosition);
+                _lastTargetPosition = _target.transform.position;
+                RotateTowards(_lastTargetPosition);
             }
 
             Vector3 forwardMove = transform.forward * Speed * Time.fixedDeltaTime;
-            Vector3 zigzagOffset = transform.right * Mathf.Sign(Mathf.Sin(timeSinceStart * ZigzagFrequency)) * ZigzagAmplitude;
+            Vector3 zigzagOffset = transform.right * Mathf.Sign(Mathf.Sin(_timeSinceStart * ZigzagFrequency)) * ZigzagAmplitude;
             transform.position += forwardMove + zigzagOffset;
 
-            // Check if the projectile has reached the last known position of the target
-            if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
+            // Check if reached target position
+            if (Vector3.Distance(transform.position, _lastTargetPosition) <= 0.1f)
             {
-                HandleImpact(null); // Impact at the last known position
+                HandleImpact(null);
             }
         }
 
         private void MoveCircular()
         {
-            if (Target != null)
+            if (_target != null)
             {
-                LastTargetPosition = Target.transform.position;
-                RotateTowards(LastTargetPosition);
+                _lastTargetPosition = _target.transform.position;
+                RotateTowards(_lastTargetPosition);
             }
 
-            Vector3 offset = new Vector3(Mathf.Sin(timeSinceStart * CircularSpeed), 0f, Mathf.Cos(timeSinceStart * CircularSpeed)) * CircularRadius;
-            transform.position = initialPosition + offset;
-            transform.position = Vector3.MoveTowards(transform.position, LastTargetPosition, Speed * Time.fixedDeltaTime);
+            Vector3 offset = new Vector3(
+                Mathf.Sin(_timeSinceStart * CircularSpeed), 
+                0f, 
+                Mathf.Cos(_timeSinceStart * CircularSpeed)
+            ) * CircularRadius;
+            
+            transform.position = _initialPosition + offset;
+            transform.position = Vector3.MoveTowards(transform.position, _lastTargetPosition, Speed * Time.fixedDeltaTime);
 
-            // Check if the projectile has reached the last known position of the target
-            if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
+            // Check if reached target position
+            if (Vector3.Distance(transform.position, _lastTargetPosition) <= 0.1f)
             {
-                HandleImpact(null); // Impact at the last known position
+                HandleImpact(null);
             }
         }
 
-
         private void MoveToLastPositionOrDestroy()
         {
-            // Check if this projectile is still valid and has not been destroyed
-            if (this == null || gameObject == null || !gameObject.activeInHierarchy)
+            // Safety check for destroyed/disabled objects
+            if (this == null || !gameObject || !gameObject.activeInHierarchy || _isReturningToPool)
             {
-                // Projectile has been destroyed or is inactive, don't proceed
                 return;
             }
             
-            try
-            {
-                transform.position = Vector3.MoveTowards(transform.position, LastTargetPosition, Speed * Time.fixedDeltaTime);
+            transform.position = Vector3.MoveTowards(transform.position, _lastTargetPosition, Speed * Time.fixedDeltaTime);
 
-                if (Vector3.Distance(transform.position, LastTargetPosition) <= 0.1f)
-                {
-                    HandleImpact(null); // Impact at the last known target position
-                }
-            }
-            catch (System.Exception e)
+            // Check if reached last known position
+            if (Vector3.Distance(transform.position, _lastTargetPosition) <= 0.1f)
             {
-                Debug.LogWarning($"Error in MoveToLastPositionOrDestroy: {e.Message}");
-                // If we can't safely move the projectile, destroy it
-                if (gameObject != null)
-                {
-                    Destroy(gameObject);
-                }
+                HandleImpact(null);
             }
         }
 
         private void OnTriggerEnter(Collider other)
         {
-            if (other.gameObject == Target)
+            // Prevent handling if already returning to pool
+            if (_isReturningToPool) return;
+
+            if (other.gameObject == _target)
             {
-                HandleImpact(Target.GetComponent<Unit>());
+                HandleImpact(_target.GetComponent<Unit>());
             }
             else if (other.CompareTag("Unit"))
             {
@@ -236,23 +254,28 @@
             }
             else if (other.CompareTag("Out"))
             {
-                HandleImpact(null); // Apply AoE even if it's out of bounds
+                HandleImpact(null);
             }
         }
 
         void HandleImpact(Unit target)
         {
+            // Prevent multiple impact handling
+            if (_isReturningToPool) return;
+            _isReturningToPool = true;
+
             try
             {
-                // Apply AoE if applicable, even if there's no target
+                // Apply AoE damage if enabled
                 if (IsAoE)
                 {
                     ApplyAoEDamage();
                 }
 
-                // Impact at the last known target position or collision point
-                InstantiateImpactEffect();
+                // Create impact effect using the pool
+                PlayImpactEffect();
 
+                // Apply damage to direct target if valid
                 if (target != null && target.gameObject != null && target.gameObject.activeInHierarchy && !target.IsDeath)
                 {
                     ApplyDirectDamage(target);
@@ -265,103 +288,72 @@
             }
             finally
             {
-                // Always destroy the projectile
-                if (gameObject != null)
-                {
-                    Destroy(gameObject);
-                }
+                // Return projectile to pool instead of destroying it
+                ReturnToPool();
             }
         }
 
         void ApplyDirectDamage(Unit target)
         {
-            // First check if the target exists and is active
+            // Validate target is still active and alive
             if (target == null || target.gameObject == null || !target.gameObject.activeInHierarchy || target.IsDeath)
             {
                 return;
             }
 
-            try
+            // Apply damage with dodge chance
+            if (Random.value < target.DodgeChance)
             {
-                if (Random.value < target.DodgeChance)
-                {
-                    Dmg = 0;
-                }
-
-                // Additional safety check right before calling OnImpactShield
-                if (target.Shield > 0 && !target.flagShield && target.gameObject.activeInHierarchy)
-                {
-                    // Final safety check via reflection to avoid direct method call that might crash
-                    try
-                    {
-                        target.OnImpactShield(Dmg);
-                    }
-                    catch (System.Exception ex)
-                    {
-                        Debug.LogWarning($"Failed to call OnImpactShield: {ex.Message}");
-                        // Fallback - just apply damage directly
-                        if (target != null && target.gameObject != null && target.gameObject.activeInHierarchy)
-                        {
-                            target.AddDmg(Dmg);
-                        }
-                    }
-                }
-                else if (target.gameObject.activeInHierarchy)
-                {
-                    InstantiateImpactEffect();
-                    // Only add damage if target is still active
-                    if (target.gameObject.activeInHierarchy)
-                    {
-                        target.AddDmg(Dmg);
-                    }
-                }
+                // Dodge - no damage
+                return;
             }
-            catch (System.Exception e)
+
+            // Apply shield damage if available
+            if (target.Shield > 0 && !target.flagShield && target.gameObject.activeInHierarchy)
             {
-                Debug.LogWarning($"Error in ApplyDirectDamage: {e.Message}");
+                target.OnImpactShield(Dmg);
+            }
+            else if (target.gameObject.activeInHierarchy)
+            {
+                // Apply direct damage
+                target.AddDmg(Dmg);
             }
         }
 
         void ApplyAoEDamage()
         {
-            try
+            // Find all colliders in the AoE radius
+            Collider[] hitColliders = Physics.OverlapSphere(transform.position, AoERadius);
+            
+            foreach (Collider hitCollider in hitColliders)
             {
-                Collider[] hitColliders = Physics.OverlapSphere(transform.position, AoERadius);
-                foreach (Collider hitCollider in hitColliders)
+                // Skip null or inactive colliders
+                if (hitCollider == null || !hitCollider.gameObject || !hitCollider.gameObject.activeInHierarchy)
                 {
-                    // Skip null or inactive colliders
-                    if (hitCollider == null || !hitCollider.gameObject || !hitCollider.gameObject.activeInHierarchy)
-                    {
-                        continue;
-                    }
-
-                    Unit unit = hitCollider.GetComponent<Unit>();
-                    if (unit != null && unit.gameObject.activeInHierarchy && !unit.IsDeath && unit.MyFaction != MyFaction)
-                    {
-                        ApplyDirectDamage(unit);
-                    }
+                    continue;
                 }
-                InstantiateImpactEffect();
+
+                // Check if it's a unit and apply damage if it's an enemy
+                Unit unit = hitCollider.GetComponent<Unit>();
+                if (unit != null && unit.gameObject.activeInHierarchy && !unit.IsDeath && unit.MyFaction != MyFaction)
+                {
+                    ApplyDirectDamage(unit);
+                }
             }
-            catch (System.Exception e)
+            
+            // Create an explosion effect
+            if (VFXPool.Instance != null)
             {
-                Debug.LogWarning($"Error in ApplyAoEDamage: {e.Message}");
+                VFXPool.Instance.PlayExplosion(transform.position, transform.localScale.x);
             }
         }
 
-        void InstantiateImpactEffect()
+        void PlayImpactEffect()
         {
-            try
+            // Use the VFXPool to create and manage impact effects
+            if (VFXPool.Instance != null && impact != null)
             {
-                if (impact != null)
-                {
-                    GameObject impactPrefab = Instantiate(impact, transform.position, Quaternion.identity);
-                    Destroy(impactPrefab, 0.25f);
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error in InstantiateImpactEffect: {e.Message}");
+                VFXPool.Instance.PlayImpact(impact, transform.position, transform.rotation, 1f);
             }
         }
 
@@ -376,180 +368,101 @@
 
         public void SetLastPosition(Vector3 lastPosition)
         {
-            LastTargetPosition = lastPosition;
+            _lastTargetPosition = lastPosition;
         }
 
         public void SetTarget(GameObject target)
         {
             // Unsubscribe from previous target if exists
-            if (Target != null)
+            if (_target != null)
             {
-                Unit previousTarget = Target.GetComponent<Unit>();
+                Unit previousTarget = _target.GetComponent<Unit>();
                 if (previousTarget != null)
                 {
                     previousTarget.OnDeath -= HandleTargetDeath;
                 }
             }
             
-            Target = target;
+            _target = target;
+            
+            // If no target, just return
             if (target == null)
             {
-                // If no target, destroy this projectile
-                if (gameObject != null)
-                {
-                    Destroy(gameObject);
-                }
                 return;
             }
             
-            try
+            // Track target position and listen for death
+            _lastTargetPosition = target.transform.position;
+            
+            Unit targetUnit = target.GetComponent<Unit>();
+            if (targetUnit != null)
             {
-                LastTargetPosition = target.transform.position;
-                // Subscribe to the unit's OnDeath event
-                Unit targetUnit = target.GetComponent<Unit>();
-                if (targetUnit != null)
-                {
-                    targetUnit.OnDeath += HandleTargetDeath;
-                }
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error in SetTarget: {e.Message}");
-                // If we can't safely set the target, destroy the projectile
-                if (gameObject != null)
-                {
-                    Destroy(gameObject);
-                }
+                targetUnit.OnDeath += HandleTargetDeath;
             }
         }
 
         private void HandleTargetDeath(Unit unit)
         {
-            // Check if this projectile is still valid and has not been destroyed
-            if (this == null || gameObject == null || !gameObject.activeInHierarchy)
+            // Check if this projectile is still valid
+            if (this == null || !gameObject || !gameObject.activeInHierarchy || _isReturningToPool)
             {
-                // Projectile has been destroyed or is inactive, don't proceed
                 return;
             }
             
-            // Store the last position before clearing the target
+            // Store the last position and clear target
             Vector3 lastPosition = unit != null && unit.gameObject != null 
                 ? unit.transform.position 
-                : LastTargetPosition;
+                : _lastTargetPosition;
                 
-            // Handle the target death
-            Target = null;
-            LastTargetPosition = lastPosition;
+            _target = null;
+            _lastTargetPosition = lastPosition;
+            
+            // Continue moving toward the last position
+            MoveToLastPositionOrDestroy();
+        }
 
-            try
+        private void OnDisable()
+        {
+            // Ensure we unsubscribe from any death events when disabled
+            if (_target != null)
             {
-                // Ensure that the projectile directly moves towards the last position
-                MoveToLastPositionOrDestroy();
-            }
-            catch (System.Exception e)
-            {
-                Debug.LogWarning($"Error in HandleTargetDeath: {e.Message}");
-                // If we can't safely move the projectile, destroy it
-                if (gameObject != null)
+                Unit targetUnit = _target.GetComponent<Unit>();
+                if (targetUnit != null)
                 {
-                    Destroy(gameObject);
+                    targetUnit.OnDeath -= HandleTargetDeath;
                 }
             }
         }
 
-        private void OnDestroy()
+        private void ReturnToPool()
         {
-            try
+            // Safety check to prevent double returns
+            if (this == null || !gameObject || !gameObject.activeInHierarchy)
             {
-                if (Target != null)
+                return;
+            }
+
+            // Clear target references
+            if (_target != null)
+            {
+                Unit targetUnit = _target.GetComponent<Unit>();
+                if (targetUnit != null)
                 {
-                    Unit targetUnit = Target.GetComponent<Unit>();
-                    if (targetUnit != null)
-                    {
-                        targetUnit.OnDeath -= HandleTargetDeath;
-                    }
+                    targetUnit.OnDeath -= HandleTargetDeath;
                 }
+                _target = null;
             }
-            catch (System.Exception e)
+
+            // Return to pool if available
+            if (VFXPool.Instance != null && PrefabReference != null)
             {
-                // Just log and continue - we're destroying anyway
-                Debug.LogWarning($"Error in OnDestroy cleanup: {e.Message}");
+                VFXPool.Instance.ReturnProjectile(gameObject, PrefabReference);
+            }
+            else
+            {
+                // Fallback if pool doesn't exist
+                Destroy(gameObject);
             }
         }
-
-        public void Destroy(bool hitUnit = false, Unit hitUnitRef = null, Vector3 hitPoint = default, Vector3 hitNormal = default)
-        {
-            if (isDestroyed) return;
-
-            // Spawn appropriate hit effects
-            if (hitUnit && hitUnitRef != null && HitEffectsEnabled)
-            {
-                // Use the FactionManager to check if the unit hit is an enemy
-                bool isEnemyHit = hitUnitRef.MyFaction != MyFaction;
-            
-                // Create VFX appropriate for what was hit
-                CreateHitEffects(hitPoint, hitNormal, isEnemyHit, hitUnitRef);
-            
-                // Add damage if this was an enemy unit
-                if (isEnemyHit)
-                {
-                    ApplyDamageToUnit(hitUnitRef);
-                }
-            }
-            else if (HitEffectsEnabled)
-            {
-                // Hit something else (terrain, etc.) - create default effects
-                CreateEnvironmentHitEffects(hitPoint, hitNormal);
-            }
-
-            // Mark as destroyed to prevent duplicate calls
-            isDestroyed = true;
-            
-            // Deactivate the projectile
-            DeactivateProjectile();
-        }
-
-        // Add these methods needed by the Destroy method
-        private void CreateHitEffects(Vector3 hitPoint, Vector3 hitNormal, bool isEnemyHit, Unit hitUnit)
-        {
-            // Create impact effect at the hit point
-            if (impact != null)
-            {
-                GameObject impactEffect = Instantiate(impact, hitPoint, Quaternion.LookRotation(hitNormal));
-                Destroy(impactEffect, 0.5f);
-            }
-            
-            // Optionally create different effects based on if it's an enemy or not
-            if (isEnemyHit)
-            {
-                // Could create additional enemy-hit specific effects here
-            }
-        }
-
-        private void CreateEnvironmentHitEffects(Vector3 hitPoint, Vector3 hitNormal)
-        {
-            // Create a generic environment hit effect
-            if (impact != null)
-            {
-                GameObject impactEffect = Instantiate(impact, hitPoint, Quaternion.LookRotation(hitNormal));
-                Destroy(impactEffect, 0.5f);
-            }
-        }
-
-        private void ApplyDamageToUnit(Unit hitUnit)
-        {
-            if (hitUnit != null && !hitUnit.GetIsDeath())
-            {
-                // Apply damage based on the projectile's damage value
-                hitUnit.AddDmg(Dmg);
-            }
-        }
-
-        private void DeactivateProjectile()
-        {
-            // Clean up and destroy this projectile
-            Destroy(gameObject);
-        }
-
     }
 }

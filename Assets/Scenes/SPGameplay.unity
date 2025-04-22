@@ -2143,8 +2143,11 @@ MonoBehaviour:
   - {fileID: 6271241949191652176, guid: 739d19610906a434a8d67ca770434aca, type: 3}
   - {fileID: 6549543012873742316, guid: 85df402618e06014dbc12715d31c1f54, type: 3}
   - {fileID: 389972561583142955, guid: a6a02baceacd0a34892152a14a057b79, type: 3}
+  projectilePrefabs: []
+  impactPrefabs: []
   poolSizePerPrefab: 10
   defaultLifetime: 3
+  impactLifetime: 0.5
 --- !u!1 &697417429969759475
 GameObject:
   m_ObjectHideFlags: 0

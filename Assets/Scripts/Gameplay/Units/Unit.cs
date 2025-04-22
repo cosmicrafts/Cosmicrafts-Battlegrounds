@@ -386,6 +386,13 @@ namespace Cosmicrafts
             HitPoints = 0;
             IsDeath = true;
 
+            // Make sure shield visual is disabled
+            if (ShieldGameObject != null)
+            {
+                ShieldGameObject.SetActive(false);
+                shieldVisualTimer = 0f;
+            }
+
             // Broadcast the death event
             OnDeath?.Invoke(this);
             OnUnitDeath?.Invoke(this);
@@ -497,6 +504,12 @@ namespace Cosmicrafts
 
         public void BlowUpEffect()
         {
+            // Early exit if the unit is already destroyed or inactive
+            if (this == null || !gameObject || !gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
             // Prefer using the pooled VFX system if available
             float scaleMultiplier = transform.localScale.x * 1.8f;
 
@@ -514,9 +527,13 @@ namespace Cosmicrafts
                 return;
             }
 
+            // Create explosion with shorter lifetime (2s instead of 4s)
             GameObject explosion = Instantiate(Explosion, transform.position, Quaternion.identity);
             explosion.transform.localScale = Vector3.one * scaleMultiplier;
-            Destroy(explosion, 4f);
+            
+            // Add a dedicated component to handle cleanup even if the parent is destroyed
+            DestroyAfterTime destroyComponent = explosion.AddComponent<DestroyAfterTime>();
+            destroyComponent.timeToDestroy = 2f;
         }
 
         public void SetImpactPosition(Vector3 position)
@@ -610,6 +627,18 @@ namespace Cosmicrafts
                 ShieldGameObject.SetActive(true);
                 // Set timer instead of using coroutine
                 shieldVisualTimer = 1f;
+                
+                // Ensure shield will be deactivated if the unit is destroyed while shield is active
+                if (!ShieldGameObject.TryGetComponent<DestroyAfterTime>(out var destroyComponent))
+                {
+                    destroyComponent = ShieldGameObject.AddComponent<DestroyAfterTime>();
+                    destroyComponent.timeToDestroy = 1.5f; // Slightly longer than visual timer
+                }
+                else
+                {
+                    // Reset the existing timer
+                    destroyComponent.timeToDestroy = 1.5f;
+                }
             }
             
             // Apply damage

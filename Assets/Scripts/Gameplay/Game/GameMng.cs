@@ -10,7 +10,6 @@
     {
         public static GameMng GM;
         public static Player P; // Player component reference
-        public static Bot BOT; // Bot component reference (for the enemy base)
         public static GameMetrics MT;
         public static UIGameMng UI;
         public Vector3[] BS_Positions; // Base stations positions [0] = Enemy (Red), [1] = Player (Blue)
@@ -164,7 +163,6 @@
             int enemyBaseIndex = 0; // Red base position index
 
             GameObject enemyObject = Instantiate(enemyCharacterSO.BasePrefab, BS_Positions[enemyBaseIndex], Quaternion.identity);
-            Bot botComponent = enemyObject.GetComponent<Bot>(); // Check for Bot component
             Unit enemyUnit = enemyObject.GetComponent<Unit>();
 
             if (enemyUnit == null) // Unit is essential
@@ -172,11 +170,6 @@
                 Debug.LogError($"Enemy base prefab '{enemyCharacterSO.BasePrefab.name}' is missing Unit component! Destroying instance.");
                 Destroy(enemyObject);
                 return;
-            }
-            if (botComponent == null) // Bot component is also expected
-            {
-                 Debug.LogWarning($"Enemy base prefab '{enemyCharacterSO.BasePrefab.name}' is missing Bot component! AI will not function.");
-                 // Proceed without AI, but log warning
             }
 
             // --- Initialize Unit ---
@@ -200,20 +193,12 @@
                  enemyUnit.Shield = 0;
             }
 
-            // --- Initialize Bot (if present) ---
-            if (botComponent != null)
-            {
-                botComponent.ID = enemyId;
-                botComponent.MyTeam = enemyTeam;
-                BOT = botComponent; // Set static reference
-            }
-
             // --- Register ---
             Targets[enemyBaseIndex] = enemyUnit;
             AddUnit(enemyUnit);
             // Optionally subscribe to enemy death: enemyUnit.OnUnitDeath += HandleEnemyBaseStationDeath;
 
-            Debug.Log($"Enemy base spawned: {enemyUnit.gameObject.name} | HP: {enemyUnit.HitPoints}/{enemyUnit.GetMaxHitPoints()} | Shield: {enemyUnit.Shield}/{enemyUnit.GetMaxShield()} | Bot Component: {(botComponent != null)}");
+            Debug.Log($"Enemy base spawned: {enemyUnit.gameObject.name} | HP: {enemyUnit.HitPoints}/{enemyUnit.GetMaxHitPoints()} | Shield: {enemyUnit.Shield}/{enemyUnit.GetMaxShield()} | Bot Component: N/A");
         }
 
         // Handle player base station death
@@ -548,7 +533,9 @@
          // Helper to get the enemy base unit instance
         public Unit GetEnemyBaseUnit()
         {
-             return (BOT != null) ? BOT.GetComponent<Unit>() : null;
+             // Return Targets[0] directly, checking for null
+             return (Targets != null && Targets.Length > 0) ? Targets[0] : null;
+             // return (BOT != null) ? BOT.GetComponent<Unit>() : null; // Old implementation
         }
     }
 }

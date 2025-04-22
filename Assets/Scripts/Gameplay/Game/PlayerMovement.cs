@@ -399,7 +399,8 @@ namespace Cosmicrafts
         
         void HandleRotation()
         {
-            bool isCurrentlyTargeting = shooter != null && shooter.GetIdTarget() != 0;
+            // Check if shooter is actively engaging a target (in combat mode)
+            bool isCurrentlyTargeting = shooter != null && shooter.IsEngagingTarget();
             
             // If we just stopped targeting, start the timer
             if (wasTargeting && !isCurrentlyTargeting)
@@ -517,4 +518,4 @@ namespace Cosmicrafts
             markerPool.Enqueue(marker);
         }
     }
-}
+} 

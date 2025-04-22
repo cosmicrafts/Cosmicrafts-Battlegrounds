@@ -128,7 +128,6 @@ GameObject:
   m_Component:
   - component: {fileID: 2198226034328220055}
   - component: {fileID: 6551100031223810535}
-  - component: {fileID: 9035670461312112703}
   - component: {fileID: 2198226034328220052}
   - component: {fileID: 1221812395794976959}
   - component: {fileID: 2198226034328220054}
@@ -188,23 +187,6 @@ MonoBehaviour:
   SpeedEnergy: 25.4
   waitSpawn: 0.5
   maxActiveUnits: 12
---- !u!114 &9035670461312112703
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2198226034328220048}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1273eefc8c1e88f488c73a8ca085c465, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ID: 2
-  MyTeam: 1
-  botName: EnemyBot
-  difficultyMultiplier: 1
-  waveNumber: 0
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -254,6 +236,7 @@ MonoBehaviour:
   SpawnAreaSize: 12
   DodgeChance: 0
   Level: 1
+  companions: []
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 3686672613588390863}
@@ -276,8 +259,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
+  DetectionRange: 62
+  AttackRange: 50.9
   CanAttack: 1
-  RangeDetector: 59.4
   CoolDown: 0.2
   BulletSpeed: 99
   BulletDamage: 4
@@ -289,6 +273,10 @@ MonoBehaviour:
   Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   Cannons:
   - {fileID: 687067266193771118}
+  rangeVisualizationType: 2
+  lineSegments: 36
+  rangeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  rangeLineWidth: 0.1
 --- !u!135 &2198226034328220042
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -628,13 +616,7 @@ PrefabInstance:
       addedObject: {fileID: 3318674462968679826}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 3636256239494127109}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 5491567881161249824}
-    - targetCorrespondingSourceObject: {fileID: 4984952003260156543, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 467118922428213789}
   m_SourcePrefab: {fileID: 100100000, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
 --- !u!1 &3686672613588390863 stripped
 GameObject:
@@ -675,63 +657,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &3636256239494127109
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3686672613588390863}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fe91dc294731a9428c0941ea7579110, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  complexMaskingMode: 0
-  drawingMode: 1
-  outlineLayer: 0
-  outlineTargets:
-  - IsVisible: 1
-    CutoutMask: 8
-    edgeDilateAmount: 5
-    frontEdgeDilateAmount: 5
-    backEdgeDilateAmount: 5
-    renderer: {fileID: 7415871185769823361}
-    SubmeshIndex: 0
-    BoundsMode: 0
-    Bounds:
-      m_Center: {x: 0, y: 0, z: 0}
-      m_Extent: {x: 0.5, y: 0.5, z: 0.5}
-    CutoutThreshold: 0.5
-    CullMode: 2
-    cutoutTextureName: 
-    DilateRenderingMode: 0
-    cutoutTextureIndex: 0
-  renderStyle: 1
-  outlineParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
-  backParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
-  frontParameters:
-    enabled: 1
-    color: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
-    dilateShift: 1
-    blurShift: 1
-    fillPass:
-      shader: {fileID: 0}
-      serializedProperties: []
 --- !u!135 &5491567881161249824
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -758,28 +683,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
   m_PrefabInstance: {fileID: 4605169094698069662}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &7415871185769823361 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -2809490351553211873, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
-  m_PrefabInstance: {fileID: 4605169094698069662}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &8846973523888202977 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4984952003260156543, guid: 7923ee430c62aa545b8520d1f0e13eee, type: 3}
-  m_PrefabInstance: {fileID: 4605169094698069662}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &467118922428213789
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8846973523888202977}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 034bc47afcbf5e141a58d5c20b7808e4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1001 &4648910276407231501
 PrefabInstance:
   m_ObjectHideFlags: 0

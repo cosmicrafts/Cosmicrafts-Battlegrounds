@@ -903,6 +903,7 @@ MonoBehaviour:
   SpawnAreaSize: 0
   DodgeChance: 0
   Level: 1
+  companions: []
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 6245011729380265433}
@@ -952,8 +953,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
+  DetectionRange: 86.2
+  AttackRange: 35
   CanAttack: 1
-  RangeDetector: 58
   CoolDown: 0.25
   BulletSpeed: 99
   BulletDamage: 1
@@ -965,6 +967,10 @@ MonoBehaviour:
   Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   Cannons:
   - {fileID: 1478323959484795093}
+  rangeVisualizationType: 1
+  lineSegments: 12
+  rangeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  rangeLineWidth: 0.1
 --- !u!135 &2198226034328220042
 SphereCollider:
   m_ObjectHideFlags: 0

@@ -50,6 +50,17 @@ namespace Cosmicrafts
         private Unit MyUnit;
         private HashSet<Unit> InRange;  // Use HashSet for O(1) lookups
         private Unit Target;
+        
+        // Add state for patrol/engage behavior
+        private enum ShooterState 
+        {
+            Patrolling,  // No enemies detected, default behavior
+            Engaging     // Enemy detected, combat behavior
+        }
+        private ShooterState currentState = ShooterState.Patrolling;
+        
+        // Public accessor for current state
+        public bool IsEngagingTarget() => currentState == ShooterState.Engaging;
 
         private void Awake()
         {
@@ -109,14 +120,37 @@ namespace Cosmicrafts
                     MyShip.ResetDestination(); // Go back to default behavior
                 }
                 Target = null; // Clear target if we can't attack
+                currentState = ShooterState.Patrolling; // Reset state
                 return; // Exit if dead, disabled, or casting
             }
 
-            // 1. Validate Current Target
+            // 1. Check if we have any potential targets in detection range
+            bool haveDetectedEnemies = InRange.Count > 0;
+            
+            // If we have no enemies in detection range, resume patrolling
+            if (!haveDetectedEnemies)
+            {
+                // If we were previously engaging but now have no targets, reset
+                if (currentState == ShooterState.Engaging)
+                {
+                    // Clear target and reset to default movement
+                    if (Target != null) SetTarget(null);
+                    if (MyShip != null && StopToAttack) MyShip.ResetDestination();
+                    currentState = ShooterState.Patrolling;
+                }
+                
+                // In patrol mode, don't try to find or engage targets
+                return;
+            }
+            
+            // If we reach here, we have detected enemies, so enter engaging state
+            currentState = ShooterState.Engaging;
+
+            // 2. Validate Current Target (now that we know we have at least one enemy)
             bool targetStillValid = Target != null && !Target.GetIsDeath();
             bool targetInAttackRange = targetStillValid && (Vector3.Distance(transform.position, Target.transform.position) <= AttackRange);
 
-            // 2. If current target is invalid or out of attack range, find a new one
+            // 3. If current target is invalid or out of attack range, find a new one
             if (!targetStillValid || !targetInAttackRange) 
             {   
                 // If the target became invalid/out of range, clear it before finding new
@@ -129,25 +163,29 @@ namespace Cosmicrafts
                 targetInAttackRange = targetStillValid && (Vector3.Distance(transform.position, Target.transform.position) <= AttackRange);
             }
 
-            // 3. Handle Ship Movement (if applicable)
-            if (MyShip != null && StopToAttack)
+            // 4. Only handle movement if we have a valid target
+            if (targetStillValid)
             {
-                if (targetStillValid) // We have a valid target (might be out of range still)
-                {   
+                // Handle Ship Movement (if applicable)
+                if (MyShip != null && StopToAttack)
+                {
                     // Tell ship to move towards target and stop just inside attack range
                     MyShip.SetDestination(Target.transform.position, AttackRange * 0.9f); 
                 }
-                else // No valid target currently
+                
+                // Rotate towards target even if not yet in attack range
+                RotateTowardsTarget();
+                
+                // 5. Attempt to Shoot if target is valid AND in attack range
+                if (targetInAttackRange) 
                 {
-                    // Resume default movement
-                    MyShip.ResetDestination();
+                    ShootTarget(); // This checks cooldown internally
                 }
             }
-            
-            // 4. Attempt to Shoot if target is valid AND in attack range
-            if (targetInAttackRange) // Check the re-evaluated range status
+            else if (MyShip != null && StopToAttack)
             {
-                ShootTarget(); // This checks cooldown internally
+                // No valid target found among detected enemies, resume default patrol
+                MyShip.ResetDestination();
             }
         }
 
@@ -258,22 +296,26 @@ namespace Cosmicrafts
             rangeLineRenderer.SetPositions(new Vector3[] { localStart, localEnd });
         }
 
+        private void RotateTowardsTarget()
+        {
+            // Only rotate if we're in combat state, have rotation enabled, and have a valid target
+            if (currentState != ShooterState.Engaging || !RotateToEnemy || Target == null) return;
+
+            Vector3 direction = (Target.transform.position - transform.position).normalized;
+            direction.y = 0; // Keep rotation on horizontal plane
+            if (direction.sqrMagnitude < 0.0001f) return;
+
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
+        }
+
         public void ShootTarget()
         {
             // Target validity and range is checked in Update before calling this
             if (Target == null) return; // Still good to have a basic null check
             
-            // Rotate if needed
-            if (RotateToEnemy)
-            {
-                Vector3 direction = (Target.transform.position - transform.position).normalized;
-                direction.y = 0; 
-                if (direction.sqrMagnitude > 0.01f) 
-                {
-                    Quaternion targetRotation = Quaternion.LookRotation(direction);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
-                }
-            }
+            // Rotate (redundant but safe if ShootTarget called directly elsewhere)
+            RotateTowardsTarget();
 
             // Fire if cooldown is ready
             if (DelayShoot <= 0f)
@@ -347,7 +389,8 @@ namespace Cosmicrafts
         // SetTarget now only updates the Target variable. Movement is handled in Update.
         public void SetTarget(Unit target)
         {
-            if (target != null && (target == MyUnit || target.MyTeam == MyUnit.MyTeam)) 
+            // Use IsAlly instead of direct team comparison
+            if (target != null && MyUnit.IsAlly(target))
             {   
                 if (Target == target) Target = null; // Clear if setting self/friendly
                 return; 
@@ -357,19 +400,17 @@ namespace Cosmicrafts
             if (Target != target) 
             { 
                 Target = target;
-                // No ship movement logic here anymore - handled in Update
             }
         }
 
         // AddEnemy just adds to the list. Update loop handles choosing target.
         public void AddEnemy(Unit enemy)
         {
-            if (enemy == null || enemy.GetIsDeath() || enemy == MyUnit || enemy.MyTeam == MyUnit.MyTeam) return;
+            // Use !IsEnemy to check for invalid targets (null, self, allies, dead)
+            if (enemy == null || enemy.GetIsDeath() || !MyUnit.IsEnemy(enemy)) return;
             
             // Add valid enemy to potential targets list
             InRange.Add(enemy);
-            
-            // No need to immediately FindNewTarget here. Update loop will handle it.
         }
 
         // RemoveEnemy just removes from the list. Update loop handles target loss.
@@ -396,13 +437,12 @@ namespace Cosmicrafts
             Unit closestEnemy = null;
             float closestDistanceSqr = float.MaxValue;
             
-            // Use a temporary list to iterate while potentially modifying InRange
             List<Unit> currentInRange = new List<Unit>(InRange);
             
             foreach (Unit potentialTarget in currentInRange)
             {
-                // Check basic validity: Not null, not dead, not friendly
-                if (potentialTarget == null || potentialTarget.GetIsDeath() || potentialTarget.MyTeam == MyUnit.MyTeam)
+                // Check validity using IsEnemy, also check death state
+                if (potentialTarget == null || potentialTarget.GetIsDeath() || !MyUnit.IsEnemy(potentialTarget))
                 { 
                     InRange.Remove(potentialTarget); // Clean up invalid entries from main set
                     continue; 
@@ -417,12 +457,10 @@ namespace Cosmicrafts
                 }
             }
             
-            // Update the target if the closest enemy found is different from the current one
             if(Target != closestEnemy) 
             { 
                 SetTarget(closestEnemy); 
             }
-            // If no valid enemy found, SetTarget(null) will be called implicitly if Target was previously set
         }
 
         public void StopAttack()
@@ -430,6 +468,7 @@ namespace Cosmicrafts
             CanAttack = false;
             InRange.Clear();
             SetTarget(null);
+            currentState = ShooterState.Patrolling;
             // Stop Ship if it was moving towards a target
             if (MyShip != null && StopToAttack)
             {
@@ -468,6 +507,9 @@ namespace Cosmicrafts
             // Clear current targets and enemies
             Target = null;
             InRange.Clear();
+            
+            // Reset state
+            currentState = ShooterState.Patrolling;
             
             // Reset detection range in case it was modified
             if (EnemyDetector != null) EnemyDetector.radius = DetectionRange;

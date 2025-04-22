@@ -241,7 +241,7 @@ MonoBehaviour:
     behaviorType: 1
     orbitDistance: 4.4
     orbitSpeed: 180
-    tintColor: {r: 1, g: 0, b: 0.7932253, a: 0}
+    tintColor: {r: 0.49507785, g: 1, b: 0, a: 0}
     scale: 1.024
   IsInmortal: 0
   flagShield: 0
@@ -265,7 +265,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
-  DetectionRange: 111.2
+  DetectionRange: 54.4
   AttackRange: 46.7
   CanAttack: 1
   CoolDown: 0.25

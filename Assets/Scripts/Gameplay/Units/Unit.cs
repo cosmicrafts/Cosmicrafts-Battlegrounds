@@ -153,7 +153,7 @@ namespace Cosmicrafts
             if (MyOutline != null)
             {
                 MyOutline.SetColor(GameMng.GM.GetColorUnit(MyTeam, PlayerId));
-                MyOutline.SetThickness(Size * 0.00015f);
+                MyOutline.SetThickness(Size * 0.0000420f);
             }
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
@@ -887,6 +887,32 @@ namespace Cosmicrafts
                 }
             }
             activeCompanions.Clear();
+        }
+
+        // --- Team Relationship Methods ---
+
+        /// <summary>
+        /// Checks if the provided unit is an ally (same team, not self).
+        /// </summary>
+        public bool IsAlly(Unit otherUnit)
+        {
+            if (otherUnit == null || otherUnit == this) // Null or self is not an ally
+                return false;
+            
+            // True if teams match
+            return this.MyTeam == otherUnit.MyTeam;
+        }
+
+        /// <summary>
+        /// Checks if the provided unit is an enemy (different team).
+        /// </summary>
+        public bool IsEnemy(Unit otherUnit)
+        {
+            if (otherUnit == null || otherUnit == this) // Null or self is not an enemy
+                return false;
+            
+            // True if teams are different (assumes only two opposing teams for now)
+            return this.MyTeam != otherUnit.MyTeam;
         }
     }
     

@@ -221,16 +221,18 @@ namespace Cosmicrafts
                     case SkillName.BotEnergyMultiplier:
                         // Use the static BOT reference instead of the removed Bots list
                         // Also need to access the Bot component's SpeedEnergy (assuming it exists)
-                        if (GameMng.BOT != null)
-                        {
-                            // Assuming Bot.cs will have a SpeedEnergy property similar to Player.cs
-                            // If Bot.cs doesn't have SpeedEnergy, this needs adjustment.
-                            // For now, let's comment it out to prevent errors until Bot.cs is confirmed/updated.
-                            // GameMng.BOT.SpeedEnergy *= Multiplier; 
-                            Debug.LogWarning("ApplyGameplayModifier: BotEnergyMultiplier needs Bot.cs to have SpeedEnergy property.");
-                        }
-                        else
-                            Debug.LogWarning("ApplyGameplayModifier: Enemy Bot (GameMng.BOT) not found for BotEnergyMultiplier.");
+                        // === CODE COMMENTED OUT TO FIX ERROR ===
+                        // if (GameMng.BOT != null)
+                        // {
+                        //     // Assuming Bot.cs will have a SpeedEnergy property similar to Player.cs
+                        //     // If Bot.cs doesn't have SpeedEnergy, this needs adjustment.
+                        //     // For now, let's comment it out to prevent errors until Bot.cs is confirmed/updated.
+                        //     // GameMng.BOT.SpeedEnergy *= Multiplier; 
+                        //     Debug.LogWarning("ApplyGameplayModifier: BotEnergyMultiplier needs Bot.cs to have SpeedEnergy property.");
+                        // }
+                        // else
+                        //     Debug.LogWarning("ApplyGameplayModifier: Enemy Bot (GameMng.BOT) not found for BotEnergyMultiplier.");
+                        Debug.LogWarning("ApplyGameplayModifier: BotEnergyMultiplier skill is currently disabled due to Bot.cs removal."); // Added warning
                         break;
                     default:
                         Debug.LogWarning($"Skill {skillName} not recognized for gameplay modification.");

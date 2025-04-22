@@ -51,18 +51,6 @@ public class WaveController : MonoBehaviour
             return;
         }
         
-        // Add Bot component if not already present
-        Bot botComponent = baseUnit.GetComponent<Bot>();
-        if (botComponent == null)
-        {
-            botComponent = baseUnit.gameObject.AddComponent<Bot>();
-            botComponent.botName = $"WaveBot_{actualWave}";
-            botComponent.waveNumber = actualWave;
-        }
-        
-        // Notify the bot that its wave is active
-        botComponent.OnWaveActivated(actualWave);
-        
         // Set it as the enemy base in GameMng
         GameMng.GM.Targets[0] = baseUnit;
         

@@ -660,9 +660,18 @@ namespace Cosmicrafts
                 
                 if (companionUnit != null)
                 {
-                    // Set basic properties
+                    // IMPORTANT: Set basic properties first before initializing controllers
+                    // This ensures the companion's team and ID are set before any behavior logic runs
                     companionUnit.MyTeam = this.MyTeam;
                     companionUnit.PlayerId = this.PlayerId;
+                    
+                    // Explicitly enforce friendly status with shooter if present
+                    Shooter companionShooter = companionGO.GetComponent<Shooter>();
+                    if (companionShooter != null)
+                    {
+                        // Immediately stop any active attacks to ensure it doesn't target parent
+                        companionShooter.StopAttack();
+                    }
                     
                     // Apply configuration to the companion
                     CompanionController controller = companionGO.GetComponent<CompanionController>();
@@ -711,9 +720,11 @@ namespace Cosmicrafts
                     if (shooter == null)
                     {
                         shooter = companionGO.AddComponent<Shooter>();
-                        shooter.RangeDetector = 10f;  // Default range
+                        // FIXED: Use AttackRange instead of deprecated RangeDetector  
+                        shooter.AttackRange = 10f;  // Default range
                         shooter.CoolDown = 0.5f;      // Fast firing rate
                         shooter.BulletDamage = 2;    // Lower damage than typical units
+                        shooter.DetectionRange = shooter.AttackRange * 1.2f; // Set detection range larger than attack range
                         
                         // Try to find a bullet prefab from parent if available
                         Shooter parentShooter = GetComponent<Shooter>();
@@ -736,6 +747,13 @@ namespace Cosmicrafts
                                 Debug.LogWarning("No bullet prefab found for attacker companion. Please assign one manually.");
                             }
                         }
+                    }
+                    
+                    // Ensure ranges are consistent
+                    if (shooter != null)
+                    {
+                        shooter.AttackRange = 10f;
+                        shooter.UpdateRangeVisualizer();
                     }
                     break;
                     
@@ -780,10 +798,13 @@ namespace Cosmicrafts
                         controller.orbitSpeed = 120f; // Move faster
                     }
                     
-                    // If it has a shooter, increase its range
+                    // If it has a shooter, increase detection range
                     if (shooter != null)
                     {
-                        shooter.RangeDetector = 15f;  // Longer detection range
+                        // FIXED: Use DetectionRange instead of deprecated RangeDetector
+                        shooter.DetectionRange = 15f; // Scouts have excellent detection
+                        shooter.AttackRange = Mathf.Min(10f, shooter.DetectionRange); // Keep attack range reasonable
+                        shooter.UpdateRangeVisualizer();
                     }
                     
                     // If it has a ship component, increase its speed

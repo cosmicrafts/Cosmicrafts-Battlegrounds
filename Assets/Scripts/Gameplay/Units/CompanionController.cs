@@ -1,4 +1,5 @@
 using UnityEngine;
+using SensorToolkit; // Add missing namespace for SteeringRig
 
 namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.cs
 {
@@ -8,7 +9,7 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
         [Header("Orbit Settings")]
         [SerializeField] public float orbitDistance = 3.0f; // How far to orbit
         [SerializeField] public float orbitSpeed = 90.0f; // Degrees per second
-        [SerializeField] private float followLerpSpeed = 5.0f; // How quickly to move to the target orbit position
+        [SerializeField] private float followLerpSpeed = 5.0f; // How quickly to move to the target orbit position (Used if Ship component missing)
 
         [Header("Orbit Style")]
         [SerializeField] private OrbitStyle orbitStyle = OrbitStyle.Circle;
@@ -27,16 +28,27 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
         private Unit parentUnit;
         private Unit myUnit;
         private Ship myShip; // Optional: Use Ship component for movement if available
+        private Shooter myShooter; // Reference to shooter component if available
         private Renderer[] renderers; // For appearance changes like tint color
         private float currentOrbitAngle = 0.0f;
         private bool isAbandoning = false;
         private float abandonTimer = 0f;
+        private SteeringRig mySteeringRig; // Cache the steering rig if ship uses one
 
         void Awake()
         {
             myUnit = GetComponent<Unit>();
             myShip = GetComponent<Ship>(); // Try to get Ship component
+            myShooter = GetComponent<Shooter>(); // Get shooter component if exists
             renderers = GetComponentsInChildren<Renderer>();
+            
+            // If we have a ship component, try to get its steering rig
+            if (myShip != null)
+            {
+                mySteeringRig = myShip.MySt; 
+                // Configure ship for companion role
+                ConfigureShipForCompanion();
+            }
         }
 
         /// <summary>
@@ -46,8 +58,70 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
         {
             parentUnit = parent;
             
+            // Set shooter to only target enemies, not parent or allies
+            ConfigureShooterTargeting();
+            
             // Randomize starting angle slightly to avoid perfect stacking
             currentOrbitAngle = Random.Range(0f, 360f); 
+            
+            // Ensure ship is configured correctly
+            ConfigureShipForCompanion(); 
+        }
+        
+        /// <summary>
+        /// Configures the Ship/SteeringRig component for companion behavior 
+        /// (prevents default AI, ensures responsiveness).
+        /// </summary>
+        private void ConfigureShipForCompanion()
+        {
+            if (myShip != null && mySteeringRig != null)
+            {
+                // Stop the Ship from seeking its default target (like the enemy base)
+                // We achieve this by constantly setting the destination in Update
+                // No need to set IsSeeking (it's read-only)
+                mySteeringRig.Destination = transform.position; // Set initial destination to current pos
+                
+                // Keep rotation enabled if the shooter needs it
+                // Shooter component handles its own rotation via `RotateToEnemy` flag
+                mySteeringRig.RotateTowardsTarget = false; // We handle rotation or let Shooter handle it
+                
+                // Adjust ship parameters for responsiveness
+                myShip.StoppingDistance = 0.1f; 
+                myShip.AvoidanceRange = 1f; // Small avoidance range for nearby obstacles
+                myShip.AlignRotationWithMovement = false; // Let this script or Shooter handle rotation
+
+                // Ensure ship can move
+                myShip.CanMove = true;
+                
+               // Debug.Log($"Configured Ship/SteeringRig for companion {gameObject.name}");
+            }
+        }
+        
+        /// <summary>
+        /// Configure shooter to only target enemies, not the parent or allies
+        /// </summary>
+        private void ConfigureShooterTargeting()
+        {
+            if (myShooter != null && myUnit != null)
+            {
+                 // Get existing enemy detector trigger
+                 if (myShooter.EnemyDetector != null)
+                 {
+                     // Add/get the target filter component
+                     CompanionTargetFilter filter = myShooter.EnemyDetector.gameObject.GetComponent<CompanionTargetFilter>();
+                     if (filter == null)
+                     {
+                         filter = myShooter.EnemyDetector.gameObject.AddComponent<CompanionTargetFilter>();
+                     }
+                     // Initialize filter with references to this companion and its unit
+                     filter.Initialize(this, myUnit, myShooter);
+                 }
+                 
+                 // Immediately stop any attack to clear potential friendly target
+                 myShooter.StopAttack();
+                    
+                 // Debug.Log($"Configured shooter targeting for companion {gameObject.name} to only target enemies");
+            }
         }
         
         /// <summary>
@@ -76,6 +150,9 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                     }
                 }
             }
+            
+            // Re-configure ship settings after applying config
+            ConfigureShipForCompanion();
         }
 
         void Update()
@@ -109,77 +186,63 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                 return;
             }
             
-            // If parent is disabled and we should match parent state, don't update position
+            // If parent is disabled and we should match parent state, prevent movement update
             if (matchParentState && parentUnit.GetIsDisabled() && !parentUnit.GetIsDeath())
             {
-                return;
+                 if(myShip != null) myShip.SetDestination(transform.position, 0.1f); // Tell ship to stop
+                 return;
             }
             
             // Calculate the desired orbit position based on selected style
-            Vector3 targetPosition;
+            Vector3 targetPosition = CalculateTargetOrbitPosition();
+
+            // Move the companion towards the calculated orbit position
+            MoveToTargetPosition(targetPosition);
             
+            // Set companion rotation based on look direction, unless Shooter is rotating
+            SetLookDirection(targetPosition);
+        }
+        
+        Vector3 CalculateTargetOrbitPosition()
+        {
+            if (parentUnit == null) return transform.position;
+
             switch (orbitStyle)
             {
                 case OrbitStyle.Circle:
-                    // Update orbit angle
-                    currentOrbitAngle += orbitSpeed * Time.deltaTime;
-                    currentOrbitAngle %= 360f; // Keep angle within bounds
-                    
-                    // Calculate orbit position
-                    Vector3 offset = new Vector3(
-                        Mathf.Sin(currentOrbitAngle * Mathf.Deg2Rad), 
-                        verticalOffset, 
-                        Mathf.Cos(currentOrbitAngle * Mathf.Deg2Rad)
-                    ) * orbitDistance;
-                    
-                    targetPosition = parentUnit.transform.position + offset;
-                    break;
+                    currentOrbitAngle = (currentOrbitAngle + orbitSpeed * Time.deltaTime) % 360f;
+                    Vector3 offset = new Vector3(Mathf.Sin(currentOrbitAngle * Mathf.Deg2Rad), verticalOffset, Mathf.Cos(currentOrbitAngle * Mathf.Deg2Rad)) * orbitDistance;
+                    return parentUnit.transform.position + offset;
                     
                 case OrbitStyle.Ellipse:
-                    // Update orbit angle
-                    currentOrbitAngle += orbitSpeed * Time.deltaTime;
-                    currentOrbitAngle %= 360f;
-                    
-                    // Calculate elliptical orbit
+                    currentOrbitAngle = (currentOrbitAngle + orbitSpeed * Time.deltaTime) % 360f;
                     float a = orbitDistance; // Semi-major axis
                     float b = orbitDistance * (1f - orbitEccentricity); // Semi-minor axis
-                    
-                    Vector3 ellipseOffset = new Vector3(
-                        a * Mathf.Sin(currentOrbitAngle * Mathf.Deg2Rad),
-                        verticalOffset,
-                        b * Mathf.Cos(currentOrbitAngle * Mathf.Deg2Rad)
-                    );
-                    
-                    targetPosition = parentUnit.transform.position + ellipseOffset;
-                    break;
+                    Vector3 ellipseOffset = new Vector3(a * Mathf.Sin(currentOrbitAngle * Mathf.Deg2Rad), verticalOffset, b * Mathf.Cos(currentOrbitAngle * Mathf.Deg2Rad));
+                    return parentUnit.transform.position + ellipseOffset;
                     
                 case OrbitStyle.Fixed:
-                    // Maintain a fixed offset from parent
-                    targetPosition = parentUnit.transform.position + fixedOffset;
-                    break;
+                    return parentUnit.transform.position + fixedOffset;
                     
                 case OrbitStyle.Formation:
-                    // Maintain position relative to parent's forward direction
-                    targetPosition = parentUnit.transform.position + 
-                                     parentUnit.transform.right * fixedOffset.x +
-                                     parentUnit.transform.up * fixedOffset.y +
-                                     parentUnit.transform.forward * fixedOffset.z;
-                    break;
+                    return parentUnit.transform.position + 
+                           parentUnit.transform.right * fixedOffset.x +
+                           parentUnit.transform.up * fixedOffset.y +
+                           parentUnit.transform.forward * fixedOffset.z;
                     
                 default:
-                    targetPosition = parentUnit.transform.position;
-                    break;
+                    return parentUnit.transform.position;
             }
-
-            // Move the companion
-            MoveToTargetPosition(targetPosition);
-            
-            // Set companion rotation based on look direction
-            SetLookDirection(targetPosition);
         }
 
         private void SetLookDirection(Vector3 targetPosition)
         {
+            // If the Shooter is actively rotating towards an enemy, let it control rotation
+            if (myShooter != null && myShooter.RotateToEnemy && myShooter.GetIdTarget() != 0)
+            {
+                return; // Shooter handles rotation
+            }
+
             switch (lookDirection)
             {
                 case LookDirection.TowardParent:
@@ -188,8 +251,15 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                     break;
                     
                 case LookDirection.MovementDirection:
-                    if (Vector3.Distance(transform.position, targetPosition) > 0.1f)
-                        transform.rotation = Quaternion.LookRotation((targetPosition - transform.position).normalized);
+                     // Look towards the calculated target position if moving significantly
+                     if (Vector3.Distance(transform.position, targetPosition) > 0.1f)
+                     {    
+                         Vector3 direction = (targetPosition - transform.position).normalized;
+                         if (direction.sqrMagnitude > 0.01f) // Avoid zero direction
+                         {
+                            transform.rotation = Quaternion.LookRotation(direction);
+                         }
+                     }
                     break;
                     
                 case LookDirection.MatchParent:
@@ -205,55 +275,110 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
 
         private void MoveToTargetPosition(Vector3 targetPosition)
         {
-            if (myShip != null && myUnit.InControl()) // Use Ship component if available and unit can move
+            if (!myUnit.InControl()) return; // Don't move if disabled or casting
+            
+            if (myShip != null) 
             {
-                // Set a very small stopping distance to try and reach the exact orbit point
+                // Use the ship's movement system by setting its destination
                 myShip.SetDestination(targetPosition, 0.1f); 
             }
-            else // Fallback to simple Lerp movement if no Ship or unit is disabled
+            else // Fallback to simple Lerp movement if no Ship component
             {
-                // Prevent movement if unit cannot control itself (e.g., casting, disabled)
-                 if (myUnit.InControl()) 
-                 {
-                     transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * followLerpSpeed);
-                 }
+                 transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * followLerpSpeed);
             }
         }
         
         private void HandleAbandonment()
         {
             abandonTimer -= Time.deltaTime;
-            
             if (abandonTimer <= 0f)
             {
                 HandleParentLost();
-            }
-            else
-            {
-                // Optional: During abandonment, could do special effects or behaviors
-                // E.g., slowly drift away, flash, etc.
             }
         }
         
         private void HandleParentLost()
         {
-             // What happens when the parent dies or is lost?
-             
              if (!stayWithDeadParent)
              {
-                 Debug.Log($"Parent of {gameObject.name} lost. Destroying companion.");
-                 Destroy(gameObject);
+                 // Debug.Log($"Parent of {gameObject.name} lost. Destroying companion.");
+                 if (this != null && gameObject != null) Destroy(gameObject);
              }
              else
              {
-                 // We've chosen to stay after parent death
-                 // Could either keep orbiting the last known position or become independent
-                 Debug.Log($"Parent of {gameObject.name} lost. Companion is now independent.");
-                 
-                 // Make the companion independent
-                 // Note: You could implement a new behavior here for independent companions
+                 // Debug.Log($"Parent of {gameObject.name} lost. Companion is now independent.");
+                 // Become independent - stop orbiting
                  parentUnit = null;
+                 if (myShip != null) myShip.SetDestination(transform.position, 0.1f); // Stop moving
+                 // Could add logic here for independent behavior (e.g., patrol, return to base)
              }
+             parentUnit = null; // Ensure parent is null
+        }
+        
+        // Check if a unit is friendly to this companion
+        public bool IsFriendly(Unit other)
+        {
+            // Units are friendly if:
+            // 1. They are the parent unit
+            // 2. They are on the same team
+            if (other == null || myUnit == null) return false;
+            
+            return (other == parentUnit) || (other.MyTeam == myUnit.MyTeam);
+        }
+    }
+    
+    /// <summary>
+    /// Helper component added to the Shooter's EnemyDetector trigger 
+    /// to filter targets for companions.
+    /// </summary>
+    [RequireComponent(typeof(Collider))] // Ensure there's a collider to trigger events
+    public class CompanionTargetFilter : MonoBehaviour
+    {
+        private CompanionController companionController;
+        private Unit companionUnit;
+        private Shooter shooter;
+        
+        public void Initialize(CompanionController controller, Unit selfUnit, Shooter shooterComponent)
+        {
+            companionController = controller;
+            companionUnit = selfUnit;
+            shooter = shooterComponent;
+            
+            // Ensure the collider is a trigger
+            Collider col = GetComponent<Collider>();
+            if (col != null) col.isTrigger = true;
+        }
+        
+        void OnTriggerEnter(Collider other)
+        {
+            // Skip filtering if setup is incomplete or components are missing
+            if (companionController == null || companionUnit == null || shooter == null)
+                return;
+                
+            Unit unit = other.GetComponentInParent<Unit>();
+            if (unit != null && unit != companionUnit) // Ensure we don't target self
+            {
+                // Only target enemies (check using the controller's IsFriendly method)
+                if (!companionController.IsFriendly(unit) && !unit.GetIsDeath())
+                {
+                    // Add as valid target
+                    shooter.AddEnemy(unit);
+                }
+            }
+        }
+        
+        void OnTriggerExit(Collider other)
+        {
+            // Skip if setup is incomplete or components are missing
+            if (shooter == null)
+                return;
+            
+            Unit unit = other.GetComponentInParent<Unit>();
+            if (unit != null)
+            {
+                // Remove from potential targets
+                shooter.RemoveEnemy(unit);
+            }
         }
     }
     
@@ -275,7 +400,7 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
     {
         TowardParent,       // Always face the parent
         MovementDirection,   // Face the direction of movement
-        MatchParent,        // Match parent's rotation
+        MatchParent,        // Match parents rotation
         Independent         // Don't adjust rotation automatically
     }
 } 

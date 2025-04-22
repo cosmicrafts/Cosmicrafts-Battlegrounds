@@ -7,5 +7,9 @@ public class NFTsUnit : NFTsCard
 
     public int Damage { get; set; }
 
+    // Ranges to be used by Shooter component
+    public float AttackRange { get; set; } = 10f;
+    public float DetectionRange { get; set; } = 15f;
+
     public float Speed { get; set; }
 }

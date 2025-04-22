@@ -239,10 +239,10 @@ MonoBehaviour:
   - name: compa
     companionPrefab: {fileID: 2198226034328220048, guid: 21b572bfec81502488150050624ed5d4, type: 3}
     behaviorType: 1
-    orbitDistance: 3.33
-    orbitSpeed: 19.8
+    orbitDistance: 4.4
+    orbitSpeed: 180
     tintColor: {r: 1, g: 0, b: 0.7932253, a: 0}
-    scale: 0
+    scale: 1.024
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 5171655099922868828}
@@ -265,8 +265,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
+  DetectionRange: 111.2
+  AttackRange: 46.7
   CanAttack: 1
-  RangeDetector: 26.7
   CoolDown: 0.25
   BulletSpeed: 99
   BulletDamage: 4
@@ -278,6 +279,10 @@ MonoBehaviour:
   Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   Cannons:
   - {fileID: 687067266193771118}
+  rangeVisualizationType: 1
+  lineSegments: 12
+  rangeColor: {r: 0.27519864, g: 1, b: 0.015686274, a: 1}
+  rangeLineWidth: 0.72
 --- !u!135 &2198226034328220042
 SphereCollider:
   m_ObjectHideFlags: 0

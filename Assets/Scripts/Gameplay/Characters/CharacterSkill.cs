@@ -104,7 +104,19 @@ namespace Cosmicrafts
                     unit.GetComponent<Ship>().SpawnAreaSize += Multiplier;
                     break;
                 case SkillName.RangeDetector:
-                    unit.GetComponent<Shooter>().RangeDetector += Multiplier;
+                    // FIXED: Modify the Shooter component's AttackRange (formerly RangeDetector property)
+                    Shooter shooter = unit.GetComponent<Shooter>();
+                    if (shooter != null)
+                    {
+                        shooter.AttackRange += Multiplier;
+                        // Also update detection range to maintain relationship
+                        shooter.DetectionRange = Mathf.Max(shooter.DetectionRange, shooter.AttackRange * 1.1f);
+                        shooter.UpdateRangeVisualizer();
+                    }
+                    else
+                    {
+                        Debug.LogWarning($"Unit {unit.name} does not have a Shooter component to apply RangeDetector skill.");
+                    }
                     break;
                 case SkillName.HitPointsMultiplier:
                     unit.HitPoints = (int)(unit.HitPoints * Multiplier);

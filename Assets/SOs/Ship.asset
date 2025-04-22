@@ -17,10 +17,10 @@ MonoBehaviour:
   Name: Deva
   LocalID: 1
   Faction: 0
-  NftType: 0
-  HitPoints: 88
-  Shield: 88
+  NftType: 3
+  HitPoints: 120
+  Shield: 150
   EnergyCost: 1
-  Damage: 10
-  Speed: 33.9
-  Level: 2
+  Damage: 88
+  Speed: 10.4
+  Level: 7

@@ -1015,8 +1015,14 @@ namespace Cosmicrafts
             if (otherUnit == null || otherUnit == this) // Null or self is not an enemy
                 return false;
             
+            // Add diagnostic logging
+            FactionRelationship relationship = FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction);
+            bool isEnemy = relationship == FactionRelationship.Hostile;
+            
+            Debug.Log($"IsEnemy check: {this.gameObject.name}({this.MyFaction}) vs {otherUnit.gameObject.name}({otherUnit.MyFaction}) = {isEnemy} (Relationship: {relationship})");
+            
             // Use FactionManager to determine relationship
-            return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == FactionRelationship.Hostile;
+            return isEnemy;
         }
         
         /// <summary>

@@ -42,6 +42,9 @@ namespace Cosmicrafts
         [SerializeField][Range(12, 72)] private int lineSegments = 36; // Number of segments for the circle
         [SerializeField] private Color rangeColor = Color.yellow;
         [SerializeField] private float rangeLineWidth = 0.1f;
+        
+        // Cached scale to detect changes
+        private Vector3 lastScale;
 
         private LineRenderer rangeLineRenderer;
         private ParticleSystem[] MuzzleFlash;
@@ -61,6 +64,22 @@ namespace Cosmicrafts
         
         // Public accessor for current state
         public bool IsEngagingTarget() => currentState == ShooterState.Engaging;
+        
+        // Get the actual attack range in world space, accounting for unit scale
+        public float GetWorldAttackRange()
+        {
+            // Use the largest scale component to determine world space range
+            float maxScale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            return AttackRange * maxScale;
+        }
+        
+        // Get the actual detection range in world space, accounting for unit scale
+        public float GetWorldDetectionRange()
+        {
+            // Use the largest scale component to determine world space range
+            float maxScale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            return DetectionRange * maxScale;
+        }
 
         private void Awake()
         {
@@ -85,9 +104,12 @@ namespace Cosmicrafts
             // Cache common components early (they won't change)
             if (MyUnit == null) MyUnit = GetComponent<Unit>();
             if (MyShip == null) MyShip = GetComponent<Ship>();
+            
+            // Store initial scale
+            lastScale = transform.lossyScale;
 
-            // Sync detector radius at startup
-            EnemyDetector.radius = DetectionRange;
+            // Sync detector radius at startup with world scale
+            EnemyDetector.radius = GetWorldDetectionRange();
 
             MuzzleFlash = new ParticleSystem[Cannons.Length];
 
@@ -112,6 +134,19 @@ namespace Cosmicrafts
 
         void Update()
         {
+            // Check if scale has changed and update visualizer if needed
+            if (lastScale != transform.lossyScale)
+            {
+                lastScale = transform.lossyScale;
+                UpdateRangeVisualizer();
+                
+                // Update detector radius if scale changed
+                if (EnemyDetector != null)
+                {
+                    EnemyDetector.radius = GetWorldDetectionRange();
+                }
+            }
+            
             if (MyUnit.GetIsDeath() || !CanAttack || !MyUnit.InControl())
             {
                 // If we cannot attack, ensure ship isn't trying to close distance to a target
@@ -148,7 +183,11 @@ namespace Cosmicrafts
 
             // 2. Validate Current Target (now that we know we have at least one enemy)
             bool targetStillValid = Target != null && !Target.GetIsDeath();
-            bool targetInAttackRange = targetStillValid && (Vector3.Distance(transform.position, Target.transform.position) <= AttackRange);
+            
+            // Use world space attack range in distance check
+            float worldAttackRange = GetWorldAttackRange();
+            bool targetInAttackRange = targetStillValid && 
+                (Vector3.Distance(transform.position, Target.transform.position) <= worldAttackRange);
 
             // 3. If current target is invalid or out of attack range, find a new one
             if (!targetStillValid || !targetInAttackRange) 
@@ -160,7 +199,8 @@ namespace Cosmicrafts
                 
                 // Re-evaluate attack range for the newly found target (if any)
                 targetStillValid = Target != null && !Target.GetIsDeath();
-                targetInAttackRange = targetStillValid && (Vector3.Distance(transform.position, Target.transform.position) <= AttackRange);
+                targetInAttackRange = targetStillValid && 
+                    (Vector3.Distance(transform.position, Target.transform.position) <= worldAttackRange);
             }
 
             // 4. Only handle movement if we have a valid target
@@ -170,7 +210,8 @@ namespace Cosmicrafts
                 if (MyShip != null && StopToAttack)
                 {
                     // Tell ship to move towards target and stop just inside attack range
-                    MyShip.SetDestination(Target.transform.position, AttackRange * 0.9f); 
+                    // Use world space attack range for movement
+                    MyShip.SetDestination(Target.transform.position, worldAttackRange * 0.9f); 
                 }
                 
                 // Rotate towards target even if not yet in attack range
@@ -195,7 +236,8 @@ namespace Cosmicrafts
             // Ensure detector radius always matches the range value used for visualization
             if (EnemyDetector != null)
             {
-                EnemyDetector.radius = DetectionRange;
+                // Set detector radius to world scale detection range
+                EnemyDetector.radius = GetWorldDetectionRange();
             }
             else { 
                 Debug.LogError($"EnemyDetector is missing on {gameObject.name}! Cannot sync range.", this);
@@ -256,7 +298,7 @@ namespace Cosmicrafts
 
         private void DrawRangeCircle()
         {
-            // Build circle in world space, then convert to local so scale has no effect
+            // Build circle that accurately represents the world-space attack range
             int segments = lineSegments;
             rangeLineRenderer.positionCount = segments + 1;
             rangeLineRenderer.loop = true;
@@ -265,15 +307,17 @@ namespace Cosmicrafts
             float angleStep = 360f / segments;
             Vector3[] points = new Vector3[segments + 1];
             Vector3 center = transform.position;
-
+            
+            // Use AttackRange directly for local space visualization
+            // The LineRenderer is a child of this object, so it inherits the scale
             for (int i = 0; i <= segments; i++)
             {
                 float angleRad = i * angleStep * Mathf.Deg2Rad;
-                // Compute offset on XZ plane using world units (y stays the same)
-                Vector3 worldOffset = new Vector3(Mathf.Sin(angleRad), 0f, Mathf.Cos(angleRad)) * AttackRange;
-                Vector3 worldPoint = center + worldOffset;
-
-                // Convert the world point to local space for the LineRenderer (which uses local space)
+                // Create the circle in local coordinates
+                Vector3 offset = new Vector3(Mathf.Sin(angleRad), 0f, Mathf.Cos(angleRad)) * AttackRange;
+                Vector3 worldPoint = center + offset;
+                
+                // Convert to local space for the LineRenderer
                 points[i] = transform.InverseTransformPoint(worldPoint);
             }
 
@@ -289,7 +333,7 @@ namespace Cosmicrafts
             // Start point is always the origin of the LineRenderer (local zero)
             Vector3 localStart = Vector3.zero;
 
-            // Compute end point in world space, then convert to local
+            // Compute end point using AttackRange, not accounting for scale (because LineRenderer inherits scale)
             Vector3 endWorld = transform.position + transform.forward * AttackRange;
             Vector3 localEnd = transform.InverseTransformPoint(endWorld);
 
@@ -554,7 +598,10 @@ namespace Cosmicrafts
             currentState = ShooterState.Patrolling;
             
             // Reset detection range in case it was modified
-            if (EnemyDetector != null) EnemyDetector.radius = DetectionRange;
+            if (EnemyDetector != null) 
+            {
+                EnemyDetector.radius = GetWorldDetectionRange();
+            }
             
             // Update the visualizer
             UpdateRangeVisualizer();

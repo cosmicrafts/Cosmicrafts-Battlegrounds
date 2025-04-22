@@ -322,8 +322,11 @@
 
         void ApplyAoEDamage()
         {
-            // Find all colliders in the AoE radius
-            Collider[] hitColliders = Physics.OverlapSphere(transform.position, AoERadius);
+            // Scale the AoE radius by the projectile's scale for consistent behavior
+            float scaledRadius = AoERadius * Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            
+            // Find all colliders in the AoE radius using world-space scaled radius
+            Collider[] hitColliders = Physics.OverlapSphere(transform.position, scaledRadius);
             
             foreach (Collider hitCollider in hitColliders)
             {

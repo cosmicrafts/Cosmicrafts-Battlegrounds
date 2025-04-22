@@ -810,7 +810,7 @@ GameObject:
   - component: {fileID: 2198226034328220042}
   - component: {fileID: 2198226034328220043}
   m_Layer: 3
-  m_Name: U_ALL_1
+  m_Name: Ship
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -894,8 +894,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   IsDeath: 0
-  PlayerId: 1
-  MyTeam: 0
+  MyFaction: 0
   HitPoints: 80
   Shield: 80
   ShieldDelay: 1.41
@@ -953,8 +952,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
-  DetectionRange: 86.2
-  AttackRange: 35
+  DetectionRange: 95.9
+  AttackRange: 83.5
   CanAttack: 1
   CoolDown: 0.25
   BulletSpeed: 99
@@ -969,7 +968,7 @@ MonoBehaviour:
   - {fileID: 1478323959484795093}
   rangeVisualizationType: 1
   lineSegments: 12
-  rangeColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  rangeColor: {r: 1, g: 0.10047615, b: 0.015686274, a: 1}
   rangeLineWidth: 0.1
 --- !u!135 &2198226034328220042
 SphereCollider:

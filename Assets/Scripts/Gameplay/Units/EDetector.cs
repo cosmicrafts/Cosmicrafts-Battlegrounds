@@ -17,8 +17,8 @@
         //New enemy detected (add to enemys list)
         private void OnTriggerEnter(Collider other)
         {
-            //Check if the detected object is an unit
-            if (other.CompareTag("Unit"))
+            //Check if the detected object is an unit or player
+            if (other.CompareTag("Unit") || other.CompareTag("Player"))
             {
                 //Check if the unit is an enemy unit and still alive
                 Unit OtherUnit = other.gameObject.GetComponent<Unit>();
@@ -33,8 +33,8 @@
         //Enemy out of range (delete from enemys list)
         private void OnTriggerExit(Collider other)
         {
-            //Check if the detected object is an unit
-            if (other.CompareTag("Unit"))
+            //Check if the detected object is an unit or player
+            if (other.CompareTag("Unit") || other.CompareTag("Player"))
             {
                 //Check if the unit is an enemy unit
                 Unit OtherUnit = other.gameObject.GetComponent<Unit>();

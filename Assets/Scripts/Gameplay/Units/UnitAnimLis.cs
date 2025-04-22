@@ -65,7 +65,7 @@ public class UnitAnimLis : MonoBehaviour
         if (MyUnit != null)
         {
             // For Red team (enemy) units, respawn them
-            if (MyUnit.MyTeam == Team.Red)
+            if (FactionManager.ConvertFactionToTeam(MyUnit.MyFaction) == Team.Red)
             {
                 Debug.Log($"Respawning enemy unit {MyUnit.gameObject.name} instead of destroying it");
                 

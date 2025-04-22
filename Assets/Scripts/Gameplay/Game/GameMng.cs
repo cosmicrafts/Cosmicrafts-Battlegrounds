@@ -101,7 +101,7 @@
             }
 
             int playerId = 1;
-            Team playerTeam = Team.Blue;
+            Faction playerFaction = Faction.Player;
             int playerBaseIndex = 1; // Blue base position index
 
             GameObject playerObject = Instantiate(playerCharacterSO.BasePrefab, BS_Positions[playerBaseIndex], Quaternion.identity);
@@ -117,8 +117,10 @@
             
             // --- Initialize Unit ---
             playerUnit.IsDeath = false; // Ensure alive state from the start
-            playerUnit.PlayerId = playerId;
-            playerUnit.MyTeam = playerTeam;
+            
+            // Set faction (this will automatically set MyTeam and PlayerId through properties)
+            playerUnit.MyFaction = playerFaction;
+            
             playerUnit.setId(GenerateUnitId());
 
             // Apply SO overrides for stats BEFORE base initialization
@@ -138,7 +140,7 @@
 
             // --- Initialize Player ---
             playerComponent.ID = playerId;
-            playerComponent.MyTeam = playerTeam;
+            playerComponent.MyFaction = playerFaction;
             // GameMng.P should be set in Player's Start method
 
             // --- Register ---
@@ -158,8 +160,8 @@
                 return;
             }
 
-            int enemyId = 2;
-            Team enemyTeam = Team.Red;
+            // Use Faction enum directly instead of separate Team and PlayerId values
+            Faction enemyFaction = Faction.Enemy;
             int enemyBaseIndex = 0; // Red base position index
 
             GameObject enemyObject = Instantiate(enemyCharacterSO.BasePrefab, BS_Positions[enemyBaseIndex], Quaternion.identity);
@@ -174,8 +176,10 @@
 
             // --- Initialize Unit ---
             enemyUnit.IsDeath = false; // Ensure alive state
-            enemyUnit.PlayerId = enemyId;
-            enemyUnit.MyTeam = enemyTeam;
+            
+            // Set faction (this will automatically set MyTeam and PlayerId through properties)
+            enemyUnit.MyFaction = enemyFaction;
+            
             enemyUnit.setId(GenerateUnitId());
 
             // Apply SO overrides for stats
@@ -219,8 +223,9 @@
         {
             isRespawning = true;
 
-            // Determine the correct spawn position based on the player's team
-            int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
+            // Determine the correct spawn position based on the player's faction
+            Team playerTeam = FactionManager.ConvertFactionToTeam(P.MyFaction);
+            int playerBaseIndex = playerTeam == Team.Blue ? 1 : 0;
             Vector3 respawnPosition = BS_Positions[playerBaseIndex];
 
             // Wait for respawn delay
@@ -274,13 +279,21 @@
                 unit.SetMaxShield(Mathf.Max(0, unit.GetMaxShield())); // Allow 0 shield
                 unit.Shield = unit.GetMaxShield();
 
-                // Set team and ID
-                unit.MyTeam = team;
-                unit.PlayerId = playerId == -1 ? (team == Team.Blue ? 1 : 2) : playerId; // Assign default ID if none provided
+                // Set faction - convert from legacy team and player ID
+                Faction unitFaction = team == Team.Blue ? Faction.Player : Faction.Enemy;
+                if (playerId != -1) {
+                    // If explicit player ID provided, use that to determine faction
+                    unitFaction = playerId == 1 ? Faction.Player : Faction.Enemy;
+                }
+                
+                // Set the faction directly
+                unit.MyFaction = unitFaction;
+
                 unit.setId(GenerateUnitId());
 
-                // Apply NFT data if provided
-                NFTsUnit nftData = GetNftCardData(nftKey, unit.PlayerId) as NFTsUnit;
+                // Apply NFT data if provided - fix PlayerId warning
+                int derivedPlayerId = unit.MyFaction == Faction.Player ? 1 : 2;
+                NFTsUnit nftData = GetNftCardData(nftKey, derivedPlayerId) as NFTsUnit;
                 if (nftData != null) {
                     unit.SetNfts(nftData); // Assuming SetNfts applies stats from the NFT
 
@@ -302,7 +315,7 @@
                 // Register with game manager
                 AddUnit(unit);
 
-                //Debug.Log($"Unit created: {unit.gameObject.name} | HP: {unit.HitPoints}/{unit.GetMaxHitPoints()} | Shield: {unit.Shield}/{unit.GetMaxShield()} | Team: {unit.MyTeam}");
+                //Debug.Log($"Unit created: {unit.gameObject.name} | HP: {unit.HitPoints}/{unit.GetMaxHitPoints()} | Shield: {unit.Shield}/{unit.GetMaxShield()} | Team: {unit.MyFaction}");
             }
             else
             {
@@ -316,28 +329,39 @@
         public Spell CreateSpell(GameObject obj, Vector3 position, Team team, string nftKey = "none", int playerId = -1)
         {
             if (obj == null) {
-                 Debug.LogError("CreateSpell called with a null prefab!");
+                Debug.LogError("CreateSpell called with a null prefab!");
                 return null;
             }
-             // Check if the prefab has a Spell component
-            if (obj.GetComponent<Spell>() == null)
+            
+            GameObject spellObj = Instantiate(obj, position, Quaternion.identity);
+            Spell spell = spellObj.GetComponent<Spell>();
+            
+            if (spell != null)
             {
-                Debug.LogError($"Spell prefab '{obj.name}' is missing Spell component! NFT Key: {nftKey}");
-                return null;
+                // Convert from legacy team/playerId to unified faction system
+                Faction spellFaction = team == Team.Blue ? Faction.Player : Faction.Enemy;
+                if (playerId != -1) {
+                    // If explicit player ID provided, use that to determine faction
+                    spellFaction = playerId == 1 ? Faction.Player : Faction.Enemy;
+                }
+                
+                // Set faction directly
+                spell.MyFaction = spellFaction;
+                
+                // Use setId instead of Init
+                spell.setId(GenerateUnitId());
+                
+                if(!string.IsNullOrEmpty(nftKey)) {
+                    // Apply NFT data if available
+                    NFTsSpell nFTsSpell = GetNftSpellData(nftKey, spellFaction == Faction.Player ? 1 : 2);
+                    if (nFTsSpell != null) {
+                        spell.SetNfts(nFTsSpell);
+                    }
+                }
+                
+                AddSpell(spell);
             }
-
-            Spell spell = Instantiate(obj, position, Quaternion.identity).GetComponent<Spell>();
-            spell.MyTeam = team;
-            spell.PlayerId = playerId == -1 ? (team == Team.Blue ? 1 : 2) : playerId; // Assign default ID
-            spell.setId(GenerateUnitId());
-
-            // Set NFT data similar to CreateUnit method
-            NFTsSpell nftData = GetNftSpellData(nftKey, spell.PlayerId) as NFTsSpell;
-            if (nftData != null) {
-                spell.SetNfts(nftData); // Assuming SetNfts applies spell properties from NFT
-            }
-
-            AddSpell(spell);
+            
             return spell;
         }
 
@@ -370,7 +394,7 @@
             if (unit != null && units.Contains(unit))
             {
                 units.Remove(unit);
-                //Debug.Log($"DeleteUnit called for {unit.gameObject.name} - Team: {unit.MyTeam}, ID: {unit.getId()}");
+                //Debug.Log($"DeleteUnit called for {unit.gameObject.name} - Team: {unit.MyFaction}, ID: {unit.getId()}");
                 Destroy(unit.gameObject);
             }
         }
@@ -393,44 +417,70 @@
             }
         }
 
-        public void EndGame(Team winner)
+        public void EndGame(Faction winner)
         {
             // Prevent the game from actually ending for infinite play
-            Debug.Log($"Game would have ended with {winner} team winning, but continuing for infinite play.");
+            Team legacyTeam = winner == Faction.Player ? Team.Blue : Team.Red;
+            Debug.Log($"Game would have ended with {winner} faction winning, but continuing for infinite play.");
             // GameOver = true; // Keep commented out for infinite play
 
             if (UI != null && UI.ResultsScreen != null) // Check if UI and ResultsScreen exist
             {
-                UI.SetGameOver(winner);
+                UI.SetGameOver(legacyTeam); // Pass legacy team for backward compatibility
             }
-             else
+            else
             {
                 Debug.LogWarning("Cannot show game over screen: UI Manager or Results Screen not found.");
             }
         }
+        
+        // Overload for backward compatibility
+        public void EndGame(Team winner)
+        {
+            Faction winnerFaction = winner == Team.Blue ? Faction.Player : Faction.Enemy;
+            EndGame(winnerFaction);
+        }
 
+        public Color GetColorUnit(Faction faction, int playerId = -1)
+        {
+            // Simplified color logic based on faction
+            return faction == Faction.Player ? Color.green : Color.red;
+        }
+        
+        // Backward compatibility method
         public Color GetColorUnit(Team team, int playerId)
         {
-            // Simplified color logic
-            return team == Team.Blue ? Color.green : Color.red;
+            return GetColorUnit(team == Team.Blue ? Faction.Player : Faction.Enemy, playerId);
         }
 
-        public Vector3 GetDefaultTargetPosition(Team team)
+        public Vector3 GetDefaultTargetPosition(Faction faction)
         {
             // Return the opponent's base position
-            int index = team == Team.Blue ? 0 : 1; // Blue targets Red (0), Red targets Blue (1)
-             if (Targets[index] != null)
-                 return Targets[index].transform.position;
-             else // Fallback if target base doesn't exist yet
-                 return BS_Positions[index];
+            int index = faction == Faction.Player ? 0 : 1; // Player targets Enemy (0), Enemy targets Player (1)
+            if (Targets[index] != null)
+                return Targets[index].transform.position;
+            else // Fallback if target base doesn't exist yet
+                return BS_Positions[index];
+        }
+        
+        // Backward compatibility method
+        public Vector3 GetDefaultTargetPosition(Team team)
+        {
+            return GetDefaultTargetPosition(team == Team.Blue ? Faction.Player : Faction.Enemy);
         }
 
+        public Transform GetFinalTransformTarget(Faction faction)
+        {
+            if (GameOver) return transform; // Return GameMng transform if game over
+
+            int targetIndex = faction == Faction.Player ? 0 : 1; // Player targets Enemy (0), Enemy targets Player (1)
+            return Targets[targetIndex] != null ? Targets[targetIndex].transform : transform; // Fallback to GameMng transform
+        }
+        
+        // Backward compatibility method
         public Transform GetFinalTransformTarget(Team team)
         {
-             if (GameOver) return transform; // Return GameMng transform if game over
-
-            int targetIndex = team == Team.Blue ? 0 : 1; // Blue targets Red (0), Red targets Blue (1)
-            return Targets[targetIndex] != null ? Targets[targetIndex].transform : transform; // Fallback to GameMng transform
+            return GetFinalTransformTarget(team == Team.Blue ? Faction.Player : Faction.Enemy);
         }
 
         public bool IsGameOver()
@@ -510,10 +560,15 @@
             return units.Count;
         }
 
+        public int CountUnits(Faction faction)
+        {
+            return units.Count(unit => unit.MyFaction == faction);
+        }
+        
+        // Backward compatibility method
         public int CountUnits(Team team)
         {
-            units.RemoveAll(unit => unit == null);
-            return units.Count(u => u.IsMyTeam(team));
+            return CountUnits(team == Team.Blue ? Faction.Player : Faction.Enemy);
         }
 
         public int GetRemainingSecs()
@@ -536,6 +591,13 @@
              // Return Targets[0] directly, checking for null
              return (Targets != null && Targets.Length > 0) ? Targets[0] : null;
              // return (BOT != null) ? BOT.GetComponent<Unit>() : null; // Old implementation
+        }
+
+        // Add the missing GetUnitsListClone method
+        public List<Unit> GetUnitsListClone()
+        {
+            // Create a copy of the units list to avoid modification issues during iteration
+            return new List<Unit>(units);
         }
     }
 }

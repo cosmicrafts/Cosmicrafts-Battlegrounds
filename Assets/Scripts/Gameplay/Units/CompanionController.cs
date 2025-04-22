@@ -323,7 +323,7 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
             // 2. They are on the same team
             if (other == null || myUnit == null) return false;
             
-            return (other == parentUnit) || (other.MyTeam == myUnit.MyTeam);
+            return (other == parentUnit) || (other.MyFaction == myUnit.MyFaction);
         }
     }
     

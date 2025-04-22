@@ -12,15 +12,15 @@ using System.Collections.Generic;
 public static class SpellUtils
 {
     /// <summary>
-    /// Finds the player's character based on team and player ID.
+    /// Finds the player's character based on faction and player ID.
     /// </summary>
-    /// <param name="team">The team to find the player for</param>
+    /// <param name="faction">The faction to find the player for</param>
     /// <param name="playerId">The player ID to find the player for</param>
     /// <returns>The player's Unit component, or null if not found</returns>
-    public static Unit FindPlayerCharacter(Team team, int playerId)
+    public static Unit FindPlayerCharacter(Faction faction, int playerId = -1)
     {
         // OPTION 1: Use GameMng.P first (fastest and most direct)
-        if (GameMng.P != null && GameMng.P.MyTeam == team && GameMng.P.ID == playerId)
+        if (GameMng.P != null && GameMng.P.MyFaction == faction && (playerId == -1 || GameMng.P.ID == playerId))
         {
             Unit playerUnit = GameMng.P.GetComponent<Unit>();
             if (playerUnit != null)
@@ -33,7 +33,7 @@ public static class SpellUtils
         Player[] allPlayers = GameObject.FindObjectsByType<Player>(FindObjectsSortMode.None);
         foreach (Player player in allPlayers)
         {
-            if (player.MyTeam == team && player.ID == playerId)
+            if (player.MyFaction == faction && (playerId == -1 || player.ID == playerId))
             {
                 Unit playerUnit = player.GetComponent<Unit>();
                 if (playerUnit != null)
@@ -46,11 +46,11 @@ public static class SpellUtils
         // OPTION 3: Fallback to GameMng targets
         if (GameMng.GM != null && GameMng.GM.MainStationsExist())
         {
-            int stationIndex = team == Team.Blue ? 1 : 0;
+            int stationIndex = faction == Faction.Player ? 1 : 0;
             if (GameMng.GM.Targets[stationIndex] != null)
             {
                 Unit targetUnit = GameMng.GM.Targets[stationIndex];
-                if (targetUnit.MyTeam == team && (playerId < 0 || targetUnit.PlayerId == playerId))
+                if (targetUnit.MyFaction == faction && (playerId < 0 || (playerId == 1 && targetUnit.MyFaction == Faction.Player) || (playerId == 2 && targetUnit.MyFaction == Faction.Enemy)))
                 {
                     return targetUnit;
                 }
@@ -58,8 +58,15 @@ public static class SpellUtils
         }
         
         // Nothing found
-        Debug.LogWarning($"[SpellUtils] No player found for Team={team}, PlayerId={playerId}");
+        Debug.LogWarning($"[SpellUtils] No player found for Faction={faction}, PlayerId={playerId}");
         return null;
+    }
+    
+    // Backwards compatibility method
+    public static Unit FindPlayerCharacter(Team team, int playerId)
+    {
+        Faction faction = FactionManager.ConvertTeamToFaction(team);
+        return FindPlayerCharacter(faction, playerId);
     }
     
     // COMPATIBILITY METHOD: For backward compatibility with existing code
@@ -75,9 +82,9 @@ public static class SpellUtils
     /// Gets direction from source position toward enemy base
     /// </summary>
     /// <param name="sourcePosition">Starting position</param>
-    /// <param name="team">The team to find the enemy base for</param>
+    /// <param name="faction">The faction to find the enemy base for</param>
     /// <returns>Direction vector pointing toward enemy base, or forward if enemy base not found</returns>
-    public static Vector3 GetDirectionToEnemyBase(Vector3 sourcePosition, Team team)
+    public static Vector3 GetDirectionToEnemyBase(Vector3 sourcePosition, Faction faction)
     {
         // Default direction
         Vector3 direction = Vector3.forward;
@@ -86,7 +93,7 @@ public static class SpellUtils
         if (GameMng.GM != null && GameMng.GM.MainStationsExist())
         {
             // Get enemy base index (opposite of current team)
-            int enemyIndex = team == Team.Blue ? 0 : 1;
+            int enemyIndex = faction == Faction.Player ? 0 : 1;
             if (GameMng.GM.Targets[enemyIndex] != null)
             {
                 // Aim toward the enemy base
@@ -98,15 +105,22 @@ public static class SpellUtils
         return direction;
     }
     
+    // Backwards compatibility method
+    public static Vector3 GetDirectionToEnemyBase(Vector3 sourcePosition, Team team)
+    {
+        Faction faction = FactionManager.ConvertTeamToFaction(team);
+        return GetDirectionToEnemyBase(sourcePosition, faction);
+    }
+    
     /// <summary>
     /// Finds all enemy units in the beam path
     /// </summary>
-    /// <param name="team">The spell's team</param>
+    /// <param name="faction">The spell's faction</param>
     /// <param name="lineStart">Start point of the beam</param>
     /// <param name="lineEnd">End point of the beam</param>
     /// <param name="beamWidth">Width of the beam for hit detection</param>
     /// <returns>List of enemy units in the beam</returns>
-    public static List<Unit> FindUnitsInBeam(Team team, Vector3 lineStart, Vector3 lineEnd, float beamWidth)
+    public static List<Unit> FindUnitsInBeam(Faction faction, Vector3 lineStart, Vector3 lineEnd, float beamWidth)
     {
         List<Unit> targetsInBeam = new List<Unit>();
         
@@ -133,7 +147,7 @@ public static class SpellUtils
         foreach (Unit unit in allUnits)
         {
             // Skip units on our team, null, or dead units
-            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(team))
+            if (unit == null || unit.GetIsDeath() || unit.MyFaction == faction)
                 continue;
             
             // Skip base station units - use a different check now (GameMng.GM.Targets)
@@ -194,6 +208,13 @@ public static class SpellUtils
         }
         
         return targetsInBeam;
+    }
+    
+    // Backwards compatibility method
+    public static List<Unit> FindUnitsInBeam(Team team, Vector3 lineStart, Vector3 lineEnd, float beamWidth)
+    {
+        Faction faction = FactionManager.ConvertTeamToFaction(team);
+        return FindUnitsInBeam(faction, lineStart, lineEnd, beamWidth);
     }
     
     /// <summary>
@@ -331,21 +352,29 @@ public static class SpellUtils
     {
         Color effectColor = color ?? Color.yellow;
         
-        // Create a simple hit effect (sphere)
+        // Create a simple visual hit effect
         GameObject hitEffect = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-        hitEffect.name = "HitEffect";
-        Object.Destroy(hitEffect.GetComponent<Collider>());
         hitEffect.transform.position = position;
-        hitEffect.transform.localScale = new Vector3(size, size, size);
+        hitEffect.transform.localScale = Vector3.one * size;
         
-        // Add a bright material
+        // Create a material with emission
         Material mat = new Material(Shader.Find("Standard"));
-        mat.SetColor("_Color", effectColor);
-        mat.SetColor("_EmissionColor", effectColor * 2.0f);
         mat.EnableKeyword("_EMISSION");
-        hitEffect.GetComponent<Renderer>().material = mat;
+        mat.SetColor("_EmissionColor", effectColor * 2);
+        mat.color = effectColor;
         
-        // Destroy after a short time
+        // Apply the material
+        Renderer renderer = hitEffect.GetComponent<Renderer>();
+        renderer.material = mat;
+        
+        // Make sure it doesn't interfere with gameplay
+        Collider collider = hitEffect.GetComponent<Collider>();
+        if (collider != null)
+        {
+            Object.Destroy(collider);
+        }
+        
+        // Destroy after duration
         Object.Destroy(hitEffect, duration);
     }
 }

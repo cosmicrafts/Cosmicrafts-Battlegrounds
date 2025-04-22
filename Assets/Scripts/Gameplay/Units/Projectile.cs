@@ -5,7 +5,15 @@
     public class Projectile : MonoBehaviour
     {
         [HideInInspector]
-        public Team MyTeam;
+        public Faction MyFaction = Faction.Player;
+        
+        // Keep for backwards compatibility
+        [System.Obsolete("Use MyFaction instead")]
+        public Team MyTeam
+        {
+            get { return MyFaction == Faction.Player ? Team.Blue : Team.Red; }
+            set { MyFaction = value == Team.Blue ? Faction.Player : Faction.Enemy; }
+        }
 
         GameObject Target;
         [HideInInspector]
@@ -51,6 +59,10 @@
         public float maxLifespan = 1f; // Maximum life of projectile
 
         private float timeAlive = 0f;
+
+        // Add these fields at the top of the class after the existing declarations
+        private bool isDestroyed = false;
+        public bool HitEffectsEnabled = true;
 
         private void Start()
         {
@@ -210,7 +222,6 @@
 
         private void OnTriggerEnter(Collider other)
         {
-
             if (other.gameObject == Target)
             {
                 HandleImpact(Target.GetComponent<Unit>());
@@ -218,7 +229,7 @@
             else if (other.CompareTag("Unit"))
             {
                 Unit target = other.gameObject.GetComponent<Unit>();
-                if (target != null && !target.IsMyTeam(MyTeam))
+                if (target != null && FactionManager.GetRelationship(this.MyFaction, target.MyFaction) == FactionRelationship.Hostile)
                 {
                     HandleImpact(target);
                 }
@@ -325,7 +336,7 @@
                     }
 
                     Unit unit = hitCollider.GetComponent<Unit>();
-                    if (unit != null && unit.gameObject.activeInHierarchy && !unit.IsDeath && !unit.IsMyTeam(MyTeam))
+                    if (unit != null && unit.gameObject.activeInHierarchy && !unit.IsDeath && unit.MyFaction != MyFaction)
                     {
                         ApplyDirectDamage(unit);
                     }
@@ -464,6 +475,80 @@
                 // Just log and continue - we're destroying anyway
                 Debug.LogWarning($"Error in OnDestroy cleanup: {e.Message}");
             }
+        }
+
+        public void Destroy(bool hitUnit = false, Unit hitUnitRef = null, Vector3 hitPoint = default, Vector3 hitNormal = default)
+        {
+            if (isDestroyed) return;
+
+            // Spawn appropriate hit effects
+            if (hitUnit && hitUnitRef != null && HitEffectsEnabled)
+            {
+                // Use the FactionManager to check if the unit hit is an enemy
+                bool isEnemyHit = hitUnitRef.MyFaction != MyFaction;
+            
+                // Create VFX appropriate for what was hit
+                CreateHitEffects(hitPoint, hitNormal, isEnemyHit, hitUnitRef);
+            
+                // Add damage if this was an enemy unit
+                if (isEnemyHit)
+                {
+                    ApplyDamageToUnit(hitUnitRef);
+                }
+            }
+            else if (HitEffectsEnabled)
+            {
+                // Hit something else (terrain, etc.) - create default effects
+                CreateEnvironmentHitEffects(hitPoint, hitNormal);
+            }
+
+            // Mark as destroyed to prevent duplicate calls
+            isDestroyed = true;
+            
+            // Deactivate the projectile
+            DeactivateProjectile();
+        }
+
+        // Add these methods needed by the Destroy method
+        private void CreateHitEffects(Vector3 hitPoint, Vector3 hitNormal, bool isEnemyHit, Unit hitUnit)
+        {
+            // Create impact effect at the hit point
+            if (impact != null)
+            {
+                GameObject impactEffect = Instantiate(impact, hitPoint, Quaternion.LookRotation(hitNormal));
+                Destroy(impactEffect, 0.5f);
+            }
+            
+            // Optionally create different effects based on if it's an enemy or not
+            if (isEnemyHit)
+            {
+                // Could create additional enemy-hit specific effects here
+            }
+        }
+
+        private void CreateEnvironmentHitEffects(Vector3 hitPoint, Vector3 hitNormal)
+        {
+            // Create a generic environment hit effect
+            if (impact != null)
+            {
+                GameObject impactEffect = Instantiate(impact, hitPoint, Quaternion.LookRotation(hitNormal));
+                Destroy(impactEffect, 0.5f);
+            }
+        }
+
+        private void ApplyDamageToUnit(Unit hitUnit)
+        {
+            if (hitUnit != null && !hitUnit.GetIsDeath())
+            {
+                // Apply damage based on the projectile's damage value
+                hitUnit.AddDmg(Dmg);
+            }
+        }
+
+        private void DeactivateProjectile()
+        {
+            // Clean up and destroy this projectile
+            Destroy(gameObject);
         }
 
     }

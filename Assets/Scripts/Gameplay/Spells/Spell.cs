@@ -5,13 +5,28 @@ using UnityEngine;
  */
 public class Spell : MonoBehaviour
 {
-
     //The NFT data source
     protected NFTsSpell NFTs;
-    //The spell's team in the game
-    public Team MyTeam;
-    //The owner of this spell
-    public int PlayerId = 1;
+    
+    //The spell's faction in the game
+    public Faction MyFaction = Faction.Player;
+    
+    //The spell's team in the game - kept for backwards compatibility
+    [System.Obsolete("Use MyFaction instead")]
+    public Team MyTeam 
+    {
+        get { return MyFaction == Faction.Player ? Team.Blue : Team.Red; }
+        set { MyFaction = value == Team.Blue ? Faction.Player : Faction.Enemy; }
+    }
+    
+    //The owner's ID - kept for backwards compatibility
+    [System.Obsolete("Use MyFaction instead")]
+    public int PlayerId 
+    {
+        get { return MyFaction == Faction.Player ? 1 : 2; }
+        set { MyFaction = value == 1 ? Faction.Player : Faction.Enemy; }
+    }
+    
     //The spell ID in the game
     protected int Id;
 

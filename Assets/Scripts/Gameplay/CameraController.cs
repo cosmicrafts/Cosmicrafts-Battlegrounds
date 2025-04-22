@@ -72,13 +72,16 @@ public class CameraController : MonoBehaviour
         // First check if GameMng.GM is initialized
         if (Cosmicrafts.GameMng.GM != null)
         {
-            // Get the player's team
-            Cosmicrafts.Team playerTeam = Cosmicrafts.Team.Blue; // Default
+            // Get the player's faction and convert to team if needed
+            Cosmicrafts.Faction playerFaction = Cosmicrafts.Faction.Player; // Default
             
             if (Cosmicrafts.GameMng.P != null)
             {
-                playerTeam = Cosmicrafts.GameMng.P.MyTeam;
+                playerFaction = Cosmicrafts.GameMng.P.MyFaction;
             }
+            
+            // Convert to Team for backward compatibility
+            Cosmicrafts.Team playerTeam = Cosmicrafts.FactionManager.ConvertFactionToTeam(playerFaction);
             
             // Get the correct base station based on team (index 1 for Blue, 0 for Red)
             int baseStationIndex = playerTeam == Cosmicrafts.Team.Blue ? 1 : 0;

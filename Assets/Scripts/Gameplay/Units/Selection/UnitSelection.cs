@@ -78,7 +78,7 @@ namespace Cosmicrafts
                 {
                     Unit targetUnit = hit.collider.GetComponent<Unit>();
 
-                    if (targetUnit != null && targetUnit.MyTeam != selectedUnit.MyTeam)
+                    if (targetUnit != null && targetUnit.MyFaction != selectedUnit.MyFaction)
                     {
                         // Command to attack
                         foreach (Unit unit in selectedUnits)
@@ -132,7 +132,7 @@ namespace Cosmicrafts
             {
                 Vector3 unitScreenPosition = Camera.main.WorldToScreenPoint(unit.transform.position);
 
-                if (selectionRect.Contains(unitScreenPosition) && unit.MyTeam == Team.Blue)
+                if (selectionRect.Contains(unitScreenPosition) && unit.MyFaction == Faction.Player)
                 {
                     selectedUnits.Add(unit);
                     if (selectionEffectPrefab != null)

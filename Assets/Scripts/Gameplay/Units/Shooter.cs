@@ -334,7 +334,7 @@ namespace Cosmicrafts
                  return; 
              }
              
-            foreach (Transform cannon in Cannons)
+            foreach(var cannon in Cannons)
             {
                 if (cannon == null) continue; // Skip if cannon transform is missing
                 
@@ -343,7 +343,9 @@ namespace Cosmicrafts
                 
                 if (bullet != null)
                 {
-                    bullet.MyTeam = MyUnit.MyTeam;
+                    // Set the faction property directly
+                    bullet.MyFaction = MyUnit.MyFaction;
+                    
                     // Double check target validity just before firing
                     if (Target != null && Target.gameObject != null && !Target.GetIsDeath()) 
                     {

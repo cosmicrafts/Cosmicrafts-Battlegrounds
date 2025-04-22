@@ -179,7 +179,7 @@
             DeckPanel.SetActive(false);
 
             ResultsScreen.SetActive(true);
-            if (GameMng.P != null && winner == GameMng.P.MyTeam)
+            if (GameMng.P != null && FactionManager.ConvertFactionToTeam(GameMng.P.MyFaction) == winner)
             {
                 VictoryScreen.SetActive(true);
             }

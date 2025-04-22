@@ -55,8 +55,8 @@ public class WaveController : MonoBehaviour
         GameMng.GM.Targets[0] = baseUnit;
         
         // Configure it as the enemy (Red team, Player ID 2)
-        baseUnit.MyTeam = Team.Red;
-        baseUnit.PlayerId = 2;
+        baseUnit.MyFaction = Faction.Enemy;
+        // PlayerId is automatically set by MyFaction property
     }
 
     public void OnBaseDestroyed()
@@ -83,7 +83,7 @@ public class WaveController : MonoBehaviour
             Ship[] ships = FindObjectsByType<Ship>(FindObjectsSortMode.None);
             foreach(Ship ship in ships)
             { 
-                if (ship.MyTeam == Team.Blue)
+                if (ship.MyFaction == Faction.Player)
                 {
                     // Don't destroy the player's character - only other ships
                     if (GameMng.P == null || GameMng.P.GetComponent<Ship>() != ship)
@@ -99,7 +99,7 @@ public class WaveController : MonoBehaviour
         else
         {
             // End the game - player wins
-            GameMng.GM.EndGame(Team.Blue);
+            GameMng.GM.EndGame(Faction.Player);
         }
     }
 }

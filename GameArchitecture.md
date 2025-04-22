@@ -28,8 +28,8 @@
 - Initial team assignment occurs during unit creation in `GameMng.CreateUnit()`
 - Player base is assigned `Team.Blue` in `GameMng.SpawnPlayerBase()`
 - Enemy base is assigned `Team.Red` in `GameMng.SpawnEnemyBase()`
-- Player-deployed units inherit `Player.MyTeam` (Blue)
-- Bot-deployed units inherit `BotEnemy.MyTeam` (Red)
+- Player-deployed units inherit `Player.MyFaction` (Blue)
+- Bot-deployed units inherit `BotEnemy.MyFaction` (Red)
 
 ### Team Relationship Methods
 The foundation of team-based targeting is in these methods in `Unit.cs`:
@@ -38,13 +38,13 @@ The foundation of team-based targeting is in these methods in `Unit.cs`:
 // Checks if the provided unit is an ally (same team, not self)
 public bool IsAlly(Unit otherUnit) {
     if (otherUnit == null || otherUnit == this) return false;
-    return this.MyTeam == otherUnit.MyTeam;
+    return this.MyFaction == otherUnit.MyFaction;
 }
 
 // Checks if the provided unit is an enemy (different team)
 public bool IsEnemy(Unit otherUnit) {
     if (otherUnit == null || otherUnit == this) return false;
-    return this.MyTeam != otherUnit.MyTeam;
+    return this.MyFaction != otherUnit.MyFaction;
 }
 ```
 
@@ -260,7 +260,7 @@ public Unit CreateUnit(GameObject obj, Vector3 position, Team team, string nftKe
         unit.IsDeath = false;
         
         // Set team and ID
-        unit.MyTeam = team;
+        unit.MyFaction = team;
         unit.PlayerId = playerId == -1 ? (team == Team.Blue ? 1 : 2) : playerId;
         unit.setId(GenerateUnitId());
         
@@ -372,10 +372,10 @@ public class BotEnemy : MonoBehaviour
 
 ### Unit Team Assignment Flow
 ```
-GameMng.SpawnPlayerBase() → Unit.MyTeam = Team.Blue
-GameMng.SpawnEnemyBase() → Unit.MyTeam = Team.Red
-Player.DeplyUnit() → GameMng.CreateUnit(team=Player.MyTeam)
-BotEnemy.CreateNewUnit() → GameMng.CreateUnit(team=BotEnemy.MyTeam)
+GameMng.SpawnPlayerBase() → Unit.MyFaction = Team.Blue
+GameMng.SpawnEnemyBase() → Unit.MyFaction = Team.Red
+Player.DeplyUnit() → GameMng.CreateUnit(team=Player.MyFaction)
+BotEnemy.CreateNewUnit() → GameMng.CreateUnit(team=BotEnemy.MyFaction)
 ```
 
 ### Target Acquisition Flow
@@ -444,13 +444,13 @@ BotEnemy.GetUnitFromPool() → Take from pool → ResetUnit() → Reactivate
 - **Check team assignment:**
   ```csharp
   // Add in Shooter.AddEnemy()
-  Debug.Log($"Enemy check: {enemy.name} (Team: {enemy.MyTeam}) vs this unit (Team: {MyUnit.MyTeam})");
+  Debug.Log($"Enemy check: {enemy.name} (Team: {enemy.MyFaction}) vs this unit (Team: {MyUnit.MyFaction})");
   ```
 - **Validate IsEnemy logic:** Temporarily modify it to print debug info
   ```csharp
   public bool IsEnemy(Unit otherUnit) {
-      bool result = (otherUnit != null && otherUnit != this && otherUnit.MyTeam != this.MyTeam);
-      Debug.Log($"IsEnemy check: {this.name}({this.MyTeam}) vs {otherUnit?.name}({otherUnit?.MyTeam}) = {result}");
+      bool result = (otherUnit != null && otherUnit != this && otherUnit.MyFaction != this.MyFaction);
+      Debug.Log($"IsEnemy check: {this.name}({this.MyFaction}) vs {otherUnit?.name}({otherUnit?.MyFaction}) = {result}");
       return result;
   }
   ```
@@ -503,17 +503,17 @@ To support neutral or multiple faction types:
    ```csharp
    public bool IsAlly(Unit otherUnit) {
        if (otherUnit == null || otherUnit == this) return false;
-       return FactionManager.GetRelationship(this.MyTeam, otherUnit.MyTeam) == Relationship.Friendly;
+       return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == Relationship.Friendly;
    }
    
    public bool IsEnemy(Unit otherUnit) {
        if (otherUnit == null || otherUnit == this) return false;
-       return FactionManager.GetRelationship(this.MyTeam, otherUnit.MyTeam) == Relationship.Hostile;
+       return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == Relationship.Hostile;
    }
    
    public bool IsNeutral(Unit otherUnit) {
        if (otherUnit == null || otherUnit == this) return false;
-       return FactionManager.GetRelationship(this.MyTeam, otherUnit.MyTeam) == Relationship.Neutral;
+       return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == Relationship.Neutral;
    }
    ```
 

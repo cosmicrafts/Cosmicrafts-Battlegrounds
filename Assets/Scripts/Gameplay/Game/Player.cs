@@ -11,8 +11,19 @@ public class Player : MonoBehaviour
     // These will be set by GameMng during instantiation
     [HideInInspector]
     public int ID = 1;
+    
+    // Replace Team with Faction
     [HideInInspector]
-    public Team MyTeam = Team.Blue;
+    public Faction MyFaction = Faction.Player;
+    
+    // Keep for backwards compatibility - automatically computed from MyFaction
+    [System.Obsolete("Use MyFaction instead")]
+    [HideInInspector]
+    public Team MyTeam 
+    {
+        get { return MyFaction == Faction.Player ? Team.Blue : Team.Red; }
+        set { MyFaction = value == Team.Blue ? Faction.Player : Faction.Enemy; }
+    }
 
     bool InControl;
     bool CanGenEnergy;
@@ -536,7 +547,7 @@ public class Player : MonoBehaviour
                 
                 if (unitPrefab != null)
                 {
-                    Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId, ID);
+                    Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), FactionManager.ConvertFactionToTeam(MyFaction), nftcard.KeyId, ID);
                     
                     // No longer using GameCharacter for deployment
                     
@@ -565,10 +576,10 @@ public class Player : MonoBehaviour
                     NFTsSpell spellCard = nftcard as NFTsSpell;
                     if (spellCard != null)
                     {
-                        Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
+                        Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), FactionManager.ConvertFactionToTeam(MyFaction), nftcard.KeyId);
                         if (spell != null)
                         {
-                            spell.PlayerId = ID; // Ensure PlayerId is set to match the player
+                            spell.MyFaction = MyFaction; // Set the spell's faction to match the player
                             
                             // No longer using GameCharacter for deployment
                             
@@ -592,18 +603,27 @@ public class Player : MonoBehaviour
         }
     }
 
-    public int GetVsTeamInt()
-    {
-        return MyTeam == Team.Red ? 0 : 1;
-    }
-
     public Team GetVsTeam()
     {
-        return MyTeam == Team.Red ? Team.Blue : Team.Red;
+        // Convert opposing faction to team for backwards compatibility
+        Faction opposingFaction = MyFaction == Faction.Player ? Faction.Enemy : Faction.Player;
+        return FactionManager.ConvertFactionToTeam(opposingFaction);
     }
-
+    
+    public Faction GetVsFaction()
+    {
+        // Get opposing faction directly
+        return MyFaction == Faction.Player ? Faction.Enemy : Faction.Player;
+    }
+    
+    public int GetVsTeamInt()
+    {
+        return GetVsTeam() == Team.Blue ? 1 : 2;
+    }
+    
     public int GetVsId()
     {
+        // Return ID of the opponent
         return ID == 1 ? 2 : 1;
     }
 

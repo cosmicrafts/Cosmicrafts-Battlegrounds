@@ -41,6 +41,10 @@ public class Spell_02 : Spell
     [Tooltip("Color of the radius gizmo")]
     public Color gizmoColor = new Color(1f, 0.5f, 0f, 0.3f);
     
+    // Position tracking
+    private Unit _playerUnit;
+    private Vector3 followOffset = new Vector3(0, 0, 0);
+    
     protected override void Start()
     {
         base.Start();
@@ -87,7 +91,7 @@ public class Spell_02 : Spell
                 Unit unit = hitCollider.GetComponent<Unit>();
                 
                 // Only damage enemy units and avoid duplicates
-                if (unit != null && !unit.GetIsDeath() && !unit.IsMyTeam(MyTeam) && !damagedUnits.Contains(unit.getId()))
+                if (unit != null && !unit.GetIsDeath() && unit.MyFaction != MyFaction && !damagedUnits.Contains(unit.getId()))
                 {
                     damagedUnits.Add(unit.getId());
                     
@@ -169,6 +173,28 @@ public class Spell_02 : Spell
         
         // Log the updated values
         // Debug.Log($"Explosion spell updated with: Damage Multi={damageMultiplier}, Radius Multi={radiusMultiplier}, Crit Chance={criticalStrikeChance}");
+    }
+
+    private void UpdatePositionToPlayer()
+    {
+        // Use the SpellUtils method to find the player character
+        _playerUnit = SpellUtils.FindPlayerCharacter(MyFaction);
+        
+        // Update position only if player unit found
+        if (_playerUnit != null)
+        {
+            transform.position = _playerUnit.transform.position + followOffset;
+        }
+        else
+        {
+            // If no player found through FindPlayerCharacter, fallback to base station
+            Team playerTeam = FactionManager.ConvertFactionToTeam(MyFaction);
+            int baseIndex = playerTeam == Team.Blue ? 1 : 0;
+            if (GameMng.GM != null && GameMng.GM.Targets.Length > baseIndex)
+            {
+                transform.position = GameMng.GM.Targets[baseIndex].transform.position + followOffset;
+            }
+        }
     }
 }
 } 

@@ -68,9 +68,9 @@
             // Set team-specific colors
             if (unit != null)
             {
-                if (unit.MyTeam == Team.Blue)
+                if (unit.MyFaction == Faction.Player)
                 {
-                    // Set Player 2 (Blue team) colors
+                    // Set Player (Blue team) colors
                     Hp.color = Player2HpColor;
                     Shield.color = Player2ShieldColor;
                     GHp.color = Player2DifHpColor;
@@ -78,9 +78,9 @@
 
                     // No flipping – just colour adjustment
                 }
-                else if (unit.MyTeam == Team.Red)
+                else if (unit.MyFaction == Faction.Enemy)
                 {
-                    // Set Player 1 (Red team) colors
+                    // Set Enemy (Red team) colors
                     Hp.color = Player1HpColor;
                     Shield.color = Player1ShieldColor;
                     GHp.color = Player1DifHpColor;

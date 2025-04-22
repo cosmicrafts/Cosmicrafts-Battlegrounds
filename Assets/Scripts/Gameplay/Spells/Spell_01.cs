@@ -65,7 +65,7 @@ public class Spell_01 : Spell
         _baseDamagePerTick = Mathf.RoundToInt(damagePerSecond * damageInterval);
         
         // Find the player character for the appropriate team using the utility
-        _playerUnit = SpellUtils.FindPlayerCharacter(MyTeam, PlayerId);
+        _playerUnit = SpellUtils.FindPlayerCharacter(MyFaction);
         
         // Setup the layer mask for target detection
         _targetLayerMask = LayerMask.GetMask("Unit", "Default");
@@ -119,7 +119,7 @@ public class Spell_01 : Spell
         if (_playerUnit == null || _playerUnit.GetIsDeath())
         {
             // If player unit is destroyed, try to find it again using SpellUtils
-            _playerUnit = SpellUtils.FindPlayerCharacter(MyTeam, PlayerId);
+            _playerUnit = SpellUtils.FindPlayerCharacter(MyFaction);
         }
         
         // Update laser beam position based on player unit
@@ -159,7 +159,7 @@ public class Spell_01 : Spell
         }
         
         // Get direction toward enemy base
-        Vector3 direction = SpellUtils.GetDirectionToEnemyBase(playerPosition, MyTeam);
+        Vector3 direction = SpellUtils.GetDirectionToEnemyBase(playerPosition, MyFaction);
         
         // If direction is roughly Vector3.forward (indicates no enemy found), use a more interesting direction
         if (Vector3.Distance(direction.normalized, Vector3.forward) < 0.1f)
@@ -215,7 +215,7 @@ public class Spell_01 : Spell
         foreach (Unit unit in allUnits)
         {
             // Skip units on our team, null, or dead units
-            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
+            if (unit == null || unit.GetIsDeath() || unit.MyFaction == MyFaction)
                 continue;
                 
             // Skip base station units (they're not damage targets) - use GameMng.Targets check instead

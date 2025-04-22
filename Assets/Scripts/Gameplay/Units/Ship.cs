@@ -75,7 +75,7 @@
                // Debug.Log($"Ship {gameObject.name} ensuring animations are in non-death state");
             }
             
-            Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
+            Target = GameMng.GM.GetFinalTransformTarget(MyFaction);
             MySt.Destination = Target.position;
             MySt.StoppingDistance = StoppingDistance;
             foreach (RaySensor sensor in AvoidanceSensors)
@@ -390,7 +390,7 @@
             if (MySt != null)
             {
                 MySt.enabled = true;
-                Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
+                Target = GameMng.GM.GetFinalTransformTarget(MyFaction);
                 MySt.Destination = Target.position;
                 MySt.StoppingDistance = StoppingDistance;
             }

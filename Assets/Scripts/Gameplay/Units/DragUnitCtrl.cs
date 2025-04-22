@@ -49,7 +49,7 @@ public class DragUnitCtrl : MonoBehaviour
         // Get player reference and targets from GameMng
         if (GameMng.P != null && GameMng.GM != null)
         {
-            target = GameMng.GM.GetDefaultTargetPosition(GameMng.P.MyTeam);
+            target = GameMng.GM.GetDefaultTargetPosition(GameMng.P.MyFaction);
         }
         else
         {

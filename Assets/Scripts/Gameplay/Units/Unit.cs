@@ -10,10 +10,20 @@ using Cosmicrafts.Units; // Add namespace for CompanionController
 
 namespace Cosmicrafts
 {
-    public enum Team
+    // Expanded team enum with potential for more factions
+    public enum Faction
     {
-        Blue,
-        Red
+        Player,     // Player's faction (previously Blue team + PlayerId 1)
+        Enemy,      // Enemy/Bot faction (previously Red team + PlayerId 2) 
+        Neutral     // Optional: For non-hostile entities
+    }
+
+    // Relationship between factions
+    public enum FactionRelationship
+    {
+        Friendly,
+        Hostile,
+        Neutral
     }
 
     public enum TypeDmg
@@ -23,6 +33,49 @@ namespace Cosmicrafts
         Shield
     }
 
+    // Static class to manage faction relationships
+    public static class FactionManager
+    {
+        // Relationship matrix defining how factions interact with each other
+        private static FactionRelationship[,] relationshipMatrix = {
+            // Player  Enemy  Neutral
+            { FactionRelationship.Friendly, FactionRelationship.Hostile, FactionRelationship.Neutral }, // Player's relationships
+            { FactionRelationship.Hostile, FactionRelationship.Friendly, FactionRelationship.Neutral }, // Enemy's relationships
+            { FactionRelationship.Neutral, FactionRelationship.Neutral, FactionRelationship.Neutral }   // Neutral's relationships
+        };
+
+        // Get relationship between two factions
+        public static FactionRelationship GetRelationship(Faction a, Faction b)
+        {
+            return relationshipMatrix[(int)a, (int)b];
+        }
+        
+        // Backwards compatibility for Team -> Faction conversion
+        public static Faction ConvertTeamToFaction(Team team)
+        {
+            return team == Team.Blue ? Faction.Player : Faction.Enemy;
+        }
+        
+        // Backwards compatibility for PlayerId -> Faction conversion
+        public static Faction ConvertPlayerIdToFaction(int playerId)
+        {
+            return playerId == 1 ? Faction.Player : Faction.Enemy;
+        }
+        
+        // Backwards compatibility: Convert Faction to legacy Team
+        public static Team ConvertFactionToTeam(Faction faction)
+        {
+            return faction == Faction.Player ? Team.Blue : Team.Red;
+        }
+    }
+
+    // Keep old Team enum for backward compatibility
+    public enum Team
+    {
+        Blue,
+        Red
+    }
+
     public class Unit : MonoBehaviour
     {
         public event Action<Unit> OnDeath;
@@ -30,8 +83,26 @@ namespace Cosmicrafts
         protected int Id;
         protected NFTsUnit NFTs;
         public bool IsDeath;
-        public int PlayerId = 1;
-        public Team MyTeam;
+        
+        // New unified faction system
+        [Header("Faction Identity")]
+        public Faction MyFaction = Faction.Player;
+        
+        // Keep for backwards compatibility but mark obsolete
+        [System.Obsolete("Use MyFaction instead")]
+        public int PlayerId 
+        {
+            get { return MyFaction == Faction.Player ? 1 : 2; }
+            set { MyFaction = value == 1 ? Faction.Player : Faction.Enemy; }
+        }
+        
+        // Keep for backwards compatibility but mark obsolete
+        [System.Obsolete("Use MyFaction instead")]
+        public Team MyTeam
+        {
+            get { return MyFaction == Faction.Player ? Team.Blue : Team.Red; }
+            set { MyFaction = value == Team.Blue ? Faction.Player : Faction.Enemy; }
+        }
 
         [Range(1, 999999)]
         public int HitPoints = 10;
@@ -143,16 +214,16 @@ namespace Cosmicrafts
             
                 // Add null check for GameMng.P
                 if (GameMng.P != null) {
-                    UI.SetColorBars(!IsMyTeam(GameMng.P.MyTeam));
+                    UI.SetColorBars(MyFaction != GameMng.P.MyFaction);
                 } else {
                     // Default behavior when player is not yet initialized
-                    UI.SetColorBars(MyTeam != Team.Blue);
+                    UI.SetColorBars(MyFaction == Faction.Enemy);
                 }
             }
             
             if (MyOutline != null)
             {
-                MyOutline.SetColor(GameMng.GM.GetColorUnit(MyTeam, PlayerId));
+                MyOutline.SetColor(GameMng.GM.GetColorUnit(MyFaction));
                 MyOutline.SetThickness(Size * 0.0000420f);
             }
             TrigerBase.radius = SolidBase.radius;
@@ -174,14 +245,14 @@ namespace Cosmicrafts
                 Destroy(portalInstance, 3f);
             }
             
-            transform.LookAt(CMath.LookToY(transform.position, GameMng.GM.GetDefaultTargetPosition(MyTeam)));
+            transform.LookAt(CMath.LookToY(transform.position, GameMng.GM.GetDefaultTargetPosition(MyFaction)));
             
             // Add null check for GameMng.P
             if (GameMng.P != null) {
-                SA.SetActive(IsMyTeam(GameMng.P.MyTeam) && SpawnAreaSize > 0f);
+                SA.SetActive(MyFaction == GameMng.P.MyFaction && SpawnAreaSize > 0f);
             } else {
                 // Default behavior when player is not yet initialized
-                SA.SetActive(MyTeam == Team.Blue && SpawnAreaSize > 0f);
+                SA.SetActive(MyFaction == Faction.Player && SpawnAreaSize > 0f);
             }
             
             GameMng.GM.AddUnit(this);
@@ -250,7 +321,7 @@ namespace Cosmicrafts
         {
             MyAnim.SetBool("Idle", true);
             MyAnim.speed = 1;
-            if (SpawnAreaSize > 0f && MyTeam == GameMng.P.MyTeam)
+            if (SpawnAreaSize > 0f && MyFaction == GameMng.P.MyFaction)
             {
                 SA.SetActive(true);
                 SA.transform.localScale = new Vector3(SpawnAreaSize, SpawnAreaSize);
@@ -284,7 +355,7 @@ namespace Cosmicrafts
                 DirectDmg += dmg;
             }
 
-            if (!IsMyTeam(GameMng.P.MyTeam))
+            if (!IsMyTeam(GameMng.P.MyFaction))
             {
                 GameMng.MT.AddDamage(DirectDmg);
             }
@@ -376,9 +447,14 @@ namespace Cosmicrafts
                 shooter.CanAttack = true;
         }
 
-        public bool IsMyTeam(Team other)
+        public bool IsMyTeam(Team team)
         {
-            return other == MyTeam;
+            return FactionManager.ConvertFactionToTeam(MyFaction) == team;
+        }
+
+        public bool IsMyTeam(Faction other)
+        {
+            return MyFaction == other;
         }
 
         public bool GetIsDeath()
@@ -411,7 +487,7 @@ namespace Cosmicrafts
             GameMng.GM.DeleteUnit(this);
 
             // For non-player units, still track kills
-            if (GameMng.P != null && !IsMyTeam(GameMng.P.MyTeam))
+            if (GameMng.P != null && !IsMyTeam(GameMng.P.MyFaction))
             {
                 GameMng.MT.AddKills(1);
             }
@@ -463,9 +539,9 @@ namespace Cosmicrafts
             return NFTs == null ? string.Empty : NFTs.KeyId;
         }
 
-        public int GetPlayerId()
+        public Faction GetFaction()
         {
-            return PlayerId;
+            return MyFaction;
         }
 
         public Animator GetAnimator()
@@ -621,7 +697,7 @@ namespace Cosmicrafts
                 shooter.ResetShooter();
             
             // Reactivate spawn area if applicable
-            if (SA != null && SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyTeam))
+            if (SA != null && SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyFaction))
                 SA.SetActive(true);
             
             // Create portal effect for respawn if Portal prefab exists
@@ -662,8 +738,7 @@ namespace Cosmicrafts
                 {
                     // IMPORTANT: Set basic properties first before initializing controllers
                     // This ensures the companion's team and ID are set before any behavior logic runs
-                    companionUnit.MyTeam = this.MyTeam;
-                    companionUnit.PlayerId = this.PlayerId;
+                    companionUnit.MyFaction = this.MyFaction;
                     
                     // Explicitly enforce friendly status with shooter if present
                     Shooter companionShooter = companionGO.GetComponent<Shooter>();
@@ -892,27 +967,64 @@ namespace Cosmicrafts
         // --- Team Relationship Methods ---
 
         /// <summary>
-        /// Checks if the provided unit is an ally (same team, not self).
+        /// Checks if the provided unit is an ally (same faction, not self).
         /// </summary>
         public bool IsAlly(Unit otherUnit)
         {
             if (otherUnit == null || otherUnit == this) // Null or self is not an ally
                 return false;
             
-            // True if teams match
-            return this.MyTeam == otherUnit.MyTeam;
+            // Use FactionManager to determine relationship
+            return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == FactionRelationship.Friendly;
         }
 
         /// <summary>
-        /// Checks if the provided unit is an enemy (different team).
+        /// Checks if the provided unit is an enemy (hostile faction).
         /// </summary>
         public bool IsEnemy(Unit otherUnit)
         {
             if (otherUnit == null || otherUnit == this) // Null or self is not an enemy
                 return false;
             
-            // True if teams are different (assumes only two opposing teams for now)
-            return this.MyTeam != otherUnit.MyTeam;
+            // Use FactionManager to determine relationship
+            return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == FactionRelationship.Hostile;
+        }
+        
+        /// <summary>
+        /// Checks if the provided unit is neutral towards this unit.
+        /// </summary>
+        public bool IsNeutral(Unit otherUnit)
+        {
+            if (otherUnit == null || otherUnit == this) // Null or self cannot be neutral
+                return false;
+            
+            // Use FactionManager to determine relationship
+            return FactionManager.GetRelationship(this.MyFaction, otherUnit.MyFaction) == FactionRelationship.Neutral;
+        }
+
+        // Now that GameMng.GetUnitsListClone exists, update to use it
+        public Unit GetClosestEnemy(float maxDistance = 999999999f)
+        {
+            Unit enemyOutput = null;
+            float distClosest = maxDistance;
+
+            if (GameMng.GM != null)
+            {
+                foreach (Unit unit in GameMng.GM.GetUnitsListClone())
+                {
+                    if (unit != null && !unit.IsDeath && unit.MyFaction != MyFaction)
+                    {
+                        float distance = Vector3.Distance(transform.position, unit.transform.position);
+                        if (distance < distClosest)
+                        {
+                            distClosest = distance;
+                            enemyOutput = unit;
+                        }
+                    }
+                }
+            }
+
+            return enemyOutput;
         }
     }
     

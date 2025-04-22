@@ -22,7 +22,7 @@
             {
                 //Check if the unit is an enemy unit and still alive
                 Unit OtherUnit = other.gameObject.GetComponent<Unit>();
-                if (OtherUnit != null && !OtherUnit.IsMyTeam(MyUnit.MyTeam) && !OtherUnit.GetIsDeath())
+                if (OtherUnit != null && MyUnit.IsEnemy(OtherUnit) && !OtherUnit.GetIsDeath())
                 {
                     //Add the unit to the enemys list
                     MyShooter.AddEnemy(OtherUnit);
@@ -38,7 +38,7 @@
             {
                 //Check if the unit is an enemy unit
                 Unit OtherUnit = other.gameObject.GetComponent<Unit>();
-                if (OtherUnit != null && !OtherUnit.IsMyTeam(MyUnit.MyTeam))
+                if (OtherUnit != null && MyUnit.IsEnemy(OtherUnit))
                 {
                     //Delete the unit from the enemys list
                     MyShooter.RemoveEnemy(OtherUnit);

@@ -26,9 +26,17 @@ public class BotEnemy : MonoBehaviour
     [HideInInspector]
     public readonly int ID = 2;
 
-    //Bot game team (always red)
+    //Bot faction (always Enemy)
     [HideInInspector]
-    public readonly Team MyTeam = Team.Red;
+    public readonly Faction MyFaction = Faction.Enemy;
+    
+    //Bot game team (always red) - kept for backwards compatibility
+    [System.Obsolete("Use MyFaction instead")]
+    [HideInInspector]
+    public Team MyTeam 
+    {
+        get { return Team.Red; }
+    }
 
     //Prefab Base Station (assign in inspector)
     public GameObject prefabBaseStation;
@@ -226,7 +234,7 @@ public class BotEnemy : MonoBehaviour
             return null;
         }
         
-        Unit newUnit = GameMng.GM.CreateUnit(unitData.prefab, position, MyTeam, DeckNfts[unitData].KeyId, 2);
+        Unit newUnit = GameMng.GM.CreateUnit(unitData.prefab, position, FactionManager.ConvertFactionToTeam(MyFaction), DeckNfts[unitData].KeyId, 2);
         
         if (newUnit != null)
         {

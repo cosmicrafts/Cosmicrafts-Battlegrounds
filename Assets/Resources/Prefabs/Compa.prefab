@@ -804,13 +804,14 @@ GameObject:
   m_Component:
   - component: {fileID: 2198226034328220055}
   - component: {fileID: 2198226034328220052}
+  - component: {fileID: 8963604904601362600}
   - component: {fileID: 6982720608951721540}
   - component: {fileID: 2198226034328220053}
   - component: {fileID: 2198226034328220054}
   - component: {fileID: 2198226034328220042}
   - component: {fileID: 2198226034328220043}
   m_Layer: 3
-  m_Name: U_ALL_1
+  m_Name: Compa
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -867,6 +868,29 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 84
   m_CollisionDetection: 0
+--- !u!114 &8963604904601362600
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2198226034328220048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed55769d5cb1f6740922fc004775cd9b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  orbitDistance: 3
+  orbitSpeed: 90
+  followLerpSpeed: 5
+  orbitStyle: 0
+  orbitEccentricity: 0
+  verticalOffset: 0
+  fixedOffset: {x: 0, y: 0, z: 0}
+  lookDirection: 1
+  matchParentState: 1
+  stayWithDeadParent: 0
+  abandonDelay: 0
 --- !u!114 &6982720608951721540
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -896,13 +920,14 @@ MonoBehaviour:
   IsDeath: 0
   PlayerId: 1
   MyTeam: 0
-  HitPoints: 80
-  Shield: 80
+  HitPoints: 800
+  Shield: 800
   ShieldDelay: 1.41
   Size: 3
   SpawnAreaSize: 0
   DodgeChance: 0
   Level: 1
+  companions: []
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 6245011729380265433}

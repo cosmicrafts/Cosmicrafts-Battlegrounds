@@ -235,6 +235,14 @@ MonoBehaviour:
   SpawnAreaSize: 12
   DodgeChance: 0
   Level: 1
+  companions:
+  - name: compa
+    companionPrefab: {fileID: 2198226034328220048, guid: 21b572bfec81502488150050624ed5d4, type: 3}
+    behaviorType: 1
+    orbitDistance: 3.33
+    orbitSpeed: 19.8
+    tintColor: {r: 1, g: 0, b: 0.7932253, a: 0}
+    scale: 0
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 5171655099922868828}
@@ -335,7 +343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d895adfde111ab048b5a25475843b885, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 80
+  moveSpeed: 150
   rotationSpeed: 12
   acceleration: 5
   deceleration: 8

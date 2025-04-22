@@ -155,7 +155,7 @@
             // Reset animation triggered flag
             animationTriggered = false;
             
-            Debug.Log($"UIUnit initialized with maxhp: {maxhp}, maxshield: {maxshield}");
+           // Debug.Log($"UIUnit initialized with maxhp: {maxhp}, maxshield: {maxshield}");
         }
 
         public void SetHPBar(float percent)

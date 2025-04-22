@@ -4,7 +4,9 @@ using Unity.Burst;
 using UnityEngine;
 using System.Linq;
 using System.Collections;
+using System.Collections.Generic;
 using System;
+using Cosmicrafts.Units; // Add namespace for CompanionController
 
 namespace Cosmicrafts
 {
@@ -47,6 +49,13 @@ namespace Cosmicrafts
         public float DodgeChance = 0f;
         [Range(1, 999)]
         public int Level = 1;
+
+        [Header("Companion System")]
+        [Tooltip("List of companion configurations")]
+        public List<CompanionConfig> companions = new List<CompanionConfig>();
+        
+        // Track active companion instances
+        private List<Unit> activeCompanions = new List<Unit>();
 
         [HideInInspector]
         public bool IsInmortal = false;
@@ -144,7 +153,7 @@ namespace Cosmicrafts
             if (MyOutline != null)
             {
                 MyOutline.SetColor(GameMng.GM.GetColorUnit(MyTeam, PlayerId));
-                MyOutline.SetThickness(Size * 0.0002f);
+                MyOutline.SetThickness(Size * 0.00015f);
             }
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
@@ -176,6 +185,9 @@ namespace Cosmicrafts
             }
             
             GameMng.GM.AddUnit(this);
+            
+            // Spawn companions
+            SpawnCompanions();
         }
 
         protected virtual void Update()
@@ -329,6 +341,9 @@ namespace Cosmicrafts
                 // Destroy non-player units after a delay
                 Destroy(gameObject, 2f); // Give time for death animation
             }
+            
+            // Handle companion death/destruction
+            DestroyCompanions();
         }
 
         public virtual void DisableUnit()
@@ -615,7 +630,278 @@ namespace Cosmicrafts
                 Destroy(portal, 3f);
             }
             
+            // Respawn companions on reset
+            SpawnCompanions();
+            
             //Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
         }
+
+        /// <summary>
+        /// Instantiates and initializes all companion units based on configurations.
+        /// </summary>
+        protected virtual void SpawnCompanions()
+        {
+            // Clear any existing companions to avoid duplicates
+            DestroyCompanions();
+            
+            // Skip if no companions are configured
+            if (companions == null || companions.Count == 0)
+                return;
+                
+            // Spawn each configured companion
+            foreach (CompanionConfig config in companions)
+            {
+                if (config == null || config.companionPrefab == null)
+                    continue;
+                    
+                // Instantiate the companion prefab
+                GameObject companionGO = Instantiate(config.companionPrefab, transform.position, transform.rotation);
+                Unit companionUnit = companionGO.GetComponent<Unit>();
+                
+                if (companionUnit != null)
+                {
+                    // Set basic properties
+                    companionUnit.MyTeam = this.MyTeam;
+                    companionUnit.PlayerId = this.PlayerId;
+                    
+                    // Apply configuration to the companion
+                    CompanionController controller = companionGO.GetComponent<CompanionController>();
+                    if (controller == null)
+                    {
+                        controller = companionGO.AddComponent<CompanionController>();
+                    }
+                    
+                    // Apply configuration settings
+                    controller.SetParent(this);
+                    controller.ApplyConfiguration(config);
+                    
+                    // Add to tracking list
+                    activeCompanions.Add(companionUnit);
+                    
+                    // Apply custom behavior type if specified
+                    if (config.behaviorType != CompanionBehaviorType.Default)
+                    {
+                        SetupCompanionBehavior(companionGO, config.behaviorType);
+                    }
+                    
+                    Debug.Log($"{gameObject.name} spawned companion {companionGO.name} with behavior: {config.behaviorType}");
+                }
+                else
+                {
+                    Debug.LogError($"Companion prefab {config.companionPrefab.name} is missing the Unit component!", config.companionPrefab);
+                    Destroy(companionGO); // Clean up invalid instance
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Sets up specialized companion behavior based on the behavior type.
+        /// </summary>
+        private void SetupCompanionBehavior(GameObject companionGO, CompanionBehaviorType behaviorType)
+        {
+            Shooter shooter = companionGO.GetComponent<Shooter>();
+            Ship companionShip = companionGO.GetComponent<Ship>();
+            Unit companionUnit = companionGO.GetComponent<Unit>();
+            CompanionController controller = companionGO.GetComponent<CompanionController>();
+            
+            switch (behaviorType)
+            {
+                case CompanionBehaviorType.Attacker:
+                    // Make sure the companion has a shooter component
+                    if (shooter == null)
+                    {
+                        shooter = companionGO.AddComponent<Shooter>();
+                        shooter.RangeDetector = 10f;  // Default range
+                        shooter.CoolDown = 0.5f;      // Fast firing rate
+                        shooter.BulletDamage = 2;    // Lower damage than typical units
+                        
+                        // Try to find a bullet prefab from parent if available
+                        Shooter parentShooter = GetComponent<Shooter>();
+                        if (parentShooter != null && parentShooter.Bullet != null)
+                        {
+                            shooter.Bullet = parentShooter.Bullet;
+                            shooter.Cannons = new Transform[] { companionGO.transform };
+                        }
+                        else
+                        {
+                            // Try to load a default bullet prefab
+                            GameObject bulletPrefab = Resources.Load<GameObject>("Prefabs/Bullets/SmallBullet");
+                            if (bulletPrefab != null)
+                            {
+                                shooter.Bullet = bulletPrefab;
+                                shooter.Cannons = new Transform[] { companionGO.transform };
+                            }
+                            else
+                            {
+                                Debug.LogWarning("No bullet prefab found for attacker companion. Please assign one manually.");
+                            }
+                        }
+                    }
+                    break;
+                    
+                case CompanionBehaviorType.Healer:
+                    // Make the companion heal the parent unit periodically
+                    // Uses the parent's existing HitPoints and UI
+                    StartCoroutine(HealParentCoroutine(companionUnit, 1f, 1f)); // 1 HP per second
+                    
+                    // Set visual parameters for recognition
+                    if (controller != null)
+                    {
+                        // Create a healing effect by making the companion orbit closer
+                        controller.orbitDistance = 2f;
+                    }
+                    break;
+                    
+                case CompanionBehaviorType.Shield:
+                    // Make the companion boost the parent's shield
+                    // This can directly modify the parent unit's Shield property
+                    int shieldBonus = 5;
+                    SetMaxShield(GetMaxShield() + shieldBonus);
+                    Shield += shieldBonus;
+                    UI.SetShieldBar((float)Shield / (float)GetMaxShield());
+                    
+                    // Also start a coroutine to regenerate shield faster
+                    StartCoroutine(ShieldRegenerateCoroutine(2f)); // 2 shield per second
+                    
+                    // Set visual parameters for recognition
+                    if (controller != null)
+                    {
+                        // Set the companion to orbit close and slow
+                        controller.orbitDistance = 2.5f;
+                        controller.orbitSpeed = 45f;
+                    }
+                    break;
+                    
+                case CompanionBehaviorType.Scout:
+                    // Increase movement speed and detection range for scouting
+                    if (controller != null)
+                    {
+                        controller.orbitDistance = 8f; // Orbit further out
+                        controller.orbitSpeed = 120f; // Move faster
+                    }
+                    
+                    // If it has a shooter, increase its range
+                    if (shooter != null)
+                    {
+                        shooter.RangeDetector = 15f;  // Longer detection range
+                    }
+                    
+                    // If it has a ship component, increase its speed
+                    if (companionShip != null)
+                    {
+                        companionShip.MaxSpeed *= 1.5f;
+                    }
+                    break;
+            }
+        }
+        
+        // Coroutine to heal the parent unit periodically
+        private IEnumerator HealParentCoroutine(Unit companion, float healAmount, float interval)
+        {
+            while (companion != null && !companion.GetIsDeath() && !this.GetIsDeath())
+            {
+                yield return new WaitForSeconds(interval);
+                
+                // Only heal if parent is not at full health
+                if (HitPoints < GetMaxHitPoints())
+                {
+                    HitPoints += Mathf.CeilToInt(healAmount);
+                    if (HitPoints > GetMaxHitPoints())
+                    {
+                        HitPoints = GetMaxHitPoints();
+                    }
+                    
+                    // Update the UI
+                    UI.SetHPBar((float)HitPoints / (float)GetMaxHitPoints());
+                }
+            }
+        }
+        
+        // Coroutine to regenerate shield faster
+        private IEnumerator ShieldRegenerateCoroutine(float regenRate)
+        {
+            Ship shipComponent = GetComponent<Ship>();
+            bool hasShipComponent = (shipComponent != null);
+            
+            while (!this.GetIsDeath())
+            {
+                yield return new WaitForSeconds(0.5f);
+                
+                // Only regenerate if the shield isn't full and we can regenerate
+                if (Shield < GetMaxShield())
+                {
+                    // Check if we can regenerate shield based on Ship component rules
+                    bool canRegen = true;
+                    if (hasShipComponent)
+                    {
+                        canRegen = shipComponent.CanRegenerateShield();
+                    }
+                    
+                    if (canRegen)
+                    {
+                        Shield += Mathf.CeilToInt(regenRate * 0.5f); // Adjust for half-second interval
+                        if (Shield > GetMaxShield())
+                        {
+                            Shield = GetMaxShield();
+                        }
+                        
+                        // Update the UI
+                        UI.SetShieldBar((float)Shield / (float)GetMaxShield());
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Destroys all active companion instances.
+        /// </summary>
+        protected virtual void DestroyCompanions()
+        {
+            foreach (Unit companion in activeCompanions.ToList())
+            {
+                if (companion != null)
+                {
+                    // Use Destroy instead of DestroyUnit to avoid potential recursion
+                    Destroy(companion.gameObject);
+                }
+            }
+            activeCompanions.Clear();
+        }
+    }
+    
+    /// <summary>
+    /// Defines different companion behavior types
+    /// </summary>
+    public enum CompanionBehaviorType
+    {
+        Default,    // Standard orbiting behavior
+        Attacker,   // Focuses on attacking enemies
+        Healer,     // Provides healing to parent
+        Shield,     // Enhances parent's shield
+        Scout       // Orbits at greater distance and detects enemies
+    }
+    
+    /// <summary>
+    /// Configuration data for a companion
+    /// </summary>
+    [System.Serializable]
+    public class CompanionConfig
+    {
+        public string name = "Companion";
+        public GameObject companionPrefab;
+        
+        [Header("Behavior")]
+        public CompanionBehaviorType behaviorType = CompanionBehaviorType.Default;
+        
+        [Header("Orbit Settings")]
+        [Range(1f, 10f)]
+        public float orbitDistance = 3.0f;
+        [Range(10f, 180f)]
+        public float orbitSpeed = 90.0f;
+        
+        [Header("Appearance")]
+        public Color tintColor = Color.white;
+        [Range(0.5f, 2.0f)]
+        public float scale = 1.0f;
     }
 }

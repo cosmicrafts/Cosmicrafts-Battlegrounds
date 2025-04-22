@@ -427,7 +427,7 @@
         public Color GetColorUnit(Team team, int playerId)
         {
             // Simplified color logic
-            return team == Team.Blue ? Color.blue : Color.red;
+            return team == Team.Blue ? Color.green : Color.red;
         }
 
         public Vector3 GetDefaultTargetPosition(Team team)

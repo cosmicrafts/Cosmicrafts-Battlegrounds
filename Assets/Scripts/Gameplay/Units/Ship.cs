@@ -72,7 +72,7 @@
                 MyAnim.ResetTrigger("Die");
                 MyAnim.SetBool("Idle", true);
                 
-                Debug.Log($"Ship {gameObject.name} ensuring animations are in non-death state");
+               // Debug.Log($"Ship {gameObject.name} ensuring animations are in non-death state");
             }
             
             Target = GameMng.GM.GetFinalTransformTarget(MyTeam);

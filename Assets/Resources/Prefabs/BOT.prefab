@@ -715,6 +715,22 @@ PrefabInstance:
       propertyPath: m_Name
       value: SpawnArea
       objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699471590, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 12
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -918,6 +934,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Canvas
       objectReference: {fileID: 0}
+    - target: {fileID: 3386961844211152119, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_Color.b
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 3386961844211152119, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_Color.g
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 3386961844211152119, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_Color.r
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4606794044662995956, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_fontAsset
       value: 
@@ -1057,6 +1085,18 @@ PrefabInstance:
     - target: {fileID: 6971450709809201329, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7641634818612591828, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_Color.b
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 7641634818612591828, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_Color.g
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: 7641634818612591828, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_Color.r
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

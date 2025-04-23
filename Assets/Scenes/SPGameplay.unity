@@ -2218,10 +2218,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02c1c41849369f54182538c6c068fb8a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  explosionPrefabs:
-  - {fileID: 6271241949191652176, guid: 739d19610906a434a8d67ca770434aca, type: 3}
-  - {fileID: 6549543012873742316, guid: 85df402618e06014dbc12715d31c1f54, type: 3}
-  - {fileID: 389972561583142955, guid: a6a02baceacd0a34892152a14a057b79, type: 3}
+  explosionPrefabs: []
   projectilePrefabs:
   - {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   impactPrefabs:

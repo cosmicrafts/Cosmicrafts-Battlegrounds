@@ -182,11 +182,11 @@ MonoBehaviour:
   prefabBaseStation: {fileID: 2198226034328220048}
   DeckUnits:
   - {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-  CurrentEnergy: 0
-  MaxEnergy: 1
-  SpeedEnergy: 0.1
-  waitSpawn: 1.5
-  maxActiveUnits: 2
+  CurrentEnergy: 7.3
+  MaxEnergy: 7.3
+  SpeedEnergy: 5
+  waitSpawn: 0.1
+  maxActiveUnits: 4
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -260,6 +260,7 @@ MonoBehaviour:
   EnemyDetector: {fileID: 2198226032576818155}
   DetectionRange: 62
   AttackRange: 50.9
+  TargetUpdateInterval: 0.2
   CanAttack: 1
   CoolDown: 0.2
   BulletSpeed: 99

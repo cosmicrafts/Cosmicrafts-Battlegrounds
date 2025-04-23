@@ -2224,12 +2224,6 @@ MonoBehaviour:
   - {fileID: 389972561583142955, guid: a6a02baceacd0a34892152a14a057b79, type: 3}
   projectilePrefabs:
   - {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
-  - {fileID: 8362349209469777719, guid: 1835dbeede209484cb976155d1b75638, type: 3}
-  - {fileID: 8102155473089344357, guid: d56b87557a2d32340bf36655f72d7ef8, type: 3}
-  - {fileID: 3053724306134487678, guid: 825fa02a7f86dd74cb5fae9038304906, type: 3}
-  - {fileID: 5295586122231405360, guid: 76ff8ef44a10b794bb0f8ff177b9ca27, type: 3}
-  - {fileID: 647104670885987435, guid: 4779b010dbd1403488ea49e9d17ffd85, type: 3}
-  - {fileID: 8530891135317232908, guid: 0318a5d4e9f35b3499c3a51e7e053320, type: 3}
   impactPrefabs:
   - {fileID: 8102155473089344357, guid: d56b87557a2d32340bf36655f72d7ef8, type: 3}
   - {fileID: 8362349209469777719, guid: 1835dbeede209484cb976155d1b75638, type: 3}
@@ -2238,10 +2232,13 @@ MonoBehaviour:
   - {fileID: 4410437682428655200, guid: 586feea8620dbf144a7df821bbc81ae6, type: 3}
   - {fileID: 8434842591292709995, guid: 12c1bc4b21c3ca24bb5ed6e2758da356, type: 3}
   - {fileID: 5950102653247709576, guid: 862784398b0561347ac1540ebfa9cf4c, type: 3}
+  shieldImpactPrefabs:
+  - {fileID: 419230059809877750, guid: 0f933251899050c4dadc659948e75471, type: 3}
+  armorImpactPrefabs: []
   poolSizePerPrefab: 50
   defaultLifetime: 1
   impactLifetime: 0.5
-  globalScaleMultiplier: 2.65
+  globalScaleMultiplier: 2.5
 --- !u!114 &697417429954438965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2255,7 +2252,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   sectorSize: 250
-  visibleGridSize: 1
+  visibleGridSize: 2
   generationPerimeter: 0
   maxBotsPerSector: 1
   maxTotalBots: 4

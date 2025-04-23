@@ -25,6 +25,12 @@
         // Visual effects
         public GameObject impact;
         
+        // New VFX references for specialized impacts
+        [HideInInspector]
+        public GameObject shieldImpactEffect;
+        [HideInInspector]
+        public GameObject armorImpactEffect;
+        
         // Explosion effect
         [HideInInspector]
         public GameObject explosionEffect;
@@ -273,7 +279,7 @@
                 }
 
                 // Create impact effect using the pool
-                PlayImpactEffect();
+                PlayImpactEffect(target);
 
                 // Apply damage to direct target if valid
                 if (target != null && target.gameObject != null && target.gameObject.activeInHierarchy && !target.IsDeath)
@@ -351,12 +357,50 @@
             }
         }
 
-        void PlayImpactEffect()
+        void PlayImpactEffect(Unit hitUnit)
         {
-            // Use the VFXPool to create and manage impact effects
-            if (VFXPool.Instance != null && impact != null)
+            if (VFXPool.Instance != null)
             {
-                VFXPool.Instance.PlayImpact(impact, transform.position, transform.rotation, 1f);
+                // If we hit a shielded unit, play shield impact effect
+                if (hitUnit != null && hitUnit.Shield > 0 && hitUnit.GetMaxShield() > 0)
+                {
+                    // Try to use unit-specific shield impact or fall back to projectile-specific one
+                    if (shieldImpactEffect != null)
+                    {
+                        VFXPool.Instance.PlayImpact(shieldImpactEffect, transform.position, transform.rotation, 1f);
+                    }
+                    else
+                    {
+                        VFXPool.Instance.PlayShieldImpact(transform.position, transform.rotation, 1f, hitUnit.getId());
+                    }
+                }
+                // Otherwise play regular impact effect
+                else
+                {
+                    GameObject impactToUse = impact;
+                    
+                    // Try to use armor-specific impact if we have one and hit a unit
+                    if (hitUnit != null && armorImpactEffect != null)
+                    {
+                        impactToUse = armorImpactEffect;
+                    }
+                    
+                    // Play impact from pool
+                    if (impactToUse != null)
+                    {
+                        VFXPool.Instance.PlayImpact(impactToUse, transform.position, transform.rotation, 1f);
+                    }
+                    else if (hitUnit != null)
+                    {
+                        // Use unit-specific armor impact as fallback
+                        VFXPool.Instance.PlayArmorImpact(transform.position, transform.rotation, 1f, hitUnit.getId());
+                    }
+                }
+            }
+            else if (impact != null)
+            {
+                // Fallback to instantiation if pool doesn't exist
+                Instantiate(impact, transform.position, transform.rotation);
             }
         }
 

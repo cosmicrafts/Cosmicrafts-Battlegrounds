@@ -954,6 +954,7 @@ MonoBehaviour:
   EnemyDetector: {fileID: 2198226032576818155}
   DetectionRange: 95.9
   AttackRange: 83.5
+  TargetUpdateInterval: 0.2
   CanAttack: 1
   CoolDown: 0.25
   BulletSpeed: 99
@@ -966,7 +967,9 @@ MonoBehaviour:
   Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   Cannons:
   - {fileID: 1478323959484795093}
-  rangeVisualizationType: 1
+  ShieldImpactEffect: {fileID: 0}
+  ArmorImpactEffect: {fileID: 0}
+  rangeVisualizationType: 2
   lineSegments: 12
   rangeColor: {r: 1, g: 0.10047615, b: 0.015686274, a: 1}
   rangeLineWidth: 0.1
@@ -1177,6 +1180,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &8358885684385215374
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 197724, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
+  m_PrefabInstance: {fileID: 8358885684385413074}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8358885684385492400}
+  m_Layer: 0
+  m_Name: 'SparkleShield (Missing Prefab with guid: 9575df930ed65704db77661c5bd8e268)'
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8358885684385492400
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
+  m_PrefabInstance: {fileID: 8358885684385413074}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8358885684385215374}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 0, y: -1.31, z: -0.11}
+  m_LocalScale: {x: 1.3359, y: 1.3359, z: 1.3359}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2198226034328220055}
+  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!1001 &180155165942315878
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1751,13 +1785,3 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
---- !u!1 &8358885684385215374 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 197724, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-  m_PrefabInstance: {fileID: 8358885684385413074}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &8358885684385492400 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-  m_PrefabInstance: {fileID: 8358885684385413074}
-  m_PrefabAsset: {fileID: 0}

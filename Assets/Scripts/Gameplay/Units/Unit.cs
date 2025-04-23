@@ -259,6 +259,36 @@ namespace Cosmicrafts
             
             // Spawn companions
             SpawnCompanions();
+            
+            // Register VFX with the pool
+            RegisterVFXWithPool();
+        }
+
+        /// <summary>
+        /// Registers this unit's VFX with the VFXPool for efficient reuse
+        /// </summary>
+        protected virtual void RegisterVFXWithPool()
+        {
+            // Skip if VFXPool isn't available
+            if (VFXPool.Instance == null || Id <= 0) return;
+            
+            // Register death explosion
+            if (Explosion != null)
+            {
+                VFXPool.Instance.RegisterUnitExplosion(Id, Explosion);
+            }
+            
+            // Register shield impact - if available
+            if (ShieldGameObject != null)
+            {
+                // Try to find child particle system to use as shield impact
+                ParticleSystem[] particleSystems = ShieldGameObject.GetComponentsInChildren<ParticleSystem>(true);
+                if (particleSystems.Length > 0)
+                {
+                    GameObject shieldEffect = particleSystems[0].gameObject;
+                    VFXPool.Instance.RegisterUnitShieldImpact(Id, shieldEffect);
+                }
+            }
         }
 
         protected virtual void Update()
@@ -341,6 +371,19 @@ namespace Cosmicrafts
             if (Shield > 0 && typeDmg != TypeDmg.Direct)
             {
                 Shield -= dmg;
+                
+                // Play shield impact VFX using pool
+                if (VFXPool.Instance != null)
+                {
+                    VFXPool.Instance.PlayShieldImpact(transform.position, Quaternion.identity, transform.localScale.x, Id);
+                }
+                else if (ShieldGameObject != null)
+                {
+                    // Fallback to original behavior
+                    ShieldGameObject.SetActive(true);
+                    shieldVisualTimer = 1f;
+                }
+                
                 if (Shield < 0)
                 {
                     HitPoints += Shield;
@@ -351,6 +394,12 @@ namespace Cosmicrafts
             }
             else if (typeDmg != TypeDmg.Shield)
             {
+                // Play armor impact VFX using pool
+                if (VFXPool.Instance != null)
+                {
+                    VFXPool.Instance.PlayArmorImpact(transform.position, Quaternion.identity, transform.localScale.x, Id);
+                }
+                
                 HitPoints -= dmg;
                 DirectDmg += dmg;
             }
@@ -612,13 +661,12 @@ namespace Cosmicrafts
                 return;
             }
 
-            // Prefer using the pooled VFX system if available
+            // Use unit-specific explosion from pool if available
             float scaleMultiplier = transform.localScale.x * 1.8f;
 
             if (VFXPool.Instance != null)
             {
-                // This will play a random explosion effect from the pool's configured "Explosions" category
-                VFXPool.Instance.PlayExplosion(transform.position, scaleMultiplier);
+                VFXPool.Instance.PlayUnitExplosion(transform.position, scaleMultiplier, Id);
                 return;
             }
 
@@ -723,8 +771,13 @@ namespace Cosmicrafts
                 return;
             }
             
-            // Activate shield visual if available
-            if (ShieldGameObject != null)
+            // Use pooled shield impact effect if available
+            if (VFXPool.Instance != null)
+            {
+                VFXPool.Instance.PlayShieldImpact(transform.position, Quaternion.identity, transform.localScale.x, Id);
+            }
+            // Fallback to old behavior
+            else if (ShieldGameObject != null)
             {
                 ShieldGameObject.SetActive(true);
                 // Set timer instead of using coroutine
@@ -811,10 +864,6 @@ namespace Cosmicrafts
                     // Clear death trigger and set idle
                     MyAnim.ResetTrigger("Die");
                     MyAnim.SetBool("Idle", true);
-                    
-                  //  Debug.Log($"Completely reset animator for {gameObject.name}");
-                } else {
-                    //Debug.LogWarning($"Animator on {gameObject.name} has no controller.");
                 }
             }
             
@@ -837,10 +886,11 @@ namespace Cosmicrafts
                 Destroy(portal, 3f);
             }
             
-            // Respawn companions on reset
+            // Respawn companions
             SpawnCompanions();
             
-            //Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
+            // Make sure VFX are registered with the pool
+            RegisterVFXWithPool();
         }
 
         /// <summary>

@@ -13,251 +13,592 @@ namespace Cosmicrafts
         Line    // Draw a line pointing forward representing the AttackRange
     }
 
-    [RequireComponent(typeof(Unit))] // Ensure Shooter is on a Unit
+    [RequireComponent(typeof(Unit))]
     public class Shooter : MonoBehaviour
     {
-        [Header("Detection & Attack")]
+        [Header("Detection & Aggro")]
         [Tooltip("The collider responsible for detecting potential targets.")]
         public SphereCollider EnemyDetector;
-        [Tooltip("The radius within which enemies are detected.")]
-        [Range(1, 150)] public float DetectionRange = 15f; // Renamed and set default
+        [Tooltip("The radius within which enemies are detected and unit can become aggressive.")]
+        [Range(1, 150)] public float DetectionRange = 15f;
         [Tooltip("The radius within which the unit can actually attack.")]
-        [Range(1, 150)] public float AttackRange = 10f; // Previously RangeDetector
+        [Range(1, 150)] public float AttackRange = 10f;
+        [Tooltip("How quickly the shooter recalculates its best target (seconds).")]
+        [Range(0.1f, 1.0f)] public float TargetUpdateInterval = 0.2f;
         
+        [Header("Attack Properties")]
         [HideInInspector] public bool CanAttack = true;
         [Range(0, 99)] public float CoolDown = 1f;
         [Range(1, 99)] public float BulletSpeed = 10f;
         [Range(1, 99)] public int BulletDamage = 1;
         [Range(0f, 1f)] public float criticalStrikeChance = 0f;
         public float criticalStrikeMultiplier = 2.0f;
+        
+        [Header("Movement & Rotation")]
         public bool RotateToEnemy = true;
         public bool StopToAttack = true;
         [Range(1f, 10f)] public float rotationSpeed = 5f;
+        
+        [Header("Projectile Settings")]
         public GameObject Bullet;
         public Transform[] Cannons;
+        
+        [Header("VFX Settings")]
+        [Tooltip("Impact effect when projectile hits a shield")]
+        public GameObject ShieldImpactEffect;
+        [Tooltip("Impact effect when projectile hits armor/health")]
+        public GameObject ArmorImpactEffect;
 
-        [Header("Range Visualization (Based on AttackRange)")]
+        [Header("Range Visualization")]
         [Tooltip("How to visualize the attack range.")]
         [SerializeField] private RangeVisualizationType rangeVisualizationType = RangeVisualizationType.Circle;
-        [SerializeField][Range(12, 72)] private int lineSegments = 36; // Number of segments for the circle
+        [SerializeField][Range(12, 72)] private int lineSegments = 36;
         [SerializeField] private Color rangeColor = Color.yellow;
         [SerializeField] private float rangeLineWidth = 0.1f;
         
-        // Cached scale to detect changes
-        private Vector3 lastScale;
-
-        private LineRenderer rangeLineRenderer;
-        private ParticleSystem[] MuzzleFlash;
-        private float DelayShoot = 0f;
-        private Ship MyShip;
-        private Unit MyUnit;
-        private HashSet<Unit> InRange;  // Use HashSet for O(1) lookups
-        private Unit Target;
-        
-        // Add state for patrol/engage behavior
+        // Internal state tracking
         private enum ShooterState 
         {
-            Patrolling,  // No enemies detected, default behavior
-            Engaging     // Enemy detected, combat behavior
-        }
-        private ShooterState currentState = ShooterState.Patrolling;
-        
-        // Public accessor for current state
-        public bool IsEngagingTarget() => currentState == ShooterState.Engaging;
-        
-        // Get the actual attack range in world space, accounting for unit scale
-        public float GetWorldAttackRange()
-        {
-            // Use the largest scale component to determine world space range
-            float maxScale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
-            return AttackRange * maxScale;
+            Idle,       // Default state, no enemies detected
+            Pursuing,   // Enemies detected but out of attack range 
+            Attacking   // Enemy in attack range, actively attacking
         }
         
-        // Get the actual detection range in world space, accounting for unit scale
-        public float GetWorldDetectionRange()
-        {
-            // Use the largest scale component to determine world space range
-            float maxScale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
-            return DetectionRange * maxScale;
-        }
-
+        // Private fields
+        private ShooterState _currentState = ShooterState.Idle;
+        private LineRenderer _rangeLineRenderer;
+        private Vector3 _lastScale;
+        private float _targetRecalcTimer = 0f;
+        private float _attackCooldownTimer = 0f;
+        private Unit _currentTarget = null;
+        private Unit _myUnit;
+        private Ship _myShip;
+        
+        // Potential targets list - using HashSet for O(1) contains checks
+        private HashSet<Unit> _potentialTargets = new HashSet<Unit>();
+        
+        // For faster nearest target finding without generating garbage
+        private List<Unit> _validTargetsCache = new List<Unit>(10);
+        
+        // Cache performance for muzzle flash
+        private ParticleSystem[] _muzzleFlashEffects;
+        
+        #region Unity Lifecycle
+        
         private void Awake()
         {
-            // Auto‑assign the detector if the reference was lost in the prefab/inspector
+            // Cache components
+            _myUnit = GetComponent<Unit>();
+            _myShip = GetComponent<Ship>();
+            
+            // Validate detector
             if (EnemyDetector == null)
             {
                 EnemyDetector = GetComponentInChildren<SphereCollider>();
                 if (EnemyDetector == null)
                 {
                     Debug.LogError($"Shooter on {gameObject.name} needs an EnemyDetector SphereCollider!", this);
-                    this.enabled = false; // Disable shooter if no detector
+                    this.enabled = false;
                     return;
                 }
             }
-
-            // Ensure collections and references are ready before any trigger events
-            if (InRange == null)
-            {
-                InRange = new HashSet<Unit>();
-            }
-
-            // Cache common components early (they won't change)
-            if (MyUnit == null) MyUnit = GetComponent<Unit>();
-            if (MyShip == null) MyShip = GetComponent<Ship>();
             
-            // Store initial scale
-            lastScale = transform.lossyScale;
-
-            // Sync detector radius at startup with world scale
-            EnemyDetector.radius = GetWorldDetectionRange();
-
-            MuzzleFlash = new ParticleSystem[Cannons.Length];
-
-            for (int i = 0; i < Cannons.Length; i++)
-            {
-                if (Cannons[i] != null && Cannons[i].childCount > 0)
-                {
-                    MuzzleFlash[i] = Cannons[i].GetChild(0).GetComponent<ParticleSystem>();
-                }
-            }
-            if (CoolDown <= 0f) CoolDown = 0.1f;
+            // Initialize scale tracking
+            _lastScale = transform.lossyScale;
             
-            // Setup LineRenderer based on selected type
+            // Set detector radius based on current scale
+            EnemyDetector.radius = GetScaledDetectionRange();
+            
+            // Setup muzzle flash references
+            SetupMuzzleFlashEffects();
+            
+            // Create range visualizer
             SetupRangeVisualizer();
+            
+            // Register VFX with pool
+            RegisterVFXWithPool();
         }
-
-        void Start()
+        
+        private void Start()
         {
-            // Draw the initial range visualization
+            // Draw attack range visualization
             UpdateRangeVisualizer();
         }
-
-        void Update()
+        
+        /// <summary>
+        /// Register this shooter's VFX with the pool system
+        /// </summary>
+        private void RegisterVFXWithPool()
         {
-            // Check if scale has changed and update visualizer if needed
-            if (lastScale != transform.lossyScale)
+            if (VFXPool.Instance == null || _myUnit == null) return;
+            
+            int unitId = _myUnit.getId();
+            if (unitId <= 0) return;
+            
+            // Register the bullet prefab
+            if (Bullet != null)
             {
-                lastScale = transform.lossyScale;
-                UpdateRangeVisualizer();
+                VFXPool.Instance.RegisterUnitProjectile(unitId, Bullet);
                 
-                // Update detector radius if scale changed
-                if (EnemyDetector != null)
+                // If the bullet has impact effect, register that too
+                Projectile projectile = Bullet.GetComponent<Projectile>();
+                if (projectile != null && projectile.impact != null)
                 {
-                    EnemyDetector.radius = GetWorldDetectionRange();
+                    VFXPool.Instance.RegisterUnitArmorImpact(unitId, projectile.impact);
                 }
             }
             
-            if (MyUnit.GetIsDeath() || !CanAttack || !MyUnit.InControl())
+            // Register impact VFX if provided
+            if (ShieldImpactEffect != null)
             {
-                // If we cannot attack, ensure ship isn't trying to close distance to a target
-                if (Target != null && MyShip != null && StopToAttack)
-                {
-                    MyShip.ResetDestination(); // Go back to default behavior
-                }
-                Target = null; // Clear target if we can't attack
-                currentState = ShooterState.Patrolling; // Reset state
-                return; // Exit if dead, disabled, or casting
-            }
-
-            // 1. Check if we have any potential targets in detection range
-            bool haveDetectedEnemies = InRange.Count > 0;
-            
-            // If we have no enemies in detection range, resume patrolling
-            if (!haveDetectedEnemies)
-            {
-                // If we were previously engaging but now have no targets, reset
-                if (currentState == ShooterState.Engaging)
-                {
-                    // Clear target and reset to default movement
-                    if (Target != null) SetTarget(null);
-                    if (MyShip != null && StopToAttack) MyShip.ResetDestination();
-                    currentState = ShooterState.Patrolling;
-                }
-                
-                // In patrol mode, don't try to find or engage targets
-                return;
+                VFXPool.Instance.RegisterUnitShieldImpact(unitId, ShieldImpactEffect);
             }
             
-            // If we reach here, we have detected enemies, so enter engaging state
-            currentState = ShooterState.Engaging;
-
-            // 2. Validate Current Target (now that we know we have at least one enemy)
-            bool targetStillValid = Target != null && !Target.GetIsDeath();
-            
-            // Use world space attack range in distance check
-            float worldAttackRange = GetWorldAttackRange();
-            bool targetInAttackRange = targetStillValid && 
-                (Vector3.Distance(transform.position, Target.transform.position) <= worldAttackRange);
-
-            // 3. If current target is invalid or out of attack range, find a new one
-            if (!targetStillValid || !targetInAttackRange) 
-            {   
-                // If the target became invalid/out of range, clear it before finding new
-                if(Target != null) SetTarget(null);
-                
-                FindNewTarget(); // Find the *best* candidate currently detected
-                
-                // Re-evaluate attack range for the newly found target (if any)
-                targetStillValid = Target != null && !Target.GetIsDeath();
-                targetInAttackRange = targetStillValid && 
-                    (Vector3.Distance(transform.position, Target.transform.position) <= worldAttackRange);
-            }
-
-            // 4. Only handle movement if we have a valid target
-            if (targetStillValid)
+            if (ArmorImpactEffect != null)
             {
-                // Handle Ship Movement (if applicable)
-                if (MyShip != null && StopToAttack)
-                {
-                    // Tell ship to move towards target and stop just inside attack range
-                    // Use world space attack range for movement
-                    MyShip.SetDestination(Target.transform.position, worldAttackRange * 0.9f); 
-                }
-                
-                // Rotate towards target even if not yet in attack range
-                RotateTowardsTarget();
-                
-                // 5. Attempt to Shoot if target is valid AND in attack range
-                if (targetInAttackRange) 
-                {
-                    ShootTarget(); // This checks cooldown internally
-                }
-            }
-            else if (MyShip != null && StopToAttack)
-            {
-                // No valid target found among detected enemies, resume default patrol
-                MyShip.ResetDestination();
+                VFXPool.Instance.RegisterUnitArmorImpact(unitId, ArmorImpactEffect);
             }
         }
-
-        // Public method to update the visualizer if range or type changes
-        public void UpdateRangeVisualizer()
+        
+        private void Update()
         {
-            // Ensure detector radius always matches the range value used for visualization
-            if (EnemyDetector != null)
+            // Handle scale changes
+            if (_lastScale != transform.lossyScale)
             {
-                // Set detector radius to world scale detection range
-                EnemyDetector.radius = GetWorldDetectionRange();
+                _lastScale = transform.lossyScale;
+                EnemyDetector.radius = GetScaledDetectionRange();
+                UpdateRangeVisualizer();
             }
-            else { 
-                Debug.LogError($"EnemyDetector is missing on {gameObject.name}! Cannot sync range.", this);
+            
+            // Exit if dead or cannot attack
+            if (!IsOperational())
+            {
+                ResetTargeting();
                 return;
             }
             
-            if (rangeLineRenderer == null) 
+            // Process targeting and attack flow
+            ProcessTargeting();
+        }
+        
+        private void FixedUpdate()
+        {
+            // Update cooldown timer - keep this in FixedUpdate for consistent timing
+            if (_attackCooldownTimer > 0)
             {
-                SetupRangeVisualizer(); 
-                if (rangeLineRenderer == null) return; 
+                _attackCooldownTimer -= Time.fixedDeltaTime;
+            }
+        }
+        
+        #endregion
+        
+        #region Targeting Logic
+        
+        private void ProcessTargeting()
+        {
+            // Clear invalid targets from potential targets (dead, null, etc.)
+            CleanupInvalidTargets();
+            
+            // No targets in detection range? Reset and bail out
+            if (_potentialTargets.Count == 0)
+            {
+                ChangeState(ShooterState.Idle);
+                return;
             }
             
-            rangeLineRenderer.enabled = (rangeVisualizationType != RangeVisualizationType.None);
-            if (!rangeLineRenderer.enabled) return;
+            // Update target selection at fixed intervals to avoid doing it every frame
+            _targetRecalcTimer -= Time.deltaTime;
+            if (_currentTarget == null || _targetRecalcTimer <= 0)
+            {
+                // Time to find a new best target
+                _targetRecalcTimer = TargetUpdateInterval;
+                SelectBestTarget();
+            }
             
-            rangeLineRenderer.startWidth = rangeLineWidth;
-            rangeLineRenderer.endWidth = rangeLineWidth;
-            rangeLineRenderer.startColor = rangeColor;
-            rangeLineRenderer.endColor = rangeColor;
-
+            // If we have a target, handle pursuit and attack
+            if (_currentTarget != null)
+            {
+                // Always rotate towards current target, even if out of attack range
+                if (RotateToEnemy)
+                {
+                    RotateTowardsTarget();
+                }
+                
+                // Is target in attack range?
+                float distToTarget = Vector3.Distance(transform.position, _currentTarget.transform.position);
+                float scaledAttackRange = GetScaledAttackRange();
+                
+                if (distToTarget <= scaledAttackRange)
+                {
+                    // Target is in attack range - attack!
+                    ChangeState(ShooterState.Attacking);
+                    
+                    // Try to attack (cooldown handled internally)
+                    TryAttack();
+                }
+                else
+                {
+                    // Target is out of attack range - pursue
+                    ChangeState(ShooterState.Pursuing);
+                    
+                    // Move towards target if we can
+                    if (_myShip != null && StopToAttack)
+                    {
+                        _myShip.SetDestination(_currentTarget.transform.position, scaledAttackRange * 0.9f);
+                    }
+                }
+            }
+            else
+            {
+                // No valid target found despite having potentials - go idle
+                ChangeState(ShooterState.Idle);
+            }
+        }
+        
+        private void SelectBestTarget()
+        {
+            if (_potentialTargets.Count == 0)
+            {
+                _currentTarget = null;
+                return;
+            }
+            
+            // Fast path for single target
+            if (_potentialTargets.Count == 1)
+            {
+                foreach (var target in _potentialTargets)
+                {
+                    _currentTarget = target;
+                    return;
+                }
+            }
+            
+            // Clear and populate our working list to avoid allocations
+            _validTargetsCache.Clear();
+            foreach (var target in _potentialTargets)
+            {
+                if (target != null && !target.GetIsDeath() && _myUnit.IsEnemy(target))
+                {
+                    _validTargetsCache.Add(target);
+                }
+            }
+            
+            // No valid targets? Clear current target
+            if (_validTargetsCache.Count == 0)
+            {
+                _currentTarget = null;
+                return;
+            }
+            
+            // Find closest valid target
+            Unit bestTarget = null;
+            float bestDistanceSqr = float.MaxValue;
+            Vector3 myPos = transform.position;
+            
+            foreach (var target in _validTargetsCache)
+            {
+                float distSqr = (target.transform.position - myPos).sqrMagnitude;
+                if (distSqr < bestDistanceSqr)
+                {
+                    bestTarget = target;
+                    bestDistanceSqr = distSqr;
+                }
+            }
+            
+            _currentTarget = bestTarget;
+        }
+        
+        private void CleanupInvalidTargets()
+        {
+            // Temporary list to avoid modifying collection during enumeration
+            _validTargetsCache.Clear();
+            
+            foreach (var target in _potentialTargets)
+            {
+                if (target == null || target.GetIsDeath() || !_myUnit.IsEnemy(target))
+                {
+                    _validTargetsCache.Add(target); // Mark for removal
+                }
+            }
+            
+            // Remove invalid targets
+            foreach (var invalidTarget in _validTargetsCache)
+            {
+                _potentialTargets.Remove(invalidTarget);
+            }
+            
+            // If current target is now invalid, clear it
+            if (_currentTarget != null && 
+                (_currentTarget.GetIsDeath() || !_myUnit.IsEnemy(_currentTarget)))
+            {
+                _currentTarget = null;
+            }
+        }
+        
+        private void RotateTowardsTarget()
+        {
+            if (_currentTarget == null) return;
+            
+            Vector3 direction = _currentTarget.transform.position - transform.position;
+            direction.y = 0; // Keep rotations on horizontal plane
+            
+            if (direction.sqrMagnitude < 0.001f) return;
+            
+            Quaternion targetRotation = Quaternion.LookRotation(direction);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation, 
+                targetRotation, 
+                Time.deltaTime * rotationSpeed
+            );
+        }
+        
+        private void ChangeState(ShooterState newState)
+        {
+            // Only process state change if it's different
+            if (newState == _currentState) return;
+            
+            // Handle exit from old state
+            switch (_currentState)
+            {
+                case ShooterState.Pursuing:
+                    // If we were pursuing and going to idle, reset ship destination
+                    if (newState == ShooterState.Idle && _myShip != null && StopToAttack)
+                    {
+                        _myShip.ResetDestination();
+                    }
+                    break;
+            }
+            
+            // Set new state
+            _currentState = newState;
+            
+            // Handle enter to new state
+            switch (_currentState)
+            {
+                case ShooterState.Idle:
+                    // If becoming idle, ensure ship resets
+                    if (_myShip != null && StopToAttack)
+                    {
+                        _myShip.ResetDestination();
+                    }
+                    break;
+            }
+        }
+        
+        private void ResetTargeting()
+        {
+            _currentTarget = null;
+            ChangeState(ShooterState.Idle);
+        }
+        
+        #endregion
+        
+        #region Attack Logic
+        
+        private void TryAttack()
+        {
+            // Validate target and ready state
+            if (_currentTarget == null || _attackCooldownTimer > 0f) return;
+            
+            // Double-check attack range
+            float distToTarget = Vector3.Distance(transform.position, _currentTarget.transform.position);
+            if (distToTarget > GetScaledAttackRange()) return;
+            
+            // Fire projectiles
+            FireProjectiles();
+            
+            // Trigger attack animation
+            _myUnit?.GetAnimator()?.SetTrigger("Attack");
+            
+            // Reset cooldown
+            _attackCooldownTimer = CoolDown;
+        }
+        
+        private void FireProjectiles()
+        {
+            if (_currentTarget == null) return;
+            
+            foreach (var cannon in Cannons)
+            {
+                if (cannon == null) continue;
+                
+                // Get bullet from pool or instantiate
+                GameObject bulletObj = GetBulletFromPool(cannon);
+                if (bulletObj == null) continue;
+                
+                Projectile bullet = bulletObj.GetComponent<Projectile>();
+                if (bullet == null)
+                {
+                    RecycleBullet(bulletObj);
+                    continue;
+                }
+                
+                // Setup bullet properties
+                SetupBullet(bullet, cannon);
+                
+                // Play muzzle flash
+                PlayMuzzleFlash(cannon);
+            }
+        }
+        
+        private GameObject GetBulletFromPool(Transform cannonTransform)
+        {
+            GameObject bulletObj = null;
+            
+            // Get from VFXPool if available and unit has an ID
+            if (VFXPool.Instance != null && _myUnit != null && _myUnit.getId() > 0)
+            {
+                // Try to get unit-specific projectile
+                bulletObj = VFXPool.Instance.GetUnitProjectile(_myUnit.getId());
+                
+                // Fallback to specified bullet if unit-specific wasn't found
+                if (bulletObj == null && Bullet != null)
+                {
+                    bulletObj = VFXPool.Instance.GetProjectile(Bullet);
+                }
+                
+                if (bulletObj != null)
+                {
+                    bulletObj.transform.position = cannonTransform.position;
+                    bulletObj.transform.rotation = cannonTransform.rotation;
+                    bulletObj.SetActive(true);
+                }
+            }
+            // Direct instantiation fallback
+            else if (Bullet != null)
+            {
+                bulletObj = Instantiate(Bullet, cannonTransform.position, cannonTransform.rotation);
+            }
+            
+            return bulletObj;
+        }
+        
+        private void SetupBullet(Projectile bullet, Transform cannon)
+        {
+            // Set faction
+            bullet.MyFaction = _myUnit.MyFaction;
+            bullet.PrefabReference = Bullet;
+            
+            // Set impact effects if available
+            if (ShieldImpactEffect != null)
+            {
+                bullet.shieldImpactEffect = ShieldImpactEffect;
+            }
+            
+            if (ArmorImpactEffect != null)
+            {
+                bullet.armorImpactEffect = ArmorImpactEffect;
+            }
+            
+            // Set target - verify it's still valid
+            if (_currentTarget != null && _currentTarget.gameObject != null && !_currentTarget.GetIsDeath())
+            {
+                bullet.SetTarget(_currentTarget.gameObject);
+                
+                // Calculate damage (with critical chance)
+                bullet.Dmg = Random.value < criticalStrikeChance ? 
+                    (int)(BulletDamage * criticalStrikeMultiplier) : BulletDamage;
+                    
+                bullet.Speed = BulletSpeed;
+            }
+            else
+            {
+                // Target became invalid, recycle bullet
+                RecycleBullet(bullet.gameObject);
+            }
+        }
+        
+        private void RecycleBullet(GameObject bulletObj)
+        {
+            if (VFXPool.Instance != null)
+            {
+                VFXPool.Instance.ReturnProjectile(bulletObj, Bullet);
+            }
+            else
+            {
+                Destroy(bulletObj);
+            }
+        }
+        
+        private void PlayMuzzleFlash(Transform cannon)
+        {
+            // Find the index of this cannon
+            for (int i = 0; i < Cannons.Length; i++)
+            {
+                if (Cannons[i] == cannon && i < _muzzleFlashEffects.Length && _muzzleFlashEffects[i] != null)
+                {
+                    _muzzleFlashEffects[i].Play();
+                    break;
+                }
+            }
+        }
+        
+        #endregion
+        
+        #region Range Visualization
+        
+        private void SetupRangeVisualizer()
+        {
+            // Find or create line renderer
+            if (_rangeLineRenderer == null)
+            {
+                _rangeLineRenderer = GetComponentInChildren<LineRenderer>();
+                
+                if (_rangeLineRenderer == null)
+                {
+                    // Create new GameObject for visualization
+                    GameObject lineObj = new GameObject("RangeVisualizer");
+                    lineObj.transform.SetParent(transform);
+                    lineObj.transform.localPosition = Vector3.zero;
+                    lineObj.transform.localRotation = Quaternion.identity;
+                    lineObj.transform.localScale = Vector3.one;
+                    _rangeLineRenderer = lineObj.AddComponent<LineRenderer>();
+                }
+            }
+            
+            // Configure renderer
+            _rangeLineRenderer.useWorldSpace = false;
+            
+            // Setup material if needed
+            if (_rangeLineRenderer.sharedMaterial == null || 
+                _rangeLineRenderer.sharedMaterial.shader == null || 
+                _rangeLineRenderer.sharedMaterial.shader.name == "Hidden/InternalErrorShader")
+            {
+                Shader shader = Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply");
+                if (shader == null) shader = Shader.Find("Unlit/Color");
+                
+                if (shader != null)
+                {
+                    _rangeLineRenderer.material = new Material(shader);
+                }
+                else
+                {
+                    Debug.LogError("Could not find a suitable shader for LineRenderer visualization");
+                }
+            }
+            
+            _rangeLineRenderer.alignment = LineAlignment.TransformZ;
+        }
+        
+        public void UpdateRangeVisualizer()
+        {
+            if (_rangeLineRenderer == null)
+            {
+                SetupRangeVisualizer();
+                if (_rangeLineRenderer == null) return;
+            }
+            
+            // Update visibility based on visualization type
+            _rangeLineRenderer.enabled = (rangeVisualizationType != RangeVisualizationType.None);
+            if (!_rangeLineRenderer.enabled) return;
+            
+            // Configure appearance
+            _rangeLineRenderer.startWidth = rangeLineWidth;
+            _rangeLineRenderer.endWidth = rangeLineWidth;
+            _rangeLineRenderer.startColor = rangeColor;
+            _rangeLineRenderer.endColor = rangeColor;
+            
+            // Draw appropriate visualization
             switch (rangeVisualizationType)
             {
                 case RangeVisualizationType.Circle:
@@ -269,342 +610,253 @@ namespace Cosmicrafts
             }
         }
         
-        private void SetupRangeVisualizer()
-        {
-            if (rangeLineRenderer == null)
-            {
-                rangeLineRenderer = GetComponentInChildren<LineRenderer>();
-                if (rangeLineRenderer == null)
-                {
-                    GameObject lineObj = new GameObject("RangeVisualizer");
-                    lineObj.transform.SetParent(transform);
-                    lineObj.transform.localPosition = Vector3.zero;
-                    lineObj.transform.localRotation = Quaternion.identity; 
-                    lineObj.transform.localScale = Vector3.one;
-                    rangeLineRenderer = lineObj.AddComponent<LineRenderer>();
-                }
-            }
-            rangeLineRenderer.useWorldSpace = false; 
-            if (rangeLineRenderer.sharedMaterial == null || rangeLineRenderer.sharedMaterial.shader == null || rangeLineRenderer.sharedMaterial.shader.name == "Hidden/InternalErrorShader")
-            {
-                Shader shader = Shader.Find("Legacy Shaders/Particles/Alpha Blended Premultiply");
-                if (shader == null) shader = Shader.Find("Unlit/Color");
-                if (shader != null) rangeLineRenderer.material = new Material(shader);
-                else Debug.LogError("Could not find a suitable default shader for LineRenderer.");
-            }
-            rangeLineRenderer.alignment = LineAlignment.TransformZ; 
-            UpdateRangeVisualizer(); 
-        }
-
         private void DrawRangeCircle()
         {
-            // Build circle that accurately represents the world-space attack range
             int segments = lineSegments;
-            rangeLineRenderer.positionCount = segments + 1;
-            rangeLineRenderer.loop = true;
-            rangeLineRenderer.transform.localRotation = Quaternion.identity; // No extra rotation needed
-
+            _rangeLineRenderer.positionCount = segments + 1;
+            _rangeLineRenderer.loop = true;
+            
             float angleStep = 360f / segments;
             Vector3[] points = new Vector3[segments + 1];
-            Vector3 center = transform.position;
             
-            // Use AttackRange directly for local space visualization
-            // The LineRenderer is a child of this object, so it inherits the scale
+            // Create circle in local space
             for (int i = 0; i <= segments; i++)
             {
                 float angleRad = i * angleStep * Mathf.Deg2Rad;
-                // Create the circle in local coordinates
-                Vector3 offset = new Vector3(Mathf.Sin(angleRad), 0f, Mathf.Cos(angleRad)) * AttackRange;
-                Vector3 worldPoint = center + offset;
-                
-                // Convert to local space for the LineRenderer
-                points[i] = transform.InverseTransformPoint(worldPoint);
+                Vector3 dir = new Vector3(Mathf.Sin(angleRad), 0f, Mathf.Cos(angleRad));
+                points[i] = dir * AttackRange;
             }
-
-            rangeLineRenderer.SetPositions(points);
+            
+            _rangeLineRenderer.SetPositions(points);
         }
         
         private void DrawDirectionalLine()
         {
-            rangeLineRenderer.positionCount = 2;
-            rangeLineRenderer.loop = false;
-            rangeLineRenderer.transform.localRotation = Quaternion.identity;
-
-            // Start point is always the origin of the LineRenderer (local zero)
-            Vector3 localStart = Vector3.zero;
-
-            // Compute end point using AttackRange, not accounting for scale (because LineRenderer inherits scale)
-            Vector3 endWorld = transform.position + transform.forward * AttackRange;
-            Vector3 localEnd = transform.InverseTransformPoint(endWorld);
-
-            rangeLineRenderer.SetPositions(new Vector3[] { localStart, localEnd });
-        }
-
-        private void RotateTowardsTarget()
-        {
-            // Only rotate if we're in combat state, have rotation enabled, and have a valid target
-            if (currentState != ShooterState.Engaging || !RotateToEnemy || Target == null) return;
-
-            Vector3 direction = (Target.transform.position - transform.position).normalized;
-            direction.y = 0; // Keep rotation on horizontal plane
-            if (direction.sqrMagnitude < 0.0001f) return;
-
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, Time.deltaTime * rotationSpeed);
-        }
-
-        public void ShootTarget()
-        {
-            // Target validity and range is checked in Update before calling this
-            if (Target == null) return; // Still good to have a basic null check
+            _rangeLineRenderer.positionCount = 2;
+            _rangeLineRenderer.loop = false;
             
-            // Rotate (redundant but safe if ShootTarget called directly elsewhere)
-            RotateTowardsTarget();
-
-            // Fire if cooldown is ready
-            if (DelayShoot <= 0f)
-            {
-                FireProjectiles();
-                DelayShoot = CoolDown; // Reset cooldown *after* firing
-                MyUnit?.GetAnimator()?.SetTrigger("Attack");
-            }
-        }
-
-        private void FireProjectiles()
-        {
-            if (Bullet == null) 
-            { 
-                Debug.LogWarning($"Shooter on {gameObject.name} has no Bullet prefab assigned!", this);
-                return; 
-            }
-             
-            foreach(var cannon in Cannons)
-            {
-                if (cannon == null) continue; // Skip if cannon transform is missing
-                
-                // Use VFXPool to get a pooled projectile instead of instantiating
-                GameObject bulletObj = null;
-                
-                if (VFXPool.Instance != null)
-                {
-                    // Get projectile from pool
-                    bulletObj = VFXPool.Instance.GetProjectile(Bullet);
-                    
-                    if (bulletObj != null)
-                    {
-                        // Position at cannon
-                        bulletObj.transform.position = cannon.position;
-                        bulletObj.transform.rotation = cannon.rotation;
-                        bulletObj.SetActive(true);
-                    }
-                }
-                else
-                {
-                    // Fallback to instantiation if pool doesn't exist
-                    bulletObj = Instantiate(Bullet, cannon.position, cannon.rotation);
-                }
-                
-                if (bulletObj == null) continue;
-                
-                Projectile bullet = bulletObj.GetComponent<Projectile>();
-                
-                if (bullet != null)
-                {
-                    // Set projectile properties
-                    bullet.MyFaction = MyUnit.MyFaction;
-                    bullet.PrefabReference = Bullet; // Store reference to original prefab for pool return
-                    
-                    // Double check target validity just before firing
-                    if (Target != null && Target.gameObject != null && !Target.GetIsDeath()) 
-                    {
-                        bullet.SetTarget(Target.gameObject);
-                    }
-                    else
-                    {
-                        // Return to pool or destroy if target is invalid
-                        if (VFXPool.Instance != null)
-                        {
-                            VFXPool.Instance.ReturnProjectile(bulletObj, Bullet);
-                        }
-                        else
-                        {
-                            Destroy(bulletObj);
-                        }
-                        continue; // Skip this bullet
-                    }
-                    
-                    bullet.Speed = BulletSpeed;
-                    bullet.Dmg = Random.value < criticalStrikeChance ? 
-                        (int)(BulletDamage * criticalStrikeMultiplier) : BulletDamage;
-
-                    // Play muzzle flash
-                    ParticleSystem flash = null;
-                    if (cannon.childCount > 0) flash = cannon.GetChild(0).GetComponent<ParticleSystem>();
-                    flash?.Play();
-                }
-                else
-                {
-                    Debug.LogWarning($"Pooled/instantiated bullet from {gameObject.name} is missing Projectile component!", bulletObj);
-                    // Clean up invalid bullet
-                    if (VFXPool.Instance != null)
-                    {
-                        VFXPool.Instance.ReturnProjectile(bulletObj, Bullet);
-                    }
-                    else
-                    {
-                        Destroy(bulletObj);
-                    }
-                }
-            }
-        }
-
-        // Tick cooldown timer separately
-        private void HandleCooldown()
-        {
-             if (DelayShoot > 0f)
-             {
-                 DelayShoot -= Time.deltaTime;
-             }
-        }
-
-        void FixedUpdate() 
-        {
-            HandleCooldown();
-        }
-
-        // SetTarget now only updates the Target variable. Movement is handled in Update.
-        public void SetTarget(Unit target)
-        {
-            // Use IsAlly instead of direct team comparison
-            if (target != null && MyUnit.IsAlly(target))
-            {   
-                if (Target == target) Target = null; // Clear if setting self/friendly
-                return; 
-            }
+            Vector3[] points = new Vector3[2];
+            points[0] = Vector3.zero;
+            points[1] = Vector3.forward * AttackRange;
             
-            // Only update if the target is actually different
-            if (Target != target) 
-            { 
-                Target = target;
+            _rangeLineRenderer.SetPositions(points);
+        }
+        
+        #endregion
+        
+        #region Utility Methods
+        
+        // Check if shooter can operate
+        private bool IsOperational()
+        {
+            return !_myUnit.GetIsDeath() && CanAttack && _myUnit.InControl();
+        }
+        
+        // Get detection range accounting for scale
+        public float GetScaledDetectionRange()
+        {
+            float maxScale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            return DetectionRange * maxScale;
+        }
+        
+        // Get attack range accounting for scale
+        public float GetScaledAttackRange()
+        {
+            float maxScale = Mathf.Max(transform.lossyScale.x, transform.lossyScale.z);
+            return AttackRange * maxScale;
+        }
+        
+        // Setup muzzle flash references
+        private void SetupMuzzleFlashEffects()
+        {
+            _muzzleFlashEffects = new ParticleSystem[Cannons.Length];
+            
+            for (int i = 0; i < Cannons.Length; i++)
+            {
+                Transform cannon = Cannons[i];
+                if (cannon != null && cannon.childCount > 0)
+                {
+                    _muzzleFlashEffects[i] = cannon.GetChild(0).GetComponent<ParticleSystem>();
+                }
             }
         }
-
-        // AddEnemy just adds to the list. Update loop handles choosing target.
+        
+        #endregion
+        
+        #region Public API
+        
+        // Add enemy to potential targets
         public void AddEnemy(Unit enemy)
         {
-            // Use !IsEnemy to check for invalid targets (null, self, allies, dead)
-            if (enemy == null || enemy.GetIsDeath() || !MyUnit.IsEnemy(enemy)) return;
+            if (enemy == null || enemy.GetIsDeath() || !_myUnit.IsEnemy(enemy)) return;
             
-            // Add valid enemy to potential targets list
-            InRange.Add(enemy);
+            _potentialTargets.Add(enemy);
+            
+            // New enemy added - force target recalculation on next update
+            _targetRecalcTimer = 0f;
         }
-
-        // RemoveEnemy just removes from the list. Update loop handles target loss.
+        
+        // Remove enemy from potential targets
         public void RemoveEnemy(Unit enemy)
         {
             if (enemy == null) return;
             
-            InRange.Remove(enemy);
+            bool wasRemoved = _potentialTargets.Remove(enemy);
             
-            // If the removed enemy was our current target, 
-            // the Update loop will detect it as invalid/out of range and find a new one.
-            // No need for specific logic here anymore.
-            // if (Target == enemy)
-            // {
-            //     Target = null;
-            //     FindNewTarget(); // This call is removed
-            // }
-        }
-
-        // FindNewTarget now finds the closest valid enemy detected by the collider,
-        // regardless of whether it's currently in exact attack range.
-        private void FindNewTarget()
-        {
-            Unit closestEnemy = null;
-            float closestDistanceSqr = float.MaxValue;
-            
-            List<Unit> currentInRange = new List<Unit>(InRange);
-            
-            foreach (Unit potentialTarget in currentInRange)
+            // If we removed our current target, force recalculation
+            if (wasRemoved && enemy == _currentTarget)
             {
-                // Check validity using IsEnemy, also check death state
-                if (potentialTarget == null || potentialTarget.GetIsDeath() || !MyUnit.IsEnemy(potentialTarget))
-                { 
-                    InRange.Remove(potentialTarget); // Clean up invalid entries from main set
-                    continue; 
-                }
-                
-                // Find the closest valid enemy based on distance
-                float distanceSqr = (transform.position - potentialTarget.transform.position).sqrMagnitude;
-                if (distanceSqr < closestDistanceSqr)
-                {
-                    closestEnemy = potentialTarget;
-                    closestDistanceSqr = distanceSqr;
-                }
-            }
-            
-            if(Target != closestEnemy) 
-            { 
-                SetTarget(closestEnemy); 
+                _currentTarget = null;
+                _targetRecalcTimer = 0f;
             }
         }
-
+        
+        // Completely stop attacking
         public void StopAttack()
         {
             CanAttack = false;
-            InRange.Clear();
-            SetTarget(null);
-            currentState = ShooterState.Patrolling;
-            // Stop Ship if it was moving towards a target
-            if (MyShip != null && StopToAttack)
-            {
-                MyShip.ResetDestination();
-            }
+            _potentialTargets.Clear();
+            _currentTarget = null;
+            ChangeState(ShooterState.Idle);
         }
-
-        public int GetIdTarget() => Target == null ? 0 : Target.getId();
-
+        
+        // Get current target ID (for networking/serialization)
+        public int GetIdTarget()
+        {
+            return _currentTarget == null ? 0 : _currentTarget.getId();
+        }
+        
+        // Initialize stats from NFT data
         public virtual void InitStatsFromNFT(NFTsUnit nFTsUnit)
         {
-            if (nFTsUnit != null) 
+            if (nFTsUnit == null) return;
+            
+            BulletDamage = nFTsUnit.Damage;
+            
+            // Store previous values for comparison
+            float previousAttackRange = AttackRange;
+            float previousDetectionRange = DetectionRange;
+            
+            // Apply new values
+            AttackRange = nFTsUnit.AttackRange;
+            DetectionRange = nFTsUnit.DetectionRange;
+            
+            // Update visualization if ranges changed
+            if (Mathf.Abs(previousAttackRange - AttackRange) > 0.01f || 
+                Mathf.Abs(previousDetectionRange - DetectionRange) > 0.01f)
             {
-                BulletDamage = nFTsUnit.Damage; // Set damage from NFT
-                float previousAttackRange = AttackRange; // Remember previous value for comparison
-                float previousDetectionRange = DetectionRange; // Remember previous value for comparison
-                
-                // Use NFT's range values
-                AttackRange = nFTsUnit.AttackRange; // Attack range (was RangeDetector)
-                DetectionRange = nFTsUnit.DetectionRange; // Detection range for enemy detection
-                
-                if (Mathf.Abs(previousAttackRange - AttackRange) > 0.01f || 
-                    Mathf.Abs(previousDetectionRange - DetectionRange) > 0.01f) 
+                // Update collider
+                if (EnemyDetector != null)
                 {
-                    UpdateRangeVisualizer();
+                    EnemyDetector.radius = GetScaledDetectionRange();
+                }
+                
+                // Update visualization
+                UpdateRangeVisualizer();
+            }
+        }
+        
+        // Reset shooter to initial state
+        public void ResetShooter()
+        {
+            // Reset timers
+            _attackCooldownTimer = 0f;
+            _targetRecalcTimer = 0f;
+            
+            // Reset state
+            CanAttack = true;
+            _currentTarget = null;
+            _potentialTargets.Clear();
+            ChangeState(ShooterState.Idle);
+            
+            // Reset visualization
+            UpdateRangeVisualizer();
+            
+            // Reset detector
+            if (EnemyDetector != null)
+            {
+                EnemyDetector.radius = GetScaledDetectionRange();
+            }
+            
+            // Make sure VFX are registered with the pool
+            RegisterVFXWithPool();
+        }
+        
+        #endregion
+        
+        #region Backwards Compatibility Methods
+        
+        // Methods to maintain backward compatibility with existing code
+        
+        /// <summary>
+        /// Legacy method to check if shooter is engaging a target
+        /// </summary>
+        public bool IsEngagingTarget()
+        {
+            return _currentState == ShooterState.Pursuing || _currentState == ShooterState.Attacking;
+        }
+        
+        /// <summary>
+        /// Legacy method - renamed to GetScaledDetectionRange
+        /// </summary>
+        public float GetWorldDetectionRange()
+        {
+            return GetScaledDetectionRange();
+        }
+        
+        /// <summary>
+        /// Legacy method - renamed to GetScaledAttackRange
+        /// </summary>
+        public float GetWorldAttackRange()
+        {
+            return GetScaledAttackRange();
+        }
+        
+        /// <summary>
+        /// Legacy method to manually set target
+        /// </summary>
+        public void SetTarget(Unit target)
+        {
+            // Check for null or friendly targets
+            if (target == null || _myUnit.IsAlly(target))
+            {
+                // If trying to set current target to null/friendly, clear it
+                if (_currentTarget == target) 
+                {
+                    _currentTarget = null;
+                }
+                return;
+            }
+            
+            // Only update if different and valid target
+            if (_currentTarget != target && !target.GetIsDeath() && _myUnit.IsEnemy(target))
+            {
+                _currentTarget = target;
+                
+                // Force immediate target evaluation
+                _targetRecalcTimer = 0f;
+                
+                // Add to potential targets if not already there
+                _potentialTargets.Add(target);
+                
+                // Update state if needed
+                if (_currentState == ShooterState.Idle)
+                {
+                    // Check range to determine state
+                    float distance = Vector3.Distance(transform.position, target.transform.position);
+                    
+                    if (distance <= GetScaledAttackRange())
+                    {
+                        ChangeState(ShooterState.Attacking);
+                    }
+                    else
+                    {
+                        ChangeState(ShooterState.Pursuing);
+                    }
                 }
             }
         }
-
-        public void ResetShooter()
-        {
-            // Reset attack parameters
-            DelayShoot = 0f;
-            CanAttack = true;
-            
-            // Clear current targets and enemies
-            Target = null;
-            InRange.Clear();
-            
-            // Reset state
-            currentState = ShooterState.Patrolling;
-            
-            // Reset detection range in case it was modified
-            if (EnemyDetector != null) 
-            {
-                EnemyDetector.radius = GetWorldDetectionRange();
-            }
-            
-            // Update the visualizer
-            UpdateRangeVisualizer();
-        }
+        
+        #endregion
     }
 }

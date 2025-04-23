@@ -22,6 +22,12 @@ namespace Cosmicrafts
         [Header("Projectile & Impact Prefabs")]
         public List<GameObject> projectilePrefabs = new List<GameObject>();
         public List<GameObject> impactPrefabs = new List<GameObject>();
+        
+        [Header("VFX Categories")]
+        [Tooltip("Impact effects specifically for shield hits")]
+        public List<GameObject> shieldImpactPrefabs = new List<GameObject>();
+        [Tooltip("Impact effects for armor/health damage")]
+        public List<GameObject> armorImpactPrefabs = new List<GameObject>();
 
         [Header("Pool Settings")]
         [Range(1, 50)] public int poolSizePerPrefab = 10;
@@ -34,6 +40,12 @@ namespace Cosmicrafts
 
         // Internal pools mapped by prefab reference
         private readonly Dictionary<GameObject, Queue<GameObject>> _pools = new();
+        
+        // Tracking of unit-specific VFX
+        private readonly Dictionary<int, List<GameObject>> _unitProjectiles = new();
+        private readonly Dictionary<int, GameObject> _unitShieldImpacts = new();
+        private readonly Dictionary<int, GameObject> _unitArmorImpacts = new();
+        private readonly Dictionary<int, GameObject> _unitExplosions = new();
 
 #if UNITY_EDITOR
         // Automatically populate the explosionPrefabs list whenever values change in inspector
@@ -91,6 +103,12 @@ namespace Cosmicrafts
             
             // Initialize impact pools
             InitializePoolForPrefabs(impactPrefabs);
+            
+            // Initialize shield impact pools
+            InitializePoolForPrefabs(shieldImpactPrefabs);
+            
+            // Initialize armor impact pools
+            InitializePoolForPrefabs(armorImpactPrefabs);
         }
         
         private void InitializePoolForPrefabs(List<GameObject> prefabs)
@@ -98,6 +116,9 @@ namespace Cosmicrafts
             foreach (var prefab in prefabs)
             {
                 if (prefab == null) continue;
+
+                // Check if pool already exists
+                if (_pools.ContainsKey(prefab)) continue;
 
                 var queue = new Queue<GameObject>(poolSizePerPrefab);
                 for (int i = 0; i < poolSizePerPrefab; i++)
@@ -242,6 +263,108 @@ namespace Cosmicrafts
             StartCoroutine(ReturnToPoolAfterLifetime(instance, impactPrefab, impactLifetime));
             return instance;
         }
+        
+        /// <summary>
+        /// Plays a shield impact effect at the specified position and returns it to the pool after a short duration.
+        /// </summary>
+        public GameObject PlayShieldImpact(Vector3 position, Quaternion rotation, float scale = 1f, int unitId = 0)
+        {
+            // Try to use unit-specific shield impact if available
+            GameObject impactPrefab = null;
+            
+            if (unitId > 0 && _unitShieldImpacts.TryGetValue(unitId, out var unitImpact))
+            {
+                impactPrefab = unitImpact;
+            }
+            else if (shieldImpactPrefabs.Count > 0)
+            {
+                impactPrefab = shieldImpactPrefabs[Random.Range(0, shieldImpactPrefabs.Count)];
+            }
+            else if (impactPrefabs.Count > 0)
+            {
+                // Fallback to general impact if no shield impact is available
+                impactPrefab = impactPrefabs[Random.Range(0, impactPrefabs.Count)];
+            }
+            
+            if (impactPrefab == null)
+            {
+                Debug.LogWarning("VFXPool: No shield impact prefabs configured.");
+                return null;
+            }
+            
+            return PlayImpact(impactPrefab, position, rotation, scale);
+        }
+        
+        /// <summary>
+        /// Plays an armor impact effect at the specified position and returns it to the pool after a short duration.
+        /// </summary>
+        public GameObject PlayArmorImpact(Vector3 position, Quaternion rotation, float scale = 1f, int unitId = 0)
+        {
+            // Try to use unit-specific armor impact if available
+            GameObject impactPrefab = null;
+            
+            if (unitId > 0 && _unitArmorImpacts.TryGetValue(unitId, out var unitImpact))
+            {
+                impactPrefab = unitImpact;
+            }
+            else if (armorImpactPrefabs.Count > 0)
+            {
+                impactPrefab = armorImpactPrefabs[Random.Range(0, armorImpactPrefabs.Count)];
+            }
+            else if (impactPrefabs.Count > 0)
+            {
+                // Fallback to general impact if no armor impact is available
+                impactPrefab = impactPrefabs[Random.Range(0, impactPrefabs.Count)];
+            }
+            
+            if (impactPrefab == null)
+            {
+                Debug.LogWarning("VFXPool: No armor impact prefabs configured.");
+                return null;
+            }
+            
+            return PlayImpact(impactPrefab, position, rotation, scale);
+        }
+        
+        /// <summary>
+        /// Plays a unit-specific explosion or a random explosion if not registered
+        /// </summary>
+        public GameObject PlayUnitExplosion(Vector3 position, float scale = 1f, int unitId = 0)
+        {
+            // Try to use unit-specific explosion if available
+            GameObject explosionPrefab = null;
+            
+            if (unitId > 0 && _unitExplosions.TryGetValue(unitId, out var unitExplosion))
+            {
+                explosionPrefab = unitExplosion;
+            }
+            
+            if (explosionPrefab != null)
+            {
+                var instance = GetFromPool(explosionPrefab);
+                if (instance != null)
+                {
+                    instance.transform.position = position;
+                    instance.transform.rotation = Quaternion.identity;
+                    instance.transform.localScale = Vector3.one * scale * globalScaleMultiplier;
+                    instance.SetActive(true);
+                    
+                    // Restart particle system if present
+                    var ps = instance.GetComponent<ParticleSystem>();
+                    if (ps != null)
+                    {
+                        ps.Clear();
+                        ps.Play();
+                    }
+                    
+                    StartCoroutine(ReturnToPoolAfterLifetime(instance, explosionPrefab, defaultLifetime));
+                    return instance;
+                }
+            }
+            
+            // Fall back to random explosion
+            return PlayExplosion(position, scale);
+        }
 
         private GameObject GetFromPool(GameObject prefab)
         {
@@ -250,6 +373,13 @@ namespace Cosmicrafts
                 // Lazy-create pool if missing (shouldn't normally happen)
                 queue = new Queue<GameObject>();
                 _pools[prefab] = queue;
+                
+                // Initialize the pool with some instances
+                for (int i = 0; i < poolSizePerPrefab; i++)
+                {
+                    var instance = CreateInstance(prefab);
+                    queue.Enqueue(instance);
+                }
             }
 
             if (queue.Count > 0)
@@ -285,5 +415,110 @@ namespace Cosmicrafts
             }
             queue.Enqueue(obj);
         }
+        
+        #region Unit VFX Registration
+        
+        /// <summary>
+        /// Registers a unit's projectile prefab with the pool
+        /// </summary>
+        public void RegisterUnitProjectile(int unitId, GameObject projectilePrefab)
+        {
+            if (projectilePrefab == null || unitId <= 0) return;
+            
+            // Add to global projectile list if not present
+            if (!projectilePrefabs.Contains(projectilePrefab))
+            {
+                projectilePrefabs.Add(projectilePrefab);
+                InitializePoolForPrefabs(new List<GameObject> { projectilePrefab });
+            }
+            
+            // Track as unit-specific
+            if (!_unitProjectiles.TryGetValue(unitId, out var projectiles))
+            {
+                projectiles = new List<GameObject>();
+                _unitProjectiles[unitId] = projectiles;
+            }
+            
+            if (!projectiles.Contains(projectilePrefab))
+            {
+                projectiles.Add(projectilePrefab);
+            }
+        }
+        
+        /// <summary>
+        /// Registers a unit's shield impact effect with the pool
+        /// </summary>
+        public void RegisterUnitShieldImpact(int unitId, GameObject shieldImpactPrefab)
+        {
+            if (shieldImpactPrefab == null || unitId <= 0) return;
+            
+            // Add to shield impacts list if not present
+            if (!shieldImpactPrefabs.Contains(shieldImpactPrefab))
+            {
+                shieldImpactPrefabs.Add(shieldImpactPrefab);
+                InitializePoolForPrefabs(new List<GameObject> { shieldImpactPrefab });
+            }
+            
+            // Track as unit-specific
+            _unitShieldImpacts[unitId] = shieldImpactPrefab;
+        }
+        
+        /// <summary>
+        /// Registers a unit's armor impact effect with the pool
+        /// </summary>
+        public void RegisterUnitArmorImpact(int unitId, GameObject armorImpactPrefab)
+        {
+            if (armorImpactPrefab == null || unitId <= 0) return;
+            
+            // Add to armor impacts list if not present
+            if (!armorImpactPrefabs.Contains(armorImpactPrefab))
+            {
+                armorImpactPrefabs.Add(armorImpactPrefab);
+                InitializePoolForPrefabs(new List<GameObject> { armorImpactPrefab });
+            }
+            
+            // Track as unit-specific
+            _unitArmorImpacts[unitId] = armorImpactPrefab;
+        }
+        
+        /// <summary>
+        /// Registers a unit's explosion effect with the pool
+        /// </summary>
+        public void RegisterUnitExplosion(int unitId, GameObject explosionPrefab)
+        {
+            if (explosionPrefab == null || unitId <= 0) return;
+            
+            // Add to explosions list if not present
+            if (!explosionPrefabs.Contains(explosionPrefab))
+            {
+                explosionPrefabs.Add(explosionPrefab);
+                InitializePoolForPrefabs(new List<GameObject> { explosionPrefab });
+            }
+            
+            // Track as unit-specific
+            _unitExplosions[unitId] = explosionPrefab;
+        }
+        
+        /// <summary>
+        /// Gets a projectile specifically for a unit
+        /// </summary>
+        public GameObject GetUnitProjectile(int unitId)
+        {
+            if (unitId <= 0 || !_unitProjectiles.TryGetValue(unitId, out var projectiles) || projectiles.Count == 0)
+            {
+                // Fall back to a random projectile if none registered for this unit
+                if (projectilePrefabs.Count > 0)
+                {
+                    return GetProjectile(projectilePrefabs[Random.Range(0, projectilePrefabs.Count)]);
+                }
+                return null;
+            }
+            
+            // Get a random projectile from this unit's registered projectiles
+            GameObject prefab = projectiles[Random.Range(0, projectiles.Count)];
+            return GetProjectile(prefab);
+        }
+        
+        #endregion
     }
 } 

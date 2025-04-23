@@ -251,20 +251,19 @@ Material:
     - _Shape3Color: {r: 1, g: 1, b: 1, a: 1}
     - _ShapeColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
 --- !u!28 &4239401364732909466
 Texture2D:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: z_ColorRampTexGradientTex{"mode":0,"colorKeys":[{"color":{"r":1.0,"g":0.39150941371917727,"b":0.562164306640625,"a":1.0},"time":0.026474403217434884},{"color":{"r":1.0,"g":0.7534735202789307,"b":0.3349056839942932,"a":1.0},"time":0.7676509022712708},{"color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"time":1.0}],"alphaKeys":[{"alpha":1.0,"time":0.0},{"alpha":1.0,"time":1.0}]}
+  m_Name: z_ColorRampTexGradientTex{"mode":0,"colorKeys":[{"color":{"r":0.0,"g":0.6033234596252441,"b":1.0,"a":1.0},"time":0.026474403217434884},{"color":{"r":0.7783018946647644,"g":0.9612676501274109,"b":1.0,"a":1.0},"time":0.7676509022712708},{"color":{"r":1.0,"g":1.0,"b":1.0,"a":1.0},"time":1.0}],"alphaKeys":[{"alpha":1.0,"time":0.0},{"alpha":1.0,"time":1.0}]}
   m_ImageContentsHash:
     serializedVersion: 2
     Hash: 00000000000000000000000000000000
-  m_ForcedFallbackFormat: 4
-  m_DownscaleFallback: 0
   m_IsAlphaChannelOptional: 0
-  serializedVersion: 2
+  serializedVersion: 3
   m_Width: 64
   m_Height: 1
   m_CompleteImageSize: 256
@@ -293,7 +292,7 @@ Texture2D:
   m_ColorSpace: 0
   m_PlatformBlob: 
   image data: 256
-  _typelessdata: ff648fffff648fffff648fffff668effff688cffff6a8bffff6c8affff6e89ffff7087ffff7286ffff7485ffff7684ffff7883ffff7a81ffff7c80ffff7e7fffff807effff827cffff847bffff867affff8879ffff8a77ffff8c76ffff8e75ffff9074ffff9272ffff9471ffff9670ffff986fffff9a6dffff9c6cffff9e6bffffa06affffa268ffffa467ffffa666ffffa865ffffaa64ffffac62ffffae61ffffb060ffffb25fffffb45dffffb65cffffb85bffffb95affffbb58ffffbd57ffffbf56ffffc35dffffc768ffffcb74ffffd080ffffd48bffffd897ffffdda2ffffe1aeffffe5b9ffffeac5ffffeed1fffff2dcfffff6e8fffffbf3ffffffffff
+  _typelessdata: 009affff009affff019affff069cffff0a9effff0ea0ffff12a2ffff17a4ffff1ba6ffff1fa8ffff23aaffff28acffff2caeffff30b0ffff34b2ffff39b4ffff3db6ffff41b8ffff45baffff4abcffff4ebeffff52c0ffff56c2ffff5bc4ffff5fc6ffff63c7ffff67c9ffff6ccbffff70cdffff74cfffff78d1ffff7dd3ffff81d5ffff85d7ffff89d9ffff8edbffff92ddffff96dfffff9ae1ffff9fe3ffffa3e5ffffa7e7ffffabe9ffffb0ebffffb4edffffb8efffffbcf1ffffc1f2ffffc5f4ffffc9f6ffffcdf6ffffd1f7ffffd5f8ffffd8f8ffffdcf9ffffe0faffffe4faffffe8fbffffecfcfffff0fcfffff3fdfffff7fefffffbfeffffffffffff
   m_StreamData:
     serializedVersion: 2
     offset: 0

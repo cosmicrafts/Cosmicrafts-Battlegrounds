@@ -26,8 +26,10 @@
         [Tooltip("Color used for Neutral faction units (if any)")]
         public Color neutralFactionColor = Color.gray;
         [Tooltip("Global outline thickness multiplier")]
-        [Range(0.0001f, 0.001f)]
+        [Range(0.00001f, 0.001f)]
         public float outlineThicknessMultiplier = 0.00042f;
+        [Tooltip("Enable or disable unit outlines globally")]
+        public bool enableOutlines = true;
 
         [Header("Respawn Settings")]
         [Tooltip("Seconds to wait before respawn UI is shown")]
@@ -59,6 +61,9 @@
         private Unit pendingRespawnUnit = null;
         private Coroutine respawnCoroutine = null;
 
+        // Initialize outline toggle tracking
+        private bool _previousEnableOutlines = true;
+
         private void Awake()
         {
             Debug.Log("--GAME MANAGER AWAKE--");
@@ -78,6 +83,9 @@
             strategicTargets[Faction.Player] = new List<Unit>();
             strategicTargets[Faction.Enemy] = new List<Unit>();
             strategicTargets[Faction.Neutral] = new List<Unit>();
+            
+            // Initialize outline toggle tracking
+            _previousEnableOutlines = enableOutlines;
             
             Debug.Log("--GAME VARIABLES READY--");
         }
@@ -744,7 +752,53 @@
         // New method to get outline thickness for units
         public float GetOutlineThickness(float unitSize)
         {
+            if (!enableOutlines) return 0f;
             return unitSize * outlineThicknessMultiplier;
+        }
+
+        // Add method to update all existing unit outlines when setting changes
+        public void UpdateAllOutlines()
+        {
+            // Get all units in the game
+            List<Unit> units = GetUnitsListClone();
+            
+            // Update the outline for each unit
+            foreach (Unit unit in units)
+            {
+                // Skip null or destroyed units
+                if (unit == null || unit.IsDeath) continue;
+                
+                // Get the outline controller component
+                OutlineController outline = unit.Mesh?.GetComponent<OutlineController>();
+                if (outline != null)
+                {
+                    if (enableOutlines)
+                    {
+                        // Set thickness and enable
+                        outline.SetThickness(GetOutlineThickness(unit.Size));
+                        outline.SetEnabled(true);
+                    }
+                    else
+                    {
+                        // Just disable the outline
+                        outline.SetEnabled(false);
+                    }
+                }
+            }
+        }
+
+        // Update enableOutlines property to call UpdateAllOutlines when changed
+        private void Update()
+        {
+            // Check if enableOutlines changed
+            if (enableOutlines != _previousEnableOutlines)
+            {
+                // Update outlines on all units
+                UpdateAllOutlines();
+                _previousEnableOutlines = enableOutlines;
+            }
+            
+            // Add any other update logic here if needed
         }
 
         public Vector3 GetDefaultTargetPosition(Faction faction)

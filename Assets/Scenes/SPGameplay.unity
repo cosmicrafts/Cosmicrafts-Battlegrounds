@@ -2166,10 +2166,11 @@ MonoBehaviour:
   - {x: 0, y: 0, z: 0}
   playerCharacterSO: {fileID: 11400000, guid: 7120f2145aa385e43a18776aebd601cd, type: 2}
   enemyCharacterSO: {fileID: 11400000, guid: 846547443a98cb34c807002468d20760, type: 2}
-  playerFactionColor: {r: 0, g: 0, b: 0, a: 1}
+  playerFactionColor: {r: 0.35684776, g: 1, b: 0, a: 1}
   enemyFactionColor: {r: 0, g: 0, b: 0, a: 1}
   neutralFactionColor: {r: 1, g: 1, b: 1, a: 1}
-  outlineThicknessMultiplier: 0.0001
+  outlineThicknessMultiplier: 0.000102
+  enableOutlines: 0
   respawnDelay: 10
   requireConfirmationToRespawn: 1
   maxTargetsPerFaction: 5

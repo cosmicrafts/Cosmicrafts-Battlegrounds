@@ -281,6 +281,12 @@ namespace Cosmicrafts
             {
                 MyOutline.SetColor(GameMng.GM.GetColorUnit(MyFaction));
                 MyOutline.SetThickness(GameMng.GM.GetOutlineThickness(Size));
+                
+                // Check global outline setting
+                if (GameMng.GM != null && !GameMng.GM.enableOutlines)
+                {
+                    MyOutline.SetEnabled(false);
+                }
             }
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
@@ -1122,6 +1128,19 @@ namespace Cosmicrafts
             
             // Make sure VFX are registered with the pool
             RegisterVFXWithPool();
+            
+            // Update outline based on global settings
+            if (MyOutline != null && GameMng.GM != null)
+            {
+                MyOutline.SetColor(GameMng.GM.GetColorUnit(MyFaction));
+                MyOutline.SetThickness(GameMng.GM.GetOutlineThickness(Size));
+                
+                // Check global outline setting
+                if (!GameMng.GM.enableOutlines)
+                {
+                    MyOutline.SetEnabled(false);
+                }
+            }
         }
         
         /// <summary>

@@ -677,6 +677,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  useCustomLoopSection: 0
+  loopStartMarker: LoopStart
+  loopEndMarker: LoopEnd
 --- !u!135 &5491567881161249824
 SphereCollider:
   m_ObjectHideFlags: 0

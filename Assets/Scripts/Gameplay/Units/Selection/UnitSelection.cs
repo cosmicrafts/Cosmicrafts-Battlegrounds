@@ -161,10 +161,9 @@ namespace Cosmicrafts
 
         void CommandMove(Unit unit, Vector3 destination)
         {
-            Ship ship = unit.GetComponent<Ship>();
-            if (ship != null)
+            if (unit.HasMovement)
             {
-                ship.SetDestination(destination, ship.StoppingDistance);
+                unit.SetDestination(destination, unit.StoppingDistance);
 
                 // Log the move command
                 Debug.Log($"Commanded {unit.name} (ID: {unit.getId()}) to move to {destination}");

@@ -302,8 +302,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2.1
-  m_Center: {x: 0, y: -1.2, z: 0}
+  m_Radius: 1.92
+  m_Center: {x: 0, y: -0.9, z: 0}
 --- !u!114 &2198226034328220043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1146,6 +1146,10 @@ PrefabInstance:
     - target: {fileID: 2912554722822094346, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_Name
       value: Canvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 3437837080083151150, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4606794044662995956, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_fontAsset

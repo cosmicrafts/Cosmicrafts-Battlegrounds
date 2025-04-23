@@ -29,13 +29,13 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
 
         private Unit parentUnit;
         private Unit myUnit;
-        private Ship myShip; // Optional: Use Ship component for movement if available
+        private Unit myShip; // Optional: Use Unit component for movement
         private Shooter myShooter; // Reference to shooter component if available
         private Renderer[] renderers; // For appearance changes like tint color
         private float currentOrbitAngle = 0.0f;
         private bool isAbandoning = false;
         private float abandonTimer = 0f;
-        private SteeringRig mySteeringRig; // Cache the steering rig if ship uses one
+        private SteeringRig mySteeringRig; // Cache the steering rig if unit uses one
         
         // Timer for periodic enemy detection refresh
         private float detectionRefreshTimer = 0f;
@@ -44,15 +44,15 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
         void Awake()
         {
             myUnit = GetComponent<Unit>();
-            myShip = GetComponent<Ship>(); // Try to get Ship component
+            myShip = GetComponent<Unit>(); // Unit now handles movement
             myShooter = GetComponent<Shooter>(); // Get shooter component if exists
             renderers = GetComponentsInChildren<Renderer>();
             
-            // If we have a ship component, try to get its steering rig
-            if (myShip != null)
+            // If unit has movement, try to get its steering rig
+            if (myShip != null && myShip.HasMovement)
             {
-                mySteeringRig = myShip.MySt; 
-                // Configure ship for companion role
+                mySteeringRig = myShip.MovementRig; 
+                // Configure unit for companion role
                 ConfigureShipForCompanion();
             }
         }
@@ -82,14 +82,14 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
         }
         
         /// <summary>
-        /// Configures the Ship/SteeringRig component for companion behavior 
+        /// Configures the Unit/SteeringRig component for companion behavior 
         /// (prevents default AI, ensures responsiveness).
         /// </summary>
         private void ConfigureShipForCompanion()
         {
-            if (myShip != null && mySteeringRig != null)
+            if (myShip != null && myShip.HasMovement && mySteeringRig != null)
             {
-                // Stop the Ship from seeking its default target (like the enemy base)
+                // Stop the Unit from seeking its default target (like the enemy base)
                 // We achieve this by constantly setting the destination in Update
                 // No need to set IsSeeking (it's read-only)
                 mySteeringRig.Destination = transform.position; // Set initial destination to current pos
@@ -98,15 +98,15 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                 // Shooter component handles its own rotation via `RotateToEnemy` flag
                 mySteeringRig.RotateTowardsTarget = false; // We handle rotation or let Shooter handle it
                 
-                // Adjust ship parameters for responsiveness
+                // Adjust unit parameters for responsiveness
                 myShip.StoppingDistance = 0.1f; 
                 myShip.AvoidanceRange = 1f; // Small avoidance range for nearby obstacles
                 myShip.AlignRotationWithMovement = false; // Let this script or Shooter handle rotation
 
-                // Ensure ship can move
+                // Ensure unit can move
                 myShip.CanMove = true;
                 
-               // Debug.Log($"Configured Ship/SteeringRig for companion {gameObject.name}");
+               // Debug.Log($"Configured Unit/SteeringRig for companion {gameObject.name}");
             }
         }
         
@@ -211,8 +211,8 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                     myShooter.InitStatsFromNFT(unitData);
                 }
                 
-                // Configure ship component with data from the SO
-                if (myShip != null)
+                // Configure movement with data from the SO
+                if (myShip != null && myShip.HasMovement)
                 {
                     myShip.MaxSpeed = unitData.Speed;
                 }
@@ -357,16 +357,16 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
 
         private void MoveToTargetPosition(Vector3 targetPosition)
         {
-            if (!myUnit.InControl()) return; // Don't move if disabled or casting
-            
-            if (myShip != null) 
+            // Handle different types of movement
+            if (myShip != null && myShip.HasMovement)
             {
-                // Use the ship's movement system by setting its destination
-                myShip.SetDestination(targetPosition, 0.1f); 
+                // Use Unit's movement system for smoother pathing
+                myShip.SetDestination(targetPosition, 0.1f);
             }
-            else // Fallback to simple Lerp movement if no Ship component
+            else 
             {
-                 transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * followLerpSpeed);
+                // Fallback to simple lerp movement if no movement system available
+                transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * followLerpSpeed);
             }
         }
         

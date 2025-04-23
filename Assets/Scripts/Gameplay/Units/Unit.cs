@@ -104,6 +104,7 @@ namespace Cosmicrafts
             set { MyFaction = value == Team.Blue ? Faction.Player : Faction.Enemy; }
         }
 
+        [Header("Unit Properties")]
         [Range(1, 999999)]
         public int HitPoints = 10;
         int MaxHp = 10;
@@ -120,45 +121,102 @@ namespace Cosmicrafts
         public float DodgeChance = 0f;
         [Range(1, 999)]
         public int Level = 1;
+        
+        [Header("References")]
+        public GameObject Mesh; // Main mesh container for the unit
+        public GameObject SA;   // Spawn area visualization
+        
+        [Header("Movement Settings")]
+        [Tooltip("Does this unit have movement capabilities")]
+        public bool HasMovement = false;
+        
+        [Range(0, 99)]
+        public float Acceleration = 1f;
+        [Range(0, 99)]
+        public float MaxSpeed = 10f;
+        [Range(0, 99)]
+        public float DragSpeed = 1f;
+        [Range(0, 99)]
+        public float TurnSpeed = 5f;
+        [Range(0, 99)]
+        public float StopSpeed = 5f;
+        [Range(0, 10)]
+        public float StoppingDistance = 0.5f;
+        [Range(0, 50)]
+        public float AvoidanceRange = 3f;
+        [Range(0, 1)]
+        public float RotationDamping = 0.1f;
+        public bool AlignRotationWithMovement = true;
+        
+        [Header("Regeneration Settings")]
+        [Tooltip("Amount of shield points regenerated per second")]
+        [Range(0, 50)]
+        public float ShieldRegenRate = 1f;
+        [Tooltip("Determines if shield regenerates when taking damage (true) or needs to wait (false)")]
+        public bool RegenShieldWhileDamaged = false;
+        [Tooltip("Amount of HP points regenerated per second")]
+        [Range(0, 50)]
+        public float HPRegenRate = 0f;
+        [Tooltip("Delay in seconds before HP regeneration starts after taking damage")]
+        [Range(0, 30)]
+        public float HPRegenDelay = 5f;
 
         [Header("Companion System")]
         [Tooltip("List of companion configurations")]
         public List<CompanionConfig> companions = new List<CompanionConfig>();
         
-        // Track active companion instances
-        private List<Unit> activeCompanions = new List<Unit>();
-
-        [HideInInspector]
-        public bool IsInmortal = false;
-        [HideInInspector]
-        public bool flagShield = false;
-        [HideInInspector]
-        protected bool Disabled = false;
-        [HideInInspector]
-        protected float Casting = 1f;
-
-        float ShieldLoad = 0f;
-        float ShieldCharge = 0f;
-        float ShieldSpeed = 1f;
-
-        protected SphereCollider TrigerBase;
-        protected SphereCollider SolidBase;
-
-        public GameObject Mesh;
-        public GameObject SA;
+        [Header("Visual Effects")]
         public GameObject Explosion;
         public GameObject Portal;
         public GameObject ShieldGameObject;
-        public UIUnit UI;
+        
+        // Movement-related references (added from Ship)
+        [HideInInspector] public SensorToolkit.SteeringRig MovementRig;
+        [HideInInspector] public bool CanMove = true;
+        [HideInInspector] public SensorToolkit.RaySensor[] AvoidanceSensors;
+        [HideInInspector] public GameObject[] Thrusters;
+        
+        // Track active companion instances
+        private List<Unit> activeCompanions = new List<Unit>();
+
+        // Hidden properties from previous implementation
+        [HideInInspector] public bool IsInmortal = false;
+        [HideInInspector] public bool flagShield = false;
+        [HideInInspector] protected bool Disabled = false;
+        [HideInInspector] protected float Casting = 1f;
+
+        // Private fields
+        protected float ShieldLoad = 0f;
+        protected float ShieldCharge = 0f;
+        protected float ShieldSpeed = 1f;
+        protected SphereCollider TrigerBase;
+        protected SphereCollider SolidBase;
+        protected Vector3 LastImpact;
+        protected Rigidbody MyRb;
         protected OutlineController MyOutline;
+        protected AnimationClip[] MyClips;
+
+        // Movement-related private fields (added from Ship)
+        protected float _currentSpeed = 0f;
+        protected Vector3 _deathRotation = Vector3.zero;
+        protected Vector3 _moveDirection = Vector3.zero;
+        protected Quaternion _targetRotation;
+        [HideInInspector] public Transform _defaultTarget;
+        
+        // HP/Shield regeneration timers
+        protected float _hpRegenTimer = 0f;
+        protected bool _recentlyDamaged = false;
+        protected float _lastDamageTime = 0f;
+        
+        // Shield visual state
+        private Coroutine _shieldVisualCoroutine = null;
+
+        // Public UI reference
+        public UIUnit UI;
+        
+        // Protected but serialized animator reference
         [SerializeField]
         protected Animator MyAnim;
-        protected AnimationClip[] MyClips;
-        protected Vector3 LastImpact;
-
-        protected Rigidbody MyRb;
-
-        private float shieldVisualTimer = 0f;
 
         private void Awake()
         {
@@ -198,8 +256,6 @@ namespace Cosmicrafts
             }
             else
             {
-              //  Debug.Log($"Initializing UI for {gameObject.name}, HP: {HitPoints}, MaxHP: {MaxHp}, Shield: {Shield}, MaxShield: {MaxShield}");
-                
                 // Make sure Canvas is active
                 if (UI.Canvas != null && !UI.Canvas.activeSelf)
                 {
@@ -262,33 +318,73 @@ namespace Cosmicrafts
             
             // Register VFX with the pool
             RegisterVFXWithPool();
-        }
-
-        /// <summary>
-        /// Registers this unit's VFX with the VFXPool for efficient reuse
-        /// </summary>
-        protected virtual void RegisterVFXWithPool()
-        {
-            // Skip if VFXPool isn't available
-            if (VFXPool.Instance == null || Id <= 0) return;
             
-            // Register death explosion
-            if (Explosion != null)
+            // Initialize movement system if this unit has movement capabilities
+            if (HasMovement)
             {
-                VFXPool.Instance.RegisterUnitExplosion(Id, Explosion);
+                InitializeMovement();
             }
             
-            // Register shield impact - if available
-            if (ShieldGameObject != null)
+            // Initialize shield visibility
+            UpdateShieldVisibility(false);
+        }
+        
+        /// <summary>
+        /// Initialize movement systems if this unit has movement capabilities
+        /// </summary>
+        protected virtual void InitializeMovement()
+        {
+            // Find or add SteeringRig component
+            MovementRig = GetComponent<SensorToolkit.SteeringRig>();
+            if (MovementRig == null)
             {
-                // Try to find child particle system to use as shield impact
-                ParticleSystem[] particleSystems = ShieldGameObject.GetComponentsInChildren<ParticleSystem>(true);
-                if (particleSystems.Length > 0)
+                MovementRig = gameObject.AddComponent<SensorToolkit.SteeringRig>();
+            }
+            
+            // Find or set target
+            if (GameMng.GM != null)
+            {
+                try
                 {
-                    GameObject shieldEffect = particleSystems[0].gameObject;
-                    VFXPool.Instance.RegisterUnitShieldImpact(Id, shieldEffect);
+                    _defaultTarget = GameMng.GM.GetFinalTransformTarget(MyFaction);
+                    
+                    // Configure the steering rig
+                    if (MovementRig != null && _defaultTarget != null)
+                    {
+                        MovementRig.Destination = _defaultTarget.position;
+                        MovementRig.StoppingDistance = StoppingDistance;
+                        MovementRig.RotateTowardsTarget = false; // We'll handle rotation ourselves
+                    }
+                }
+                catch (System.Exception e)
+                {
+                    Debug.LogWarning($"Error setting default target for {gameObject.name}: {e.Message}");
+                    _defaultTarget = null;
                 }
             }
+            else
+            {
+                Debug.LogWarning($"GameMng.GM is null during InitializeMovement for {gameObject.name}");
+                _defaultTarget = null;
+            }
+            
+            // Find avoidance sensors
+            if (AvoidanceSensors == null || AvoidanceSensors.Length == 0)
+            {
+                AvoidanceSensors = GetComponentsInChildren<SensorToolkit.RaySensor>();
+            }
+            
+            // Configure avoidance sensors
+            foreach (SensorToolkit.RaySensor sensor in AvoidanceSensors)
+            {
+                if (sensor != null)
+                {
+                    sensor.Length = AvoidanceRange;
+                }
+            }
+            
+            // Initialize target rotation to current rotation
+            _targetRotation = transform.rotation;
         }
 
         protected virtual void Update()
@@ -316,19 +412,188 @@ namespace Cosmicrafts
                 {
                     ShieldCharge = 12.5f;
                     Shield++;
-                    UI.SetShieldBar((float)Shield / (float)MaxShield);
+                    if (UI != null)
+                    {
+                        UI.SetShieldBar((float)Shield / (float)MaxShield);
+                    }
                 }
             }
             
-            // Handle shield visual timer without coroutines
-            if (shieldVisualTimer > 0)
+            // Update recently damaged flag
+            if (_recentlyDamaged && Time.time - _lastDamageTime > ShieldDelay)
             {
-                shieldVisualTimer -= Time.deltaTime;
-                if (shieldVisualTimer <= 0 && ShieldGameObject != null)
+                _recentlyDamaged = false;
+            }
+            
+            // Handle regeneration
+            RegenerateShieldAndHP();
+            
+            // Process movement if this unit has movement capabilities
+            if (HasMovement && !IsDeath)
+            {
+                ProcessMovement();
+            }
+        }
+        
+        /// <summary>
+        /// Process unit movement (previously in Ship.cs)
+        /// </summary>
+        protected virtual void ProcessMovement()
+        {
+            if (MovementRig == null) return;
+            
+            if (InControl())
+            {
+                if (CanMove)
                 {
-                    ShieldGameObject.SetActive(false);
+                    // Accelerate gradually
+                    if (_currentSpeed < MaxSpeed)
+                    {
+                        _currentSpeed += Acceleration * Time.deltaTime;
+                    }
+                    else
+                    {
+                        _currentSpeed = MaxSpeed;
+                    }
+
+                    // Apply steering parameters
+                    MovementRig.TurnForce = TurnSpeed * 100f;
+                    MovementRig.StrafeForce = DragSpeed * 100f;
+                    MovementRig.MoveForce = _currentSpeed * 100f;
+                    MovementRig.StopSpeed = StopSpeed;
+                    
+                    // Calculate steering direction
+                    if (MovementRig.IsSeeking)
+                    {
+                        Vector3 directionToTarget = (MovementRig.Destination - transform.position).normalized;
+                        _moveDirection = MovementRig.GetSteeredDirection(directionToTarget);
+                    }
+                    
+                    // Only update rotation if we want to align with movement
+                    if (AlignRotationWithMovement && _moveDirection.sqrMagnitude > 0.01f)
+                    {
+                        // Create a target rotation that points in the movement direction
+                        _targetRotation = Quaternion.LookRotation(_moveDirection, Vector3.up);
+                        
+                        // Smoothly rotate towards the target direction
+                        transform.rotation = Quaternion.Slerp(
+                            transform.rotation,
+                            _targetRotation,
+                            TurnSpeed * Time.deltaTime * (1f - RotationDamping)
+                        );
+                    }
+                }
+                else
+                {
+                    MovementRig.TurnForce = 0f;
+                    MovementRig.MoveForce = 0f;
+                    _currentSpeed = 0f;
+                    _moveDirection = Vector3.zero;
+                }
+
+                // Safely check destination reached status and manage thrusters
+                bool hasReachedDest = false;
+                try {
+                    hasReachedDest = MovementRig.hasReachedDestination();
+                }
+                catch (NullReferenceException) {
+                    // Handle the case where something inside hasReachedDestination is null
+                    // This can happen during initialization
+                    hasReachedDest = false;
+                }
+
+                // Manage thrusters
+                if (hasReachedDest && ThrustersAreEnabled())
+                {
+                    EnableThrusters(false);
+                }
+                if (!hasReachedDest && !ThrustersAreEnabled())
+                {
+                    EnableThrusters(true);
                 }
             }
+            else if (ThrustersAreEnabled())
+            {
+                EnableThrusters(false);
+                MovementRig.TurnForce = 0f;
+                MovementRig.MoveForce = 0f;
+                _currentSpeed = 0f;
+                _moveDirection = Vector3.zero;
+            }
+        }
+        
+        /// <summary>
+        /// Regenerate shield and HP based on unit settings
+        /// </summary>
+        protected virtual void RegenerateShieldAndHP()
+        {
+            if (IsDeath) return;
+            
+            // Shield regeneration
+            if (Shield < GetMaxShield() && CanRegenerateShield() && ShieldRegenRate > 0)
+            {
+                // Add the regeneration amount, taking into account fractional regeneration
+                float shieldToAdd = ShieldRegenRate * Time.deltaTime;
+                int wholeAmount = Mathf.FloorToInt(shieldToAdd);
+                float fractional = shieldToAdd - wholeAmount;
+                
+                // Random chance to add an extra point based on the fractional part
+                if (UnityEngine.Random.value < fractional)
+                    wholeAmount += 1;
+                
+                if (wholeAmount > 0)
+                {
+                    Shield += wholeAmount;
+                    if (Shield > GetMaxShield())
+                        Shield = GetMaxShield();
+                    
+                    if (UI != null)
+                    {
+                        UI.SetShieldBar((float)Shield / (float)GetMaxShield());
+                    }
+                }
+            }
+            
+            // HP regeneration - with delay after taking damage
+            int currentMaxHP = GetMaxHitPoints();
+            if (HPRegenRate > 0 && HitPoints < currentMaxHP)
+            {
+                if (_hpRegenTimer > 0)
+                {
+                    _hpRegenTimer -= Time.deltaTime;
+                }
+                else
+                {
+                    // Same logic as shield - convert to int with chance for fractional parts
+                    int hpToAdd = Mathf.FloorToInt(HPRegenRate * Time.deltaTime);
+                    float fractional = (HPRegenRate * Time.deltaTime) - hpToAdd;
+                    if (UnityEngine.Random.value < fractional)
+                        hpToAdd += 1;
+                    
+                    if (hpToAdd > 0)
+                    {
+                        HitPoints += hpToAdd;
+                        if (HitPoints > currentMaxHP)
+                            HitPoints = currentMaxHP;
+                        
+                        if (UI != null)
+                        {
+                            UI.SetHPBar((float)HitPoints / (float)currentMaxHP);
+                        }
+                    }
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Check if shield can regenerate based on unit settings
+        /// </summary>
+        public virtual bool CanRegenerateShield()
+        {
+            // Shield can regenerate if:
+            // 1. Unit allows shields to regenerate while damaged OR
+            // 2. Unit hasn't been damaged recently 
+            return RegenShieldWhileDamaged || !_recentlyDamaged;
         }
 
         protected virtual void FixedUpdate()
@@ -365,6 +630,13 @@ namespace Cosmicrafts
 
             ShieldLoad = ShieldDelay;
             ShieldCharge = 0f;
+            
+            // Mark damage was just taken - used for regeneration
+            _recentlyDamaged = true;
+            _lastDamageTime = Time.time;
+            
+            // Reset HP regeneration timer
+            _hpRegenTimer = HPRegenDelay;
 
             int DirectDmg = 0;
 
@@ -372,16 +644,13 @@ namespace Cosmicrafts
             {
                 Shield -= dmg;
                 
+                // Show shield visual
+                UpdateShieldVisibility(true);
+                
                 // Play shield impact VFX using pool
                 if (VFXPool.Instance != null)
                 {
                     VFXPool.Instance.PlayShieldImpact(transform.position, Quaternion.identity, transform.localScale.x, Id);
-                }
-                else if (ShieldGameObject != null)
-                {
-                    // Fallback to original behavior
-                    ShieldGameObject.SetActive(true);
-                    shieldVisualTimer = 1f;
                 }
                 
                 if (Shield < 0)
@@ -389,8 +658,14 @@ namespace Cosmicrafts
                     HitPoints += Shield;
                     DirectDmg += Mathf.Abs(Shield);
                     Shield = 0;
+                    
+                    // Immediately hide shield on depletion
+                    UpdateShieldVisibility(false);
                 }
-                UI.SetShieldBar((float)Shield / (float)MaxShield);
+                if (UI != null)
+                {
+                    UI.SetShieldBar((float)Shield / (float)MaxShield);
+                }
             }
             else if (typeDmg != TypeDmg.Shield)
             {
@@ -415,12 +690,55 @@ namespace Cosmicrafts
                 Die();
             }
 
-            UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            if (UI != null)
+            {
+                UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            }
         }
 
         public void AddDmg(int dmg)
         {
             AddDmg(dmg, TypeDmg.Normal);
+        }
+        
+        /// <summary>
+        /// Updates shield visibility and manages automatic hiding after delay
+        /// </summary>
+        protected virtual void UpdateShieldVisibility(bool visible)
+        {
+            // Skip if no shield object
+            if (ShieldGameObject == null) return;
+            
+            // Set immediate visibility
+            ShieldGameObject.SetActive(visible);
+            
+            // Stop any existing coroutine
+            if (_shieldVisualCoroutine != null)
+            {
+                StopCoroutine(_shieldVisualCoroutine);
+                _shieldVisualCoroutine = null;
+            }
+            
+            // Start auto-hide timer if shield is visible
+            if (visible)
+            {
+                _shieldVisualCoroutine = StartCoroutine(HideShieldAfterDelay(1.0f));
+            }
+        }
+        
+        /// <summary>
+        /// Coroutine to hide shield visual after delay
+        /// </summary>
+        protected virtual IEnumerator HideShieldAfterDelay(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            
+            if (ShieldGameObject != null)
+            {
+                ShieldGameObject.SetActive(false);
+            }
+            
+            _shieldVisualCoroutine = null;
         }
 
         public virtual void Die()
@@ -439,7 +757,13 @@ namespace Cosmicrafts
             if (ShieldGameObject != null)
             {
                 ShieldGameObject.SetActive(false);
-                shieldVisualTimer = 0f;
+                
+                // Cancel shield hide coroutine
+                if (_shieldVisualCoroutine != null)
+                {
+                    StopCoroutine(_shieldVisualCoroutine);
+                    _shieldVisualCoroutine = null;
+                }
             }
 
             // Broadcast the death event - this will trigger GameMng.HandlePlayerBaseStationDeath for player
@@ -447,13 +771,22 @@ namespace Cosmicrafts
             OnUnitDeath?.Invoke(this);
 
             // Standard death handling for all units, including player
-            UI.HideUI();
+            if (UI != null)
+            {
+                UI.HideUI();
+            }
             if (SA != null) SA.SetActive(false);
             if (MyAnim != null) MyAnim.SetTrigger("Die");
             if (SolidBase != null) SolidBase.enabled = false;
             
             // Handle companion death/destruction
             DestroyCompanions();
+            
+            // If unit has movement, handle movement death
+            if (HasMovement)
+            {
+                HandleMovementDeath();
+            }
             
             // Special player death handling
             bool isPlayerCharacter = (GameMng.P != null && GameMng.P.GetComponent<Unit>() == this);
@@ -481,7 +814,52 @@ namespace Cosmicrafts
                 Destroy(gameObject, 2f); // Give time for death animation
             }
         }
-
+        
+        /// <summary>
+        /// Handle death-specific movement behavior for units with movement capabilities
+        /// </summary>
+        protected virtual void HandleMovementDeath()
+        {
+            // Disable steering rig
+            if (MovementRig != null)
+            {
+                MovementRig.enabled = false;
+            }
+            
+            // Disable thrusters
+            EnableThrusters(false);
+            
+            // Calculate death rotation direction based on impact
+            float AngleDeathRot = CMath.AngleBetweenVector2(LastImpact, transform.position);
+            float z = Mathf.Sin(AngleDeathRot * Mathf.Deg2Rad);
+            float x = Mathf.Cos(AngleDeathRot * Mathf.Deg2Rad);
+            _deathRotation = new Vector3(x, 0, z);
+        }
+        
+        /// <summary>
+        /// Helper method for thruster control
+        /// </summary>
+        protected virtual void EnableThrusters(bool enable)
+        {
+            if (Thrusters == null || Thrusters.Length == 0) return;
+            
+            foreach (GameObject thruster in Thrusters)
+            {
+                if (thruster != null)
+                {
+                    thruster.SetActive(enable);
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Check if thrusters are currently enabled
+        /// </summary>
+        protected virtual bool ThrustersAreEnabled()
+        {
+            return Thrusters != null && Thrusters.Length > 0 && Thrusters[0] != null && Thrusters[0].activeSelf;
+        }
+        
         // Soul state transformation
         private IEnumerator TransformToSoulState()
         {
@@ -579,13 +957,13 @@ namespace Cosmicrafts
         {
             Disabled = true;
 
-            Ship ship = GetComponent<Ship>();
-
-            if (ship != null)
-                ship.CanMove = false;
+            // If the unit has movement, disable it
+            if (HasMovement)
+            {
+                CanMove = false;
+            }
 
             Shooter shooter = GetComponent<Shooter>();
-
             if (shooter != null)
                 shooter.CanAttack = false;
         }
@@ -594,15 +972,217 @@ namespace Cosmicrafts
         {
             Disabled = false;
 
-            Ship ship = GetComponent<Ship>();
-
-            if (ship != null)
-                ship.CanMove = true;
+            // If the unit has movement, enable it
+            if (HasMovement)
+            {
+                CanMove = true;
+            }
 
             Shooter shooter = GetComponent<Shooter>();
-
             if (shooter != null)
                 shooter.CanAttack = true;
+        }
+
+        /// <summary>
+        /// Resets destination for units with movement to their default target
+        /// </summary>
+        public virtual void ResetDestination()
+        {
+            if (!HasMovement || !InControl() || MovementRig == null || _defaultTarget == null)
+                return;
+
+            MovementRig.Destination = _defaultTarget.position;
+            MovementRig.StoppingDistance = StoppingDistance;
+        }
+        
+        /// <summary>
+        /// Sets custom destination for units with movement
+        /// </summary>
+        public virtual void SetDestination(Vector3 destination, float stopDistance)
+        {
+            if (!HasMovement || MovementRig == null) return;
+            
+            MovementRig.Destination = destination;
+            MovementRig.StoppingDistance = stopDistance;
+            
+            // Calculate initial direction for smoother rotation
+            if (AlignRotationWithMovement)
+            {
+                Vector3 directionToTarget = (destination - transform.position).normalized;
+                _moveDirection = MovementRig.GetSteeredDirection(directionToTarget);
+            }
+        }
+        
+        /// <summary>
+        /// Set a custom rotation for the unit, temporarily overriding movement-based rotation
+        /// </summary>
+        public virtual void SetCustomRotation(Quaternion rotation)
+        {
+            if (!HasMovement) return;
+            
+            AlignRotationWithMovement = false;
+            _targetRotation = rotation;
+            StartCoroutine(ReenableRotationAlignment(1.0f));
+        }
+        
+        /// <summary>
+        /// Re-enable rotation alignment after a delay
+        /// </summary>
+        protected virtual IEnumerator ReenableRotationAlignment(float delay)
+        {
+            yield return new WaitForSeconds(delay);
+            AlignRotationWithMovement = true;
+        }
+
+        public void OnImpactShield(int dmg)
+        {
+            // Early return if object is inactive or destroyed
+            if (this == null || !gameObject || !gameObject.activeInHierarchy || IsDeath)
+            {
+                return;
+            }
+            
+            // Use pooled shield impact effect if available
+            if (VFXPool.Instance != null)
+            {
+                VFXPool.Instance.PlayShieldImpact(transform.position, Quaternion.identity, transform.localScale.x, Id);
+            }
+            
+            // Show shield visual directly
+            UpdateShieldVisibility(true);
+            
+            // Apply damage
+            AddDmg(dmg);
+        }
+
+        public virtual void ResetUnit()
+        {
+            // Reset the unit to its initial state for reuse in object pooling
+            IsDeath = false;
+            Disabled = false;
+            Casting = 0f;
+            
+            // Make sure colliders are enabled
+            if (SolidBase != null) 
+                SolidBase.enabled = true;
+            
+            // Re-enable GameObject if it was disabled
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            
+            // Reset health and shield to their maximum values
+            HitPoints = MaxHp;
+            Shield = MaxShield;
+            
+            // Reset UI elements
+            if (UI != null) {
+                UI.SetHPBar(1f);
+                UI.SetShieldBar(MaxShield > 0 ? (float)Shield / (float)GetMaxShield() : 0f);
+                // Show UI
+                if (UI.Canvas != null)
+                    UI.Canvas.SetActive(true);
+            }
+            
+            // Reset animation state if needed
+            if (MyAnim != null) {
+                // Ensure animator controller is valid before resetting triggers
+                if (MyAnim.runtimeAnimatorController != null) {
+                    // Force a complete reset of the animator state
+                    MyAnim.Rebind();
+                    MyAnim.Update(0f);
+                    
+                    // Clear death trigger and set idle
+                    MyAnim.ResetTrigger("Die");
+                    MyAnim.SetBool("Idle", true);
+                }
+            }
+            
+            // Reset any ship-specific components
+            if (HasMovement)
+            {
+                ResetMovement();
+            }
+            
+            Shooter shooter = GetComponent<Shooter>();
+            if (shooter != null)
+                shooter.ResetShooter();
+            
+            // Reactivate spawn area if applicable
+            if (SA != null && SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyFaction))
+                SA.SetActive(true);
+            
+            // Create portal effect for respawn if Portal prefab exists
+            if (Portal != null) {
+                GameObject portal = Instantiate(Portal, transform.position, Quaternion.identity);
+                Destroy(portal, 3f);
+            }
+            
+            // Respawn companions
+            SpawnCompanions();
+            
+            // Make sure VFX are registered with the pool
+            RegisterVFXWithPool();
+        }
+        
+        /// <summary>
+        /// Reset movement-specific properties
+        /// </summary>
+        public virtual void ResetMovement()
+        {
+            // Reset movement variables
+            _currentSpeed = 0f;
+            _deathRotation = Vector3.zero;
+            _moveDirection = Vector3.zero;
+            
+            // Re-enable movement rig
+            if (MovementRig != null)
+            {
+                MovementRig.enabled = true;
+                _defaultTarget = GameMng.GM.GetFinalTransformTarget(MyFaction);
+                MovementRig.Destination = _defaultTarget.position;
+                MovementRig.StoppingDistance = StoppingDistance;
+            }
+            
+            // Reset thrusters
+            EnableThrusters(false);
+            
+            // Reset rotation alignment
+            AlignRotationWithMovement = true;
+            _targetRotation = transform.rotation;
+            
+            // Reset HP and shield regeneration
+            _hpRegenTimer = 0f;
+            _recentlyDamaged = false;
+            
+            // Re-enable movement
+            CanMove = true;
+        }
+
+        /// <summary>
+        /// Registers this unit's VFX with the VFXPool for efficient reuse
+        /// </summary>
+        protected virtual void RegisterVFXWithPool()
+        {
+            // Skip if VFXPool isn't available
+            if (VFXPool.Instance == null || Id <= 0) return;
+            
+            // Register death explosion
+            if (Explosion != null)
+            {
+                VFXPool.Instance.RegisterUnitExplosion(Id, Explosion);
+            }
+            
+            // Register shield impact - if available
+            if (ShieldGameObject != null)
+            {
+                // Try to find child particle system to use as shield impact
+                ParticleSystem[] particleSystems = ShieldGameObject.GetComponentsInChildren<ParticleSystem>(true);
+                if (particleSystems.Length > 0)
+                {
+                    GameObject shieldEffect = particleSystems[0].gameObject;
+                    VFXPool.Instance.RegisterUnitShieldImpact(Id, shieldEffect);
+                }
+            }
         }
 
         public bool IsMyTeam(Team team)
@@ -729,12 +1309,19 @@ namespace Cosmicrafts
         public void SetMaxShield(int maxshield)
         {
             MaxShield = maxshield;
+            if (UI != null && Shield > 0)
+            {
+                UI.SetShieldBar((float)Shield / (float)MaxShield);
+            }
         }
 
         public void SetMaxHitPoints(int maxhp)
         {
             MaxHp = maxhp;
-            UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            if (UI != null)
+            {
+                UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            }
         }
 
         public int GetMaxHitPoints()
@@ -756,48 +1343,17 @@ namespace Cosmicrafts
             Level = nFTsUnit.Level;
 
             GetComponent<Shooter>()?.InitStatsFromNFT(nFTsUnit);
+            
+            // Apply NFT properties
+            if (HasMovement)
+            {
+                MaxSpeed = nFTsUnit.Speed;
+            }
         }
 
         public bool InControl()
         {
             return (!Disabled && Casting <= 0f);
-        }
-
-        public void OnImpactShield(int dmg)
-        {
-            // Early return if object is inactive or destroyed
-            if (this == null || !gameObject || !gameObject.activeInHierarchy || IsDeath)
-            {
-                return;
-            }
-            
-            // Use pooled shield impact effect if available
-            if (VFXPool.Instance != null)
-            {
-                VFXPool.Instance.PlayShieldImpact(transform.position, Quaternion.identity, transform.localScale.x, Id);
-            }
-            // Fallback to old behavior
-            else if (ShieldGameObject != null)
-            {
-                ShieldGameObject.SetActive(true);
-                // Set timer instead of using coroutine
-                shieldVisualTimer = 1f;
-                
-                // Ensure shield will be deactivated if the unit is destroyed while shield is active
-                if (!ShieldGameObject.TryGetComponent<DestroyAfterTime>(out var destroyComponent))
-                {
-                    destroyComponent = ShieldGameObject.AddComponent<DestroyAfterTime>();
-                    destroyComponent.timeToDestroy = 1.5f; // Slightly longer than visual timer
-                }
-                else
-                {
-                    // Reset the existing timer
-                    destroyComponent.timeToDestroy = 1.5f;
-                }
-            }
-            
-            // Apply damage
-            AddDmg(dmg);
         }
 
         public int GetLevel()
@@ -812,85 +1368,14 @@ namespace Cosmicrafts
 
         public virtual void MoveTo(Vector3 position)
         {
-            Ship ship = GetComponent<Ship>();
-            if (ship != null)
+            if (HasMovement)
             {
-                ship.SetDestination(position, ship.StoppingDistance);
+                SetDestination(position, StoppingDistance);
             }
             else
             {
-                Debug.LogWarning($"MoveTo called on {name}, but no Ship component was found.");
+                Debug.LogWarning($"MoveTo called on {name}, but HasMovement is false.");
             }
-        }
-
-        public virtual void ResetUnit()
-        {
-           // Debug.Log($"[Unit.ResetUnit] Resetting unit {gameObject.name} (ID: {Id})");
-            
-            // Reset the unit to its initial state for reuse in object pooling
-            IsDeath = false;
-            Disabled = false;
-            Casting = 0f;
-            
-            // Make sure colliders are enabled
-            if (SolidBase != null) 
-                SolidBase.enabled = true;
-            
-            // Re-enable GameObject if it was disabled
-            if (!gameObject.activeSelf)
-                gameObject.SetActive(true);
-            
-            // Reset health and shield to their maximum values
-            HitPoints = MaxHp;
-            Shield = MaxShield;
-            
-            // Reset UI elements
-            if (UI != null) {
-                UI.SetHPBar(1f);
-                UI.SetShieldBar(MaxShield > 0 ? (float)Shield / (float)GetMaxShield() : 0f);
-                // Show UI
-                if (UI.Canvas != null)
-                    UI.Canvas.SetActive(true);
-            }
-            
-            // Reset animation state if needed
-            if (MyAnim != null) {
-                // Ensure animator controller is valid before resetting triggers
-                if (MyAnim.runtimeAnimatorController != null) {
-                    // Force a complete reset of the animator state
-                    MyAnim.Rebind();
-                    MyAnim.Update(0f);
-                    
-                    // Clear death trigger and set idle
-                    MyAnim.ResetTrigger("Die");
-                    MyAnim.SetBool("Idle", true);
-                }
-            }
-            
-            // Reset any ship-specific components
-            Ship ship = GetComponent<Ship>();
-            if (ship != null)
-                ship.ResetShip();
-            
-            Shooter shooter = GetComponent<Shooter>();
-            if (shooter != null)
-                shooter.ResetShooter();
-            
-            // Reactivate spawn area if applicable
-            if (SA != null && SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyFaction))
-                SA.SetActive(true);
-            
-            // Create portal effect for respawn if Portal prefab exists
-            if (Portal != null) {
-                GameObject portal = Instantiate(Portal, transform.position, Quaternion.identity);
-                Destroy(portal, 3f);
-            }
-            
-            // Respawn companions
-            SpawnCompanions();
-            
-            // Make sure VFX are registered with the pool
-            RegisterVFXWithPool();
         }
 
         /// <summary>
@@ -968,7 +1453,6 @@ namespace Cosmicrafts
         {
             // Make sure the companion has all necessary components for the behavior type
             Shooter shooter = companionGO.GetComponent<Shooter>();
-            Ship companionShip = companionGO.GetComponent<Ship>();
             Unit companionUnit = companionGO.GetComponent<Unit>();
             CompanionController controller = companionGO.GetComponent<CompanionController>();
             
@@ -1085,12 +1569,12 @@ namespace Cosmicrafts
                     break;
                     
                 case CompanionBehaviorType.Scout:
-                    // Create Ship component if needed
-                    if (companionShip == null)
+                    // Ensure unit has movement capabilities
+                    if (!companionUnit.HasMovement)
                     {
-                        companionShip = companionGO.AddComponent<Ship>();
-                        companionShip.MaxSpeed = 10f;
-                        companionShip.TurnSpeed = 5f;
+                        companionUnit.HasMovement = true;
+                        companionUnit.MaxSpeed = 10f;
+                        companionUnit.TurnSpeed = 5f;
                     }
                     
                     // Increase movement speed and detection range for scouting
@@ -1109,10 +1593,10 @@ namespace Cosmicrafts
                         shooter.UpdateRangeVisualizer();
                     }
                     
-                    // If it has a ship component, increase its speed
-                    if (companionShip != null)
+                    // If it has movement, increase its speed
+                    if (companionUnit.HasMovement)
                     {
-                        companionShip.MaxSpeed *= 1.5f;
+                        companionUnit.MaxSpeed *= 1.5f;
                     }
                     break;
             }
@@ -1135,7 +1619,10 @@ namespace Cosmicrafts
                     }
                     
                     // Update the UI
-                    UI.SetHPBar((float)HitPoints / (float)GetMaxHitPoints());
+                    if (UI != null)
+                    {
+                        UI.SetHPBar((float)HitPoints / (float)GetMaxHitPoints());
+                    }
                 }
             }
         }
@@ -1143,8 +1630,7 @@ namespace Cosmicrafts
         // Coroutine to regenerate shield faster
         private IEnumerator ShieldRegenerateCoroutine(float regenRate)
         {
-            Ship shipComponent = GetComponent<Ship>();
-            bool hasShipComponent = (shipComponent != null);
+            bool hasMovement = HasMovement;
             
             while (!this.GetIsDeath())
             {
@@ -1153,11 +1639,11 @@ namespace Cosmicrafts
                 // Only regenerate if the shield isn't full and we can regenerate
                 if (Shield < GetMaxShield())
                 {
-                    // Check if we can regenerate shield based on Ship component rules
+                    // Check if we can regenerate shield based on movement rules
                     bool canRegen = true;
-                    if (hasShipComponent)
+                    if (hasMovement)
                     {
-                        canRegen = shipComponent.CanRegenerateShield();
+                        canRegen = CanRegenerateShield();
                     }
                     
                     if (canRegen)
@@ -1169,7 +1655,10 @@ namespace Cosmicrafts
                         }
                         
                         // Update the UI
-                        UI.SetShieldBar((float)Shield / (float)GetMaxShield());
+                        if (UI != null) 
+                        {
+                            UI.SetShieldBar((float)Shield / (float)GetMaxShield());
+                        }
                     }
                 }
             }

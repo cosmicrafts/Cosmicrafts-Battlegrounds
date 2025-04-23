@@ -72,7 +72,7 @@ namespace Cosmicrafts
         private float _attackCooldownTimer = 0f;
         private Unit _currentTarget = null;
         private Unit _myUnit;
-        private Ship _myShip;
+        private Unit _myShip;
         
         // Potential targets list - using HashSet for O(1) contains checks
         private HashSet<Unit> _potentialTargets = new HashSet<Unit>();
@@ -89,7 +89,7 @@ namespace Cosmicrafts
         {
             // Cache components
             _myUnit = GetComponent<Unit>();
-            _myShip = GetComponent<Ship>();
+            _myShip = GetComponent<Unit>();
             
             // Validate detector
             if (EnemyDetector == null)
@@ -388,7 +388,13 @@ namespace Cosmicrafts
         private void ResetTargeting()
         {
             _currentTarget = null;
-            ChangeState(ShooterState.Idle);
+            _currentState = ShooterState.Idle;
+            
+            // Stop moving if following a target
+            if (_myShip != null && StopToAttack)
+            {
+                _myShip.ResetDestination();
+            }
         }
         
         #endregion

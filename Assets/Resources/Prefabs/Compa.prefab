@@ -139,7 +139,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 95907deb15658354b820b51b72cb1cd9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  MyUnit: {fileID: 2198226034328220053}
+  MyUnit: {fileID: 0}
   MyShooter: {fileID: 2198226034328220054}
 --- !u!1 &2198226032778397162
 GameObject:
@@ -804,6 +804,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2198226034328220055}
   - component: {fileID: 2198226034328220052}
+  - component: {fileID: 4985161326094170274}
   - component: {fileID: 6982720608951721540}
   - component: {fileID: 2198226034328220053}
   - component: {fileID: 2198226034328220054}
@@ -829,7 +830,6 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 8358885684385492400}
   - {fileID: 3279429730010382996}
   - {fileID: 1478323959484795093}
   - {fileID: 6764808752486651747}
@@ -867,6 +867,56 @@ Rigidbody:
   m_Interpolate: 0
   m_Constraints: 84
   m_CollisionDetection: 0
+--- !u!114 &4985161326094170274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2198226034328220048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51d4a09c51eb317479067e7974bdc85c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  IsDeath: 0
+  MyFaction: 0
+  HitPoints: 5000
+  Shield: 5000
+  ShieldDelay: 1
+  Size: 4
+  SpawnAreaSize: 12
+  DodgeChance: 0.04
+  Level: 153
+  Mesh: {fileID: 6245011729380265433}
+  SA: {fileID: 9038553318201266411, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
+  HasMovement: 1
+  Acceleration: 1
+  MaxSpeed: 10
+  DragSpeed: 1
+  TurnSpeed: 5
+  StopSpeed: 5
+  StoppingDistance: 0.5
+  AvoidanceRange: 3
+  RotationDamping: 0.1
+  AlignRotationWithMovement: 1
+  ShieldRegenRate: 1
+  RegenShieldWhileDamaged: 0
+  HPRegenRate: 0
+  HPRegenDelay: 5
+  companions: []
+  Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
+  Portal: {fileID: 3721508634898023609}
+  ShieldGameObject: {fileID: 2614791013219909015, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
+  MovementRig: {fileID: 0}
+  CanMove: 1
+  AvoidanceSensors: []
+  Thrusters: []
+  IsInmortal: 0
+  flagShield: 0
+  _defaultTarget: {fileID: 0}
+  UI: {fileID: 8725141663424671622}
+  MyAnim: {fileID: 6364282005187429036}
 --- !u!114 &6982720608951721540
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -893,26 +943,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4b0a022c518df8c4a93db57a89a8b10c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  IsDeath: 0
-  MyFaction: 0
-  HitPoints: 800
-  Shield: 800
-  ShieldDelay: 1.41
-  Size: 3
-  SpawnAreaSize: 0
-  DodgeChance: 0
-  Level: 1
-  companions: []
-  IsInmortal: 0
-  flagShield: 0
-  Mesh: {fileID: 6245011729380265433}
-  SA: {fileID: 3966040614498046297}
-  Explosion: {fileID: 6271241949191652176, guid: 739d19610906a434a8d67ca770434aca, type: 3}
-  Portal: {fileID: 3721508634898023609}
-  ShieldGameObject: {fileID: 8358885684385215374}
-  UI: {fileID: 8725141663424671622}
-  MyAnim: {fileID: 6364282005187429036}
-  MySt: {fileID: 2198226033917351815}
   Aceleration: 99
   MaxSpeed: 99
   DragSpeed: 0.25
@@ -926,19 +956,6 @@ MonoBehaviour:
   RegenShieldWhileDamaged: 0
   HPRegenRate: 0
   HPRegenDelay: 5
-  AvoidanceSensors:
-  - {fileID: 2198226033650733241}
-  - {fileID: 2198226033311181648}
-  - {fileID: 2198226032778397161}
-  - {fileID: 2198226034028049338}
-  - {fileID: 2198226034061418289}
-  - {fileID: 2198226032447877257}
-  - {fileID: 2198226032991477277}
-  - {fileID: 2198226033913644468}
-  - {fileID: 2198226033598466411}
-  Thrusters:
-  - {fileID: 5200662773400736600}
-  CanMove: 1
 --- !u!114 &2198226034328220054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1103,7 +1120,7 @@ GameObject:
   - component: {fileID: 953729098420294387}
   - component: {fileID: 6800171134341490053}
   m_Layer: 0
-  m_Name: Mesh_Deva
+  m_Name: Mesh_Hovercraft
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1180,37 +1197,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!1 &8358885684385215374
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 197724, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-  m_PrefabInstance: {fileID: 8358885684385413074}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8358885684385492400}
-  m_Layer: 0
-  m_Name: 'SparkleShield (Missing Prefab with guid: 9575df930ed65704db77661c5bd8e268)'
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8358885684385492400
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-  m_PrefabInstance: {fileID: 8358885684385413074}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 8358885684385215374}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: -0, z: -0, w: 0.7071068}
-  m_LocalPosition: {x: 0, y: -1.31, z: -0.11}
-  m_LocalScale: {x: 1.3359, y: 1.3359, z: 1.3359}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 2198226034328220055}
-  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
 --- !u!1001 &180155165942315878
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1273,11 +1259,6 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3387505018749762034, guid: 994e77bd63d01469bb15ef8ae5cc6d20, type: 3}
   m_PrefabInstance: {fileID: 180155165942315878}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &5200662773400736600 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 5380813195950123070, guid: 994e77bd63d01469bb15ef8ae5cc6d20, type: 3}
-  m_PrefabInstance: {fileID: 180155165942315878}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &784030904721311167
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1338,11 +1319,6 @@ PrefabInstance:
 --- !u!4 &3966040614497791523 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
-  m_PrefabInstance: {fileID: 784030904721311167}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &3966040614498046297 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4461760019699471590, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
   m_PrefabInstance: {fileID: 784030904721311167}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1465409562270482249
@@ -1712,76 +1688,3 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 3686315682025668043, guid: da39e66e40eb74de295a0ef95a72d30c, type: 3}
   m_PrefabInstance: {fileID: 6982889374529040918}
   m_PrefabAsset: {fileID: 0}
---- !u!1001 &8358885684385413074
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 2198226034328220055}
-    m_Modifications:
-    - target: {fileID: 197724, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_Name
-      value: SparkleShield
-      objectReference: {fileID: 0}
-    - target: {fileID: 197724, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1.3359
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1.3359
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1.3359
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: -1.31
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -0.11
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0.7071068
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: -90
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 449122, guid: 9575df930ed65704db77661c5bd8e268, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: 9575df930ed65704db77661c5bd8e268, type: 3}

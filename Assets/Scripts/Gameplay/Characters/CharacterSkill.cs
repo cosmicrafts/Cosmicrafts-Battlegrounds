@@ -101,7 +101,7 @@ namespace Cosmicrafts
                     unit.DodgeChance += Multiplier;
                     break;
                 case SkillName.SpawnAreaSize:
-                    unit.GetComponent<Ship>().SpawnAreaSize += Multiplier;
+                    unit.SpawnAreaSize += Multiplier;
                     break;
                 case SkillName.RangeDetector:
                     // FIXED: Modify the Shooter component's AttackRange (formerly RangeDetector property)
@@ -123,7 +123,11 @@ namespace Cosmicrafts
                     unit.SetMaxHitPoints(unit.HitPoints);
                     break;
                 case SkillName.MaxSpeedMultiplier:
-                    unit.GetComponent<Ship>().MaxSpeed *= Multiplier;
+                    // Use Unit's MaxSpeed property
+                    if (unit.HasMovement)
+                    {
+                        unit.MaxSpeed *= Multiplier;
+                    }
                     break;
                 case SkillName.SizeMultiplier:
                     unit.Size *= Multiplier;

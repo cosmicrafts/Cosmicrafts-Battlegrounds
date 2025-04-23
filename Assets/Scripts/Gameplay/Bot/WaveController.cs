@@ -80,16 +80,16 @@ public class WaveController : MonoBehaviour
             SetupEnemyBaseForCurrentWave();
             
             // Find and destroy all player ships (respawn cleanup)
-            Ship[] ships = FindObjectsByType<Ship>(FindObjectsSortMode.None);
-            foreach(Ship ship in ships)
+            Unit[] units = FindObjectsByType<Unit>(FindObjectsSortMode.None);
+            foreach(Unit unit in units)
             { 
-                if (ship.MyFaction == Faction.Player)
+                if (unit.MyFaction == Faction.Player)
                 {
-                    // Don't destroy the player's character - only other ships
-                    if (GameMng.P == null || GameMng.P.GetComponent<Ship>() != ship)
+                    // Don't destroy the player's character - only other units
+                    if (GameMng.P == null || GameMng.P.GetComponent<Unit>() != unit)
                     {
-                        Destroy(ship.gameObject);
-                        GameMng.GM.DeleteUnit(ship);
+                        Destroy(unit.gameObject);
+                        GameMng.GM.DeleteUnit(unit);
                     }
                 }
             }

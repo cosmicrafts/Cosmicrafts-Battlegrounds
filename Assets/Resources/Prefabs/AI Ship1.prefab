@@ -134,7 +134,7 @@ GameObject:
   - component: {fileID: 2198226034328220042}
   - component: {fileID: 2198226034328220043}
   m_Layer: 3
-  m_Name: BOT
+  m_Name: AI Ship1
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -175,17 +175,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 02e479c5bf7fefc469048b81a423d6e4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  botName: Alpha-9
+  botName: AI Ship
   botLv: 420
   botAvatar: 1
   prefabBaseStation: {fileID: 2198226034328220048}
   DeckUnits:
   - {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-  CurrentEnergy: 7.3
-  MaxEnergy: 7.3
-  SpeedEnergy: 5
-  waitSpawn: 0.1
-  maxActiveUnits: 4
+  CurrentEnergy: 0
+  MaxEnergy: 0
+  SpeedEnergy: 0
+  waitSpawn: 3
+  maxActiveUnits: 0
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0

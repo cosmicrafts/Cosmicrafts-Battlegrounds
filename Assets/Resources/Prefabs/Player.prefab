@@ -232,6 +232,22 @@ MonoBehaviour:
   SpawnAreaSize: 12
   DodgeChance: 0
   Level: 1
+  Mesh: {fileID: 5171655099922868828}
+  SA: {fileID: 9038553318201266411}
+  HasMovement: 0
+  Acceleration: 1
+  MaxSpeed: 10
+  DragSpeed: 1
+  TurnSpeed: 5
+  StopSpeed: 5
+  StoppingDistance: 0.5
+  AvoidanceRange: 3
+  RotationDamping: 0.1
+  AlignRotationWithMovement: 1
+  ShieldRegenRate: 1
+  RegenShieldWhileDamaged: 0
+  HPRegenRate: 0
+  HPRegenDelay: 5
   companions:
   - name: compa
     unitData: {fileID: 11400000, guid: 6b11b1a5a1ce7b14eb603b23057cf63a, type: 2}
@@ -240,13 +256,16 @@ MonoBehaviour:
     orbitSpeed: 104.4
     tintColor: {r: 1, g: 1, b: 1, a: 0}
     scale: 1.024
-  IsInmortal: 0
-  flagShield: 0
-  Mesh: {fileID: 5171655099922868828}
-  SA: {fileID: 9038553318201266411}
   Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
   Portal: {fileID: 567947164588322215}
   ShieldGameObject: {fileID: 2614791013219909015}
+  MovementRig: {fileID: 0}
+  CanMove: 1
+  AvoidanceSensors: []
+  Thrusters: []
+  IsInmortal: 0
+  flagShield: 0
+  _defaultTarget: {fileID: 0}
   UI: {fileID: 4604192858225185969}
   MyAnim: {fileID: 7010268558372766691}
 --- !u!114 &2198226034328220054
@@ -353,6 +372,21 @@ MonoBehaviour:
   acceleration: 5
   deceleration: 8
   returnToMovementRotationDelay: 0.5
+  kineticTransform: {fileID: 0}
+  maxBankAngle: 45
+  bankSpeed: 9.16
+  bankRecoverySpeed: 3
+  bankIntensity: 1.5
+  maxPitchAngle: 10
+  pitchSpeed: 7
+  pitchRecoverySpeed: 5
+  pitchIntensity: -3
+  forwardLeanAngle: -2
+  leanSpeed: 5
+  enableHoverEffect: 1
+  hoverAmount: 0.1
+  hoverSpeed: 1
+  showKineticDebug: 0
   dashDistance: 75
   dashDuration: 0.45
   dashCooldown: 0
@@ -417,8 +451,8 @@ Transform:
   m_GameObject: {fileID: 5171655099922868828}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.43, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalPosition: {x: 0.034549, y: -1.825, z: -0.087816}
+  m_LocalScale: {x: 2.6998563, y: 2.6998563, z: 2.6998563}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2033426705449759240}
@@ -674,6 +708,10 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: f64735147b47da645a68b1e5ddd5ba3c, type: 3}
       propertyPath: m_Name
       value: Chela
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: f64735147b47da645a68b1e5ddd5ba3c, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

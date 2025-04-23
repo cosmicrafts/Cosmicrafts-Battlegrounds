@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: cecbfa22da475ed48bc221b2a5cdfbc1, type: 3}
   m_Name: Ship
   m_EditorClassIdentifier: 
-  Prefab: {fileID: 2198226034328220048, guid: 193483c2cab0da642874f5aa23d12329, type: 3}
+  Prefab: {fileID: 2198226034328220048, guid: b978f78d5b8ef1b4fa39d1fae0478ce9, type: 3}
   IconSprite: {fileID: 21300000, guid: d1a457f99688f2c41b46d9588c189521, type: 3}
   Name: Deva
   LocalID: 1
@@ -24,3 +24,5 @@ MonoBehaviour:
   Damage: 88
   Speed: 10.4
   Level: 7
+  AttackRange: 10
+  DetectionRange: 15

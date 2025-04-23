@@ -280,7 +280,7 @@ namespace Cosmicrafts
             if (MyOutline != null)
             {
                 MyOutline.SetColor(GameMng.GM.GetColorUnit(MyFaction));
-                MyOutline.SetThickness(Size * 0.00000420f);
+                MyOutline.SetThickness(GameMng.GM.GetOutlineThickness(Size));
             }
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);

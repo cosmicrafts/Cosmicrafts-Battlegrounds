@@ -312,55 +312,85 @@
             return isEnnemy ? EnemyShieldBarColor : FriendShieldBarColor;
         }
 
-        // Shows the respawn UI with countdown
-        public void ShowRespawnCountdown(float respawnTime)
+        // Show respawn countdown UI
+        public void ShowRespawnCountdown(float totalTime)
         {
+            // If already showing a countdown, stop it
+            if (countdownCoroutine != null)
+            {
+                StopCoroutine(countdownCoroutine);
+            }
+            
+            // Show respawn panel
             if (respawnPanel != null)
             {
                 respawnPanel.SetActive(true);
-                
-                // Set up the respawn button
-                if (respawnButton != null)
-                {
-                    // Find player unit to connect the button
-                    if (GameMng.P != null)
-                    {
-                        Unit playerUnit = GameMng.P.GetComponent<Unit>();
-                        if (playerUnit != null)
-                        {
-                            // Clear previous listeners to avoid duplicates
-                            respawnButton.onClick.RemoveAllListeners();
-                            respawnButton.onClick.AddListener(playerUnit.TriggerRespawn);
-                        }
-                    }
-                }
-                
-                // Start countdown
-                if (countdownCoroutine != null)
-                {
-                    StopCoroutine(countdownCoroutine);
-                }
-                countdownCoroutine = StartCoroutine(UpdateRespawnCountdown(respawnTime));
-            }
-        }
-        
-        // Hide respawn UI
-        public void HideRespawnUI()
-        {
-            if (respawnPanel != null)
-            {
-                respawnPanel.SetActive(false);
             }
             
+            // Hide the respawn button while showing the countdown
+            if (respawnButton != null)
+            {
+                respawnButton.gameObject.SetActive(false);
+            }
+            
+            // Start countdown
+            countdownCoroutine = StartCoroutine(CountdownCoroutine(totalTime));
+        }
+        
+        // Show respawn prompt with confirmation button
+        public void ShowRespawnPrompt()
+        {
+            // If there's a countdown running, stop it
             if (countdownCoroutine != null)
             {
                 StopCoroutine(countdownCoroutine);
                 countdownCoroutine = null;
             }
+            
+            // Show respawn panel
+            if (respawnPanel != null)
+            {
+                respawnPanel.SetActive(true);
+            }
+            
+            // Show the respawn button
+            if (respawnButton != null)
+            {
+                respawnButton.gameObject.SetActive(true);
+                
+                // Make sure the button calls ForcePlayerRespawn when clicked
+                respawnButton.onClick.RemoveAllListeners();
+                respawnButton.onClick.AddListener(() => {
+                    if (GameMng.GM != null)
+                    {
+                        GameMng.GM.ForcePlayerRespawn();
+                    }
+                });
+            }
+            
+            // Update text to prompt user
+            if (respawnCountdownText != null)
+            {
+                respawnCountdownText.text = "Click to Respawn";
+            }
         }
         
-        // Coroutine to update countdown text
-        private IEnumerator UpdateRespawnCountdown(float totalTime)
+        // Hide respawn UI completely
+        public void HideRespawnUI()
+        {
+            if (countdownCoroutine != null)
+            {
+                StopCoroutine(countdownCoroutine);
+                countdownCoroutine = null;
+            }
+            
+            if (respawnPanel != null)
+            {
+                respawnPanel.SetActive(false);
+            }
+        }
+
+        private IEnumerator CountdownCoroutine(float totalTime)
         {
             float remainingTime = totalTime;
             

@@ -15,6 +15,7 @@ namespace Cosmicrafts
         public float AttackRange = 10f;
         public float DetectionRange = 15f;
         
-        public GameObject Prefab;
+        // Using 'new' keyword to explicitly hide the base class property
+        public new GameObject Prefab;
     }
 } 

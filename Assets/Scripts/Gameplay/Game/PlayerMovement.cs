@@ -4,6 +4,7 @@ using System.Collections;
 
 namespace Cosmicrafts
 {
+    [AddComponentMenu("Cosmicrafts/PlayerMovement")]
     public class PlayerMovement : MonoBehaviour
     {
         [Header("Movement Settings")]
@@ -14,6 +15,69 @@ namespace Cosmicrafts
         
         [Header("Combat Settings")]
         public float returnToMovementRotationDelay = 0.5f; // Delay before returning to movement-based rotation
+        
+        [Header("Spaceship Kinetic Rotation")]
+        [Tooltip("Transform that should receive kinetic rotation effects (visual model)")]
+        public Transform kineticTransform;
+        
+        [Header("Banking (Z-axis / Roll)")]
+        [Tooltip("Maximum roll angle when turning (degrees)")]
+        [Range(0f, 45f)] 
+        public float maxBankAngle = 20f;
+        [Tooltip("How quickly the banking tilt is applied")]
+        [Range(1f, 20f)]
+        public float bankSpeed = 6f;
+        [Tooltip("How quickly the banking returns to neutral")]
+        [Range(1f, 20f)]
+        public float bankRecoverySpeed = 4f;
+        [Tooltip("Multiplier for turning effect (higher = more dramatic banking)")]
+        [Range(0.1f, 10f)]
+        public float bankIntensity = 2.5f;
+        
+        [Header("Pitching (X-axis)")]
+        [Tooltip("Maximum pitch angle during acceleration/deceleration (degrees)")]
+        [Range(0f, 45f)]
+        public float maxPitchAngle = 10f;
+        [Tooltip("How quickly the pitch tilt is applied")]
+        [Range(1f, 20f)]
+        public float pitchSpeed = 7f;
+        [Tooltip("How quickly the pitch returns to neutral")]
+        [Range(1f, 20f)]
+        public float pitchRecoverySpeed = 5f;
+        [Tooltip("Multiplier for acceleration effect (negative = nose down when accelerating)")]
+        [Range(-10f, 10f)]
+        public float pitchIntensity = -3f;
+        
+        [Header("Forward Lean (X-axis)")]
+        [Tooltip("Constant forward lean angle applied during movement (degrees)")]
+        [Range(-45f, 45f)]
+        public float forwardLeanAngle = -2f;
+        [Tooltip("How quickly the forward lean is applied")]
+        [Range(1f, 20f)]
+        public float leanSpeed = 5f;
+        
+        [Header("Hover Effect (Y-axis)")]
+        [Tooltip("Enable subtle bobbing motion")]
+        public bool enableHoverEffect = true;
+        [Tooltip("Hover bobbing amount in local Y axis")]
+        [Range(0f, 0.5f)]
+        public float hoverAmount = 0.1f;
+        [Tooltip("Hover bobbing speed")]
+        [Range(0.1f, 5f)]
+        public float hoverSpeed = 1f;
+        
+        [Header("Debug")]
+        [Tooltip("Show debug info in console")]
+        public bool showKineticDebug = false;
+        
+        // Private kinetic rotation variables
+        private float currentBankAngle = 0f; // Current Z-axis rotation
+        private float currentPitchAngle = 0f; // Current X-axis rotation from acceleration
+        private float currentLeanAngle = 0f; // Current X-axis rotation from constant lean
+        private Vector3 lastMoveDirection = Vector3.zero;
+        private float lastSpeedMagnitude = 0f;
+        private Vector3 kineticInitialPosition; // Store initial local position for hover effect
+        private float hoverTimer = 0f;
         
         [Header("Dash Settings")]
         public float dashDistance = 15f;
@@ -93,6 +157,12 @@ namespace Cosmicrafts
                 marker.SetActive(false);
                 markerPool.Enqueue(marker);
             }
+            
+            // Initialize kinetic transform
+            if (kineticTransform != null) {
+                // Store initial position for hover effect
+                kineticInitialPosition = kineticTransform.localPosition;
+            }
         }
 
         void Update()
@@ -109,6 +179,27 @@ namespace Cosmicrafts
             
             HandleMovementInput();
             ApplyMovement();
+            
+            // Apply hover effect (separate from rotation)
+            ApplyHoverEffect();
+        }
+        
+        // Apply subtle hover/bob effect to the kinetic transform
+        void ApplyHoverEffect() 
+        {
+            if (!enableHoverEffect || kineticTransform == null) return;
+            
+            hoverTimer += Time.deltaTime * hoverSpeed;
+            
+            if (hoverTimer > 2 * Mathf.PI) hoverTimer -= 2 * Mathf.PI;
+            
+            // Calculate bobbing vertical position
+            float yOffset = Mathf.Sin(hoverTimer) * hoverAmount;
+            
+            // Apply to local position (preserving x and z)
+            Vector3 newPosition = kineticInitialPosition;
+            newPosition.y += yOffset;
+            kineticTransform.localPosition = newPosition;
         }
         
         void UpdateDashState()
@@ -395,6 +486,11 @@ namespace Cosmicrafts
                 // Handle rotation based on targeting state
                 HandleRotation();
             }
+            else
+            {
+                // If we're not moving, still handle rotation for recovery
+                HandleRotation();
+            }
         }
         
         void HandleRotation()
@@ -414,26 +510,113 @@ namespace Cosmicrafts
                 targetingTimer -= Time.deltaTime;
             }
             
-            // Only apply movement-based rotation if:
+            // Get the transform to apply kinetic rotation to (use our transform if not specified)
+            Transform targetKineticTransform = kineticTransform != null ? kineticTransform : transform;
+            
+            // Current velocity values
+            Vector3 normalizedVelocity = currentVelocity.normalized;
+            float currentSpeedMagnitude = currentVelocity.magnitude;
+            
+            // Target rotation angles (will be calculated based on movement)
+            float targetBankAngle = 0f;
+            float targetPitchAngle = 0f;
+            float targetLeanAngle = 0f;
+            
+            // Only apply full movement-based rotation if:
             // 1. Not currently targeting an enemy AND
             // 2. The return-to-movement delay has expired
             if (!isCurrentlyTargeting && targetingTimer <= 0)
             {
-                // Before creating rotation, ensure vector is not zero
-                Vector3 normalizedVelocity = currentVelocity.normalized;
-                
                 // Double-check that normalized velocity is valid for look rotation
                 if (normalizedVelocity.sqrMagnitude > 0.001f)
                 {
-                    // Rotate towards movement direction
-                    Quaternion targetRotation = Quaternion.LookRotation(normalizedVelocity);
-                    transform.rotation = Quaternion.Lerp(
+                    // -- 1. Calculate Banking (Z-axis) based on turning --
+                    if (lastMoveDirection.sqrMagnitude > 0.001f)
+                    {
+                        // Calculate turn amount using SignedAngle for better results
+                        float turnAmount = Vector3.SignedAngle(lastMoveDirection, normalizedVelocity, Vector3.up);
+                        
+                        // Calculate target bank angle - negative because we want to bank INTO the turn
+                        // Scale based on max angle and clamp to limits
+                        targetBankAngle = -turnAmount * bankIntensity * (maxBankAngle / 90f);
+                        targetBankAngle = Mathf.Clamp(targetBankAngle, -maxBankAngle, maxBankAngle);
+                    }
+                    
+                    // -- 2. Calculate Pitch (X-axis) based on acceleration/deceleration --
+                    // Calculate acceleration (change in speed over time)
+                    float accelerationValue = (currentSpeedMagnitude - lastSpeedMagnitude) / Time.deltaTime;
+                    
+                    // Translate acceleration to pitch angle
+                    // Negative pitchIntensity = nose down when accelerating forward (realistic feeling)
+                    targetPitchAngle = accelerationValue * pitchIntensity * (maxPitchAngle / 10f);
+                    targetPitchAngle = Mathf.Clamp(targetPitchAngle, -maxPitchAngle, maxPitchAngle);
+                    
+                    // -- 3. Apply constant forward lean when moving --
+                    targetLeanAngle = forwardLeanAngle * Mathf.Clamp01(currentSpeedMagnitude / moveSpeed);
+                    
+                    // --- Apply Forward Direction to main transform ---
+                    // The primary transform always rotates to face movement direction
+                    Quaternion targetForwardRotation = Quaternion.LookRotation(normalizedVelocity);
+                    transform.rotation = Quaternion.Slerp(
                         transform.rotation,
-                        targetRotation,
+                        targetForwardRotation,
                         rotationSpeed * Time.deltaTime
                     );
+                    
+                    if (showKineticDebug)
+                    {
+                        Debug.Log($"Kinetic - Speed: {currentSpeedMagnitude:F2}, Accel: {accelerationValue:F2}, Turn: {targetBankAngle:F2}° | " +
+                                  $"Bank(Z): {currentBankAngle:F2}° → {targetBankAngle:F2}° | " +
+                                  $"Pitch(X): {currentPitchAngle:F2}° → {targetPitchAngle:F2}° | " +
+                                  $"Lean(X): {currentLeanAngle:F2}° → {targetLeanAngle:F2}°");
+                    }
+                    
+                    // Store direction for next frame's comparison
+                    lastMoveDirection = normalizedVelocity;
+                }
+                else
+                {
+                    // When velocity is zero or near-zero, still handle recovery to neutral position
+                    targetBankAngle = 0f;
+                    targetPitchAngle = 0f;
+                    targetLeanAngle = 0f;
+                    lastMoveDirection = Vector3.zero;
                 }
             }
+            else
+            {
+                // When targeting enemies, gradually return to neutral position
+                targetBankAngle = 0f;
+                targetPitchAngle = 0f;
+                targetLeanAngle = 0f;
+            }
+            
+            // --- Smoothly interpolate current rotation angles toward targets ---
+            currentBankAngle = Mathf.Lerp(currentBankAngle, targetBankAngle, bankSpeed * Time.deltaTime);
+            currentPitchAngle = Mathf.Lerp(currentPitchAngle, targetPitchAngle, pitchSpeed * Time.deltaTime);
+            currentLeanAngle = Mathf.Lerp(currentLeanAngle, targetLeanAngle, leanSpeed * Time.deltaTime);
+            
+            // --- Apply combined kinetic rotation to the visual transform ---
+            // Only apply if we have a separate transform for kinetic effects
+            if (targetKineticTransform != transform)
+            {
+                // Combine all rotational effects (X = pitch+lean, Z = bank)
+                targetKineticTransform.localRotation = Quaternion.Euler(
+                    currentPitchAngle + currentLeanAngle, 
+                    0, 
+                    currentBankAngle
+                );
+            }
+            else
+            {
+                // If we're applying to the main transform, blend with current rotation
+                // This is trickier since we don't want to disrupt the forward direction
+                // For simplicity, only apply the bank effect in this case
+                transform.rotation *= Quaternion.Euler(0, 0, currentBankAngle);
+            }
+            
+            // Update last speed for next frame's acceleration calculation
+            lastSpeedMagnitude = currentSpeedMagnitude;
             
             // Remember targeting state for next frame
             wasTargeting = isCurrentlyTargeting;

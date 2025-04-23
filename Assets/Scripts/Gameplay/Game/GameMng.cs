@@ -18,27 +18,44 @@
         public CharacterBaseSO playerCharacterSO; // Player character definition
         public CharacterBaseSO enemyCharacterSO;  // Enemy character definition (should have Unit and Bot components on its prefab)
 
-        [Header("Player Respawn Settings")]
-        public int playerLives = 9; // Number of lives before game over (Currently not used due to infinite respawn)
-        public float respawnDelay = 5f; // Seconds to wait before respawning
-        public GameObject respawnEffectPrefab; // Optional visual effect for respawn
+        [Header("Faction Visual Settings")]
+        [Tooltip("Color used for Player faction units")]
+        public Color playerFactionColor = Color.black;
+        [Tooltip("Color used for Enemy faction units")]
+        public Color enemyFactionColor = Color.red;
+        [Tooltip("Color used for Neutral faction units (if any)")]
+        public Color neutralFactionColor = Color.gray;
+        [Tooltip("Global outline thickness multiplier")]
+        [Range(0.0001f, 0.001f)]
+        public float outlineThicknessMultiplier = 0.00042f;
 
-        private int playerLivesRemaining; // Currently not used
-        private bool isRespawning = false;
+        [Header("Respawn Settings")]
+        [Tooltip("Seconds to wait before respawn UI is shown")]
+        public float respawnDelay = 5f; 
+        [Tooltip("Whether player must click to respawn or respawns automatically")]
+        public bool requireConfirmationToRespawn = true;
 
+        [Header("Targeting System")]
+        [Tooltip("Maximum number of strategic targets per faction")]
+        public int maxTargetsPerFaction = 5;
+        [Tooltip("Whether units should automatically target closest strategic target")]
+        public bool autoTargetNearest = true;
+
+        // Tracking lists
         private List<Unit> units = new List<Unit>();
         private List<Spell> spells = new List<Spell>();
         private int idCounter = 0;
         private Dictionary<string, NFTsCard> allPlayersNfts = new Dictionary<string, NFTsCard>();
 
+        // New enhanced targeting system
+        private Dictionary<Faction, List<Unit>> strategicTargets = new Dictionary<Faction, List<Unit>>();
+        
+        // Old base stations array - keeping for backwards compatibility
         public Unit[] Targets = new Unit[2]; // Array for managing base stations [0] = Enemy, [1] = Player
-        bool GameOver = false;
 
-        // Time variables (if needed, otherwise remove)
-        private TimeSpan timeOut;
-        private DateTime startTime;
-
-        // Variables to control respawn handling
+        // Game state
+        private bool GameOver = false;
+        private bool isRespawning = false;
         private Unit pendingRespawnUnit = null;
         private Coroutine respawnCoroutine = null;
 
@@ -56,7 +73,12 @@
             Debug.Log("--GAME VARIABLES INITIALIZING--");
             MT = new GameMetrics();
             MT.InitMetrics();
-            playerLivesRemaining = playerLives; // Lives counter (currently unused)
+            
+            // Initialize strategic targets dictionary
+            strategicTargets[Faction.Player] = new List<Unit>();
+            strategicTargets[Faction.Enemy] = new List<Unit>();
+            strategicTargets[Faction.Neutral] = new List<Unit>();
+            
             Debug.Log("--GAME VARIABLES READY--");
         }
 
@@ -150,7 +172,12 @@
             // --- Register ---
             Targets[playerBaseIndex] = playerUnit;
             AddUnit(playerUnit);
-            playerUnit.OnUnitDeath += HandlePlayerBaseStationDeath; // Subscribe to death event
+            
+            // Add to strategic targets
+            AddStrategicTarget(playerUnit);
+            
+            // Subscribe to death event
+            playerUnit.OnUnitDeath += HandlePlayerBaseStationDeath;
 
             Debug.Log($"Player base spawned: {playerUnit.gameObject.name} | HP: {playerUnit.HitPoints}/{playerUnit.GetMaxHitPoints()} | Shield: {playerUnit.Shield}/{playerUnit.GetMaxShield()}");
         }
@@ -204,6 +231,10 @@
             // --- Register ---
             Targets[enemyBaseIndex] = enemyUnit;
             AddUnit(enemyUnit);
+            
+            // Add to strategic targets
+            AddStrategicTarget(enemyUnit);
+            
             // Optionally subscribe to enemy death: enemyUnit.OnUnitDeath += HandleEnemyBaseStationDeath;
 
             Debug.Log($"Enemy base spawned: {enemyUnit.gameObject.name} | HP: {enemyUnit.HitPoints}/{enemyUnit.GetMaxHitPoints()} | Shield: {enemyUnit.Shield}/{enemyUnit.GetMaxShield()} | Bot Component: N/A");
@@ -227,18 +258,40 @@
             pendingRespawnUnit = baseStation;
             
             // Start the reset process with longer delay to allow for soul experience
-            respawnCoroutine = StartCoroutine(ResetPlayerCharacter(baseStation));
+            respawnCoroutine = StartCoroutine(ShowRespawnPrompt(baseStation));
         }
 
-        // Updated reset player function with countdown support
-        private IEnumerator ResetPlayerCharacter(Unit playerUnit)
+        // Updated to show respawn prompt instead of automatic respawn
+        private IEnumerator ShowRespawnPrompt(Unit playerUnit)
         {
             isRespawning = true;
 
-            // Allow time for the soul experience
+            // Allow time for the soul experience before showing respawn UI
             yield return new WaitForSeconds(respawnDelay);
 
-            yield return StartCoroutine(CompletePlayerRespawn(playerUnit));
+            // Show respawn UI
+            if (UI != null)
+            {
+                // If we're requiring confirmation, show the respawn UI with a button
+                if (requireConfirmationToRespawn)
+                {
+                    UI.ShowRespawnPrompt();
+                    // The UI button will call ForcePlayerRespawn() when clicked
+                }
+                else
+                {
+                    // If no confirmation required, start respawn countdown
+                    UI.ShowRespawnCountdown(respawnDelay);
+                    yield return new WaitForSeconds(respawnDelay);
+                    StartCoroutine(CompletePlayerRespawn(playerUnit));
+                }
+            }
+            else
+            {
+                // Fallback if UI is missing - respawn directly
+                yield return new WaitForSeconds(respawnDelay);
+                StartCoroutine(CompletePlayerRespawn(playerUnit));
+            }
         }
         
         // Separate coroutine for the actual respawn mechanics
@@ -255,13 +308,6 @@
             Team playerTeam = FactionManager.ConvertFactionToTeam(P.MyFaction);
             int playerBaseIndex = playerTeam == Team.Blue ? 1 : 0;
             Vector3 respawnPosition = BS_Positions[playerBaseIndex];
-            
-            // Create respawn effect if available
-            if (respawnEffectPrefab != null)
-            {
-                GameObject effect = Instantiate(respawnEffectPrefab, respawnPosition, Quaternion.identity);
-                Destroy(effect, 3f);
-            }
             
             // Force teleport to respawn position BEFORE activating
             playerUnit.transform.position = respawnPosition;
@@ -549,11 +595,83 @@
             }
         }
 
+        // New function to manage strategic targets
+        public void AddStrategicTarget(Unit unit)
+        {
+            if (unit == null || unit.IsDeath) return;
+
+            // Get the appropriate faction list
+            Faction faction = unit.MyFaction;
+            List<Unit> targetList = strategicTargets[faction];
+
+            // Check if this unit is already in the list
+            if (!targetList.Contains(unit))
+            {
+                // Add and enforce maximum limit
+                targetList.Add(unit);
+                if (targetList.Count > maxTargetsPerFaction)
+                {
+                    // Remove oldest target if exceeding max
+                    targetList.RemoveAt(0);
+                }
+            }
+        }
+
+        // Get nearest strategic target for a unit to move against
+        public Unit GetNearestStrategicTarget(Unit forUnit)
+        {
+            if (forUnit == null) return null;
+
+            // Get opposing faction
+            Faction enemyFaction = forUnit.MyFaction == Faction.Player ? Faction.Enemy : Faction.Player;
+            
+            // If enemy faction has no targets, fallback to base stations
+            if (strategicTargets[enemyFaction].Count == 0)
+            {
+                // Legacy targets array fallback
+                int targetIndex = forUnit.MyFaction == Faction.Player ? 0 : 1;
+                return Targets[targetIndex];
+            }
+
+            // Find nearest target from enemy faction's strategic targets
+            Unit nearestTarget = null;
+            float nearestDistance = float.MaxValue;
+
+            foreach (Unit target in strategicTargets[enemyFaction])
+            {
+                if (target != null && !target.IsDeath)
+                {
+                    float distance = Vector3.Distance(forUnit.transform.position, target.transform.position);
+                    if (distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        nearestTarget = target;
+                    }
+                }
+            }
+
+            // If no valid target found from strategic list, fallback to base stations
+            if (nearestTarget == null)
+            {
+                int targetIndex = forUnit.MyFaction == Faction.Player ? 0 : 1;
+                nearestTarget = Targets[targetIndex];
+            }
+
+            return nearestTarget;
+        }
+
         public void DeleteUnit(Unit unit)
         {
             if (unit != null && units.Contains(unit))
             {
                 units.Remove(unit);
+                
+                // Remove from strategic targets if present
+                if (strategicTargets.ContainsKey(unit.MyFaction))
+                {
+                    strategicTargets[unit.MyFaction].Remove(unit);
+                }
+                
                 //Debug.Log($"DeleteUnit called for {unit.gameObject.name} - Team: {unit.MyFaction}, ID: {unit.getId()}");
                 Destroy(unit.gameObject);
             }
@@ -603,8 +721,18 @@
 
         public Color GetColorUnit(Faction faction, int playerId = -1)
         {
-            // Simplified color logic based on faction
-            return faction == Faction.Player ? Color.green : Color.red;
+            // Use configurable colors from inspector
+            switch (faction)
+            {
+                case Faction.Player:
+                    return playerFactionColor;
+                case Faction.Enemy:
+                    return enemyFactionColor;
+                case Faction.Neutral:
+                    return neutralFactionColor;
+                default:
+                    return Color.white; // Fallback
+            }
         }
         
         // Backward compatibility method
@@ -613,9 +741,52 @@
             return GetColorUnit(team == Team.Blue ? Faction.Player : Faction.Enemy, playerId);
         }
 
+        // New method to get outline thickness for units
+        public float GetOutlineThickness(float unitSize)
+        {
+            return unitSize * outlineThicknessMultiplier;
+        }
+
         public Vector3 GetDefaultTargetPosition(Faction faction)
         {
-            // Return the opponent's base position
+            // Check if we have strategic targets for opposing faction
+            Faction opposingFaction = faction == Faction.Player ? Faction.Enemy : Faction.Player;
+            
+            if (strategicTargets[opposingFaction].Count > 0)
+            {
+                // Find nearest strategic target
+                Unit nearestTarget = null;
+                float nearestDist = float.MaxValue;
+                
+                // Get a position to use as reference (usually player position or center of map)
+                Vector3 referencePos = BS_Positions[faction == Faction.Player ? 1 : 0];
+                
+                // If player exists, use player position as reference for enemy units
+                if (faction == Faction.Enemy && P != null)
+                {
+                    referencePos = P.transform.position;
+                }
+                
+                foreach (Unit target in strategicTargets[opposingFaction])
+                {
+                    if (target != null && !target.IsDeath)
+                    {
+                        float dist = Vector3.Distance(referencePos, target.transform.position);
+                        if (dist < nearestDist)
+                        {
+                            nearestDist = dist;
+                            nearestTarget = target;
+                        }
+                    }
+                }
+                
+                if (nearestTarget != null)
+                {
+                    return nearestTarget.transform.position;
+                }
+            }
+            
+            // Fallback to legacy base positions
             int index = faction == Faction.Player ? 0 : 1; // Player targets Enemy (0), Enemy targets Player (1)
             if (Targets[index] != null)
                 return Targets[index].transform.position;
@@ -632,7 +803,43 @@
         public Transform GetFinalTransformTarget(Faction faction)
         {
             if (GameOver) return transform; // Return GameMng transform if game over
+            
+            if (autoTargetNearest)
+            {
+                // Get opposing faction
+                Faction opposingFaction = faction == Faction.Player ? Faction.Enemy : Faction.Player;
+                
+                // Check if we have any strategic targets for the opposing faction
+                if (strategicTargets[opposingFaction].Count > 0)
+                {
+                    // Find nearest valid target
+                    Unit nearestTarget = null;
+                    float nearestDist = float.MaxValue;
+                    
+                    // Get a position to use as reference (usually player position or center of map)
+                    Vector3 referencePos = BS_Positions[faction == Faction.Player ? 1 : 0];
+                    
+                    foreach (Unit target in strategicTargets[opposingFaction])
+                    {
+                        if (target != null && !target.IsDeath)
+                        {
+                            float dist = Vector3.Distance(referencePos, target.transform.position);
+                            if (dist < nearestDist)
+                            {
+                                nearestDist = dist;
+                                nearestTarget = target;
+                            }
+                        }
+                    }
+                    
+                    if (nearestTarget != null)
+                    {
+                        return nearestTarget.transform;
+                    }
+                }
+            }
 
+            // Legacy fallback behavior
             int targetIndex = faction == Faction.Player ? 0 : 1; // Player targets Enemy (0), Enemy targets Player (1)
             return Targets[targetIndex] != null ? Targets[targetIndex].transform : transform; // Fallback to GameMng transform
         }
@@ -652,12 +859,6 @@
         {
             // Check if both base stations (Targets) exist and are not marked as dead
             return Targets[0] != null && !Targets[0].IsDeath && Targets[1] != null && !Targets[1].IsDeath;
-        }
-
-        // Get the number of player lives remaining (currently unused)
-        public int GetPlayerLivesRemaining()
-        {
-            return playerLivesRemaining;
         }
 
         private int GenerateUnitId()
@@ -731,12 +932,11 @@
             return CountUnits(team == Team.Blue ? Faction.Player : Faction.Enemy);
         }
 
+        // Get remaining seconds (restored for backward compatibility)
         public int GetRemainingSecs()
         {
-            // Implement time logic if needed, otherwise return a default
-            // TimeSpan currentTime = timeOut.Add(startTime - DateTime.Now);
-            // return Mathf.Max(0, (int)currentTime.TotalSeconds);
-            return 999; // Placeholder
+            // Game has no time limit, so return a default high value
+            return 999; 
         }
 
         // Helper to get the player unit instance
@@ -750,7 +950,6 @@
         {
              // Return Targets[0] directly, checking for null
              return (Targets != null && Targets.Length > 0) ? Targets[0] : null;
-             // return (BOT != null) ? BOT.GetComponent<Unit>() : null; // Old implementation
         }
 
         // Add the missing GetUnitsListClone method

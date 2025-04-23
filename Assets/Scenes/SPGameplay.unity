@@ -2166,9 +2166,14 @@ MonoBehaviour:
   - {x: 0, y: 0, z: 0}
   playerCharacterSO: {fileID: 11400000, guid: 7120f2145aa385e43a18776aebd601cd, type: 2}
   enemyCharacterSO: {fileID: 11400000, guid: 846547443a98cb34c807002468d20760, type: 2}
-  playerLives: 5
+  playerFactionColor: {r: 0, g: 0, b: 0, a: 1}
+  enemyFactionColor: {r: 0, g: 0, b: 0, a: 1}
+  neutralFactionColor: {r: 1, g: 1, b: 1, a: 1}
+  outlineThicknessMultiplier: 0.0001
   respawnDelay: 10
-  respawnEffectPrefab: {fileID: 3952169841054198065, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}
+  requireConfirmationToRespawn: 1
+  maxTargetsPerFaction: 5
+  autoTargetNearest: 1
   Targets:
   - {fileID: 0}
   - {fileID: 0}
@@ -2223,19 +2228,13 @@ MonoBehaviour:
   - {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   impactPrefabs:
   - {fileID: 8102155473089344357, guid: d56b87557a2d32340bf36655f72d7ef8, type: 3}
-  - {fileID: 8362349209469777719, guid: 1835dbeede209484cb976155d1b75638, type: 3}
-  - {fileID: 2294555824928324180, guid: 3e33a52d79be8d64d936e68cfa38b605, type: 3}
-  - {fileID: 3536986080484332858, guid: 8946e62d89e36e9449c8b9e92eba8fc9, type: 3}
-  - {fileID: 4410437682428655200, guid: 586feea8620dbf144a7df821bbc81ae6, type: 3}
-  - {fileID: 8434842591292709995, guid: 12c1bc4b21c3ca24bb5ed6e2758da356, type: 3}
-  - {fileID: 5950102653247709576, guid: 862784398b0561347ac1540ebfa9cf4c, type: 3}
   shieldImpactPrefabs:
   - {fileID: 419230059809877750, guid: 0f933251899050c4dadc659948e75471, type: 3}
   armorImpactPrefabs: []
   poolSizePerPrefab: 50
   defaultLifetime: 1
   impactLifetime: 0.5
-  globalScaleMultiplier: 2.5
+  globalScaleMultiplier: 3.24
 --- !u!114 &697417429954438965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2255,7 +2254,10 @@ MonoBehaviour:
   maxTotalBots: 4
   botSpawnSettings:
   - botPrefab: {fileID: 2198226034328220048, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
-    spawnRate: 15.2
+    spawnRate: 20.5
+    botDescription: WowZers
+  - botPrefab: {fileID: 2198226034328220048, guid: 193483c2cab0da642874f5aa23d12329, type: 3}
+    spawnRate: 30
     botDescription: WowZers
   respawnDelay: 30
   showSectorBounds: 1

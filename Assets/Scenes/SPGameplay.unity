@@ -288,6 +288,81 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!1 &252843773
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 252843774}
+  - component: {fileID: 252843776}
+  - component: {fileID: 252843775}
+  m_Layer: 0
+  m_Name: Tile
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &252843774
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252843773}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -47.557896}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: -180.93088, y: 29.725527}
+  m_SizeDelta: {x: 100, y: 100}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &252843775
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252843773}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_Sprite: {fileID: 0}
+  m_Type: 0
+  m_PreserveAspect: 0
+  m_FillCenter: 1
+  m_FillMethod: 4
+  m_FillAmount: 1
+  m_FillClockwise: 1
+  m_FillOrigin: 0
+  m_UseSpriteMesh: 0
+  m_PixelsPerUnitMultiplier: 1
+--- !u!222 &252843776
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 252843773}
+  m_CullTransparentMesh: 1
 --- !u!1 &464097781
 GameObject:
   m_ObjectHideFlags: 0
@@ -2066,6 +2141,7 @@ GameObject:
   - component: {fileID: 697417429954438961}
   - component: {fileID: 697417429954438963}
   - component: {fileID: 697417429954438964}
+  - component: {fileID: 697417429954438965}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2151,6 +2227,37 @@ MonoBehaviour:
   poolSizePerPrefab: 10
   defaultLifetime: 3
   impactLifetime: 0.5
+--- !u!114 &697417429954438965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 697417429954438960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f71c7655d017b42aceb44d68bb64c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  sectorSize: 1000
+  visibleGridSize: 3
+  generationPerimeter: 1
+  tilePrefab: {fileID: 252843773}
+  tileSize: 10
+  tileVariationChance: 0.3
+  tileMaterials: []
+  maxBotsPerSector: 1
+  botSpawnSettings:
+  - botPrefab: {fileID: 2198226034328220048, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
+    spawnRate: 41.6
+    botDescription: WowZers
+  respawnDelay: 5
+  resourceSpawnChance: 0.3
+  resourcePrefabs: []
+  showSectorBounds: 1
+  sectorBoundColor: {r: 0, g: 1, b: 0, a: 0.3}
+  showSpawnPoints: 0
+  spawnPointColor: {r: 1, g: 0, b: 0, a: 0.5}
 --- !u!1 &697417429969759475
 GameObject:
   m_ObjectHideFlags: 0
@@ -6214,3 +6321,4 @@ SceneRoots:
   m_Roots:
   - {fileID: 697417429954438962}
   - {fileID: 2018689341}
+  - {fileID: 252843774}

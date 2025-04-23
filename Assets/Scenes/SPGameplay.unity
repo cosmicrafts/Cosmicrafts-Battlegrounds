@@ -2230,9 +2230,14 @@ MonoBehaviour:
   - {fileID: 5295586122231405360, guid: 76ff8ef44a10b794bb0f8ff177b9ca27, type: 3}
   - {fileID: 647104670885987435, guid: 4779b010dbd1403488ea49e9d17ffd85, type: 3}
   - {fileID: 8530891135317232908, guid: 0318a5d4e9f35b3499c3a51e7e053320, type: 3}
-  - {fileID: 3010895046562501561, guid: 357ca1f3c55d5aa46a0e1bea4f0109ba, type: 3}
+  impactPrefabs:
+  - {fileID: 8102155473089344357, guid: d56b87557a2d32340bf36655f72d7ef8, type: 3}
+  - {fileID: 8362349209469777719, guid: 1835dbeede209484cb976155d1b75638, type: 3}
+  - {fileID: 2294555824928324180, guid: 3e33a52d79be8d64d936e68cfa38b605, type: 3}
+  - {fileID: 3536986080484332858, guid: 8946e62d89e36e9449c8b9e92eba8fc9, type: 3}
+  - {fileID: 4410437682428655200, guid: 586feea8620dbf144a7df821bbc81ae6, type: 3}
   - {fileID: 8434842591292709995, guid: 12c1bc4b21c3ca24bb5ed6e2758da356, type: 3}
-  impactPrefabs: []
+  - {fileID: 5950102653247709576, guid: 862784398b0561347ac1540ebfa9cf4c, type: 3}
   poolSizePerPrefab: 50
   defaultLifetime: 1
   impactLifetime: 0.5
@@ -2249,25 +2254,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99f71c7655d017b42aceb44d68bb64c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sectorSize: 100
+  sectorSize: 250
   visibleGridSize: 1
-  generationPerimeter: 1
-  tilePrefab: {fileID: 252843773}
-  tileSize: 10
-  tileVariationChance: 0.3
-  tileMaterials: []
+  generationPerimeter: 0
   maxBotsPerSector: 1
+  maxTotalBots: 4
   botSpawnSettings:
   - botPrefab: {fileID: 2198226034328220048, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
-    spawnRate: 41.6
+    spawnRate: 15.2
     botDescription: WowZers
-  respawnDelay: 5
-  resourceSpawnChance: 0.3
-  resourcePrefabs: []
+  respawnDelay: 30
   showSectorBounds: 1
   sectorBoundColor: {r: 0, g: 1, b: 0, a: 0.3}
-  showSpawnPoints: 0
-  spawnPointColor: {r: 1, g: 0, b: 0, a: 0.5}
 --- !u!1 &697417429969759475
 GameObject:
   m_ObjectHideFlags: 0

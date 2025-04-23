@@ -4,84 +4,84 @@ namespace Cosmicrafts
     using System.Collections.Generic;
     using UnityEngine;
     using System.Linq;
-    using UnityEngine.Serialization;
 
     /// <summary>
-    /// ProceduralWorldManager handles procedural generation of the game world, including tiles, enemies,
-    /// and other objects. It uses a sector-based approach where the world is divided into grid cells.
+    /// ProceduralWorldManager handles procedural generation of the game world, including enemies.
+    /// It uses a sector-based approach where the world is divided into grid cells.
     /// </summary>
     public class ProceduralWorldManager : MonoBehaviour
     {
         public static ProceduralWorldManager Instance;
 
         [Header("Sector Settings")]
-        public int sectorSize = 100; // World units per sector
-        public int visibleGridSize = 3; // Size of the visible grid (3x3)
-        public int generationPerimeter = 1; // Additional perimeter of sectors to generate beyond visible grid
-
-        [Header("Tile Settings")]
-        public GameObject tilePrefab; // Base tile prefab
-        public float tileSize = 10f; // Size of each tile
-        [Range(0f, 1f)]
-        public float tileVariationChance = 0.3f; // Chance for tile variation
-        public List<Material> tileMaterials; // Different materials for tile variations
+        [Tooltip("Size of each sector in world units")]
+        public int sectorSize = 250; 
+        
+        [Tooltip("Size of the visible grid around player (1=just player's sector, 3=3x3 grid with player in center)")]
+        [Range(1, 5)]
+        public int visibleGridSize = 1; 
+        
+        [Tooltip("Additional sectors to generate beyond visible grid for seamless transitions")]
+        [Range(0, 2)]
+        public int generationPerimeter = 1; 
 
         [Header("Bot Spawning")]
-        public int maxBotsPerSector = 3; // Maximum number of bots to spawn per sector
+        [Tooltip("Maximum bots spawned per sector")]
+        [Range(0, 10)]
+        public int maxBotsPerSector = 1; 
+        
+        [Tooltip("Global limit on total active bots in the world")]
+        [Range(1, 20)]
+        public int maxTotalBots = 4;
 
         [System.Serializable]
         public class BotSpawnSetting
         {
-            public GameObject botPrefab; // The bot prefab to spawn
+            [Tooltip("The bot prefab to spawn")]
+            public GameObject botPrefab;
+            
+            [Tooltip("Relative spawn chance (0=never, 100=common)")]
             [Range(0f, 100f)]
-            public float spawnRate = 100f; // 0% = never spawn, 100% = common spawn
-            [Tooltip("A descriptive name to help identify this bot in the Inspector")]
+            public float spawnRate = 100f;
+            
+            [Tooltip("Optional description to identify this bot in the Inspector")]
             public string botDescription;
         }
 
         // List exposed in the Inspector for configuration
+        [Tooltip("Configure different bot types with their relative spawn rates")]
         public List<BotSpawnSetting> botSpawnSettings = new List<BotSpawnSetting>();
 
-        public float respawnDelay = 30f; // Delay before a bot can respawn in seconds
-
-        [Header("Resource Settings")]
-        [Range(0f, 1f)]
-        public float resourceSpawnChance = 0.3f; // Chance to spawn resources
-        public List<GameObject> resourcePrefabs; // Resource prefabs
+        [Tooltip("Delay in seconds before respawning bots in a sector")]
+        public float respawnDelay = 30f;
 
         [Header("Debug Visualization")]
+        [Tooltip("Show sector boundaries in the Scene view")]
         public bool showSectorBounds = true;
+        
+        [Tooltip("Color of sector boundary lines")]
         public Color sectorBoundColor = new Color(0, 1, 0, 0.3f);
-        public bool showSpawnPoints = false;
-        public Color spawnPointColor = new Color(1, 0, 0, 0.5f);
 
         // Private fields
-        private Dictionary<Vector2Int, Sector> sectors = new Dictionary<Vector2Int, Sector>();
+        private Dictionary<Vector2Int, bool> generatedSectors = new Dictionary<Vector2Int, bool>();
         private Vector2Int currentPlayerSector;
         private Transform playerTransform;
-        private HashSet<Vector2Int> generatedSectors = new HashSet<Vector2Int>();
+
+        // Object tracking lists - using arrays for more efficient memory management
+        private List<GameObject> activeBots = new List<GameObject>(20);  // Pre-allocate capacity
         
-        // Object Pools
-        private Dictionary<string, Queue<GameObject>> tilePool = new Dictionary<string, Queue<GameObject>>();
-        private Dictionary<GameObject, Queue<GameObject>> botPool = new Dictionary<GameObject, Queue<GameObject>>();
-        private Dictionary<GameObject, Queue<GameObject>> resourcePool = new Dictionary<GameObject, Queue<GameObject>>();
-
-        // Track active objects for cleanup
-        private List<GameObject> activeTiles = new List<GameObject>();
-        private List<GameObject> activeBots = new List<GameObject>();
-        private List<GameObject> activeResources = new List<GameObject>();
-
-        // Track sector probabilities
+        // Bot count tracking
         private Dictionary<Vector2Int, int> sectorBotCounts = new Dictionary<Vector2Int, int>();
         
-        // Random number generator with seed for consistency
-        private System.Random rng;
+        // Object pools - reuse same objects instead of creating/destroying
+        private Queue<GameObject> botPool = new Queue<GameObject>(20);
 
-        // Coroutines for respawn management
-        private Dictionary<Vector2Int, Coroutine> sectorRespawnCoroutines = new Dictionary<Vector2Int, Coroutine>();
+        private bool isInitialized = false;
+        private bool isRunning = false;
 
         private void Awake()
         {
+            // Singleton pattern
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -89,95 +89,147 @@ namespace Cosmicrafts
             }
             
             Instance = this;
-            DontDestroyOnLoad(gameObject);
-            
-            // Initialize RNG with a seed based on time or fixed value
-            rng = new System.Random(System.DateTime.Now.Millisecond);
         }
 
         private void Start()
         {
-            // Find player reference - we'll use the base station from GameMng
-            StartCoroutine(FindPlayer());
-            
-            // Initialize pools
-            InitializePools();
+            // Start initialization process - don't initialize immediately
+            StartCoroutine(SafeInitialize());
         }
-
-        private IEnumerator FindPlayer()
+        
+        private IEnumerator SafeInitialize()
         {
-            // Wait until GameMng is properly initialized
-            yield return new WaitUntil(() => GameMng.GM != null && GameMng.P != null);
+            // Safety delay to let other systems initialize
+            yield return new WaitForSeconds(1f);
             
-            // Use player's transform or transform of player's base
-            if (GameMng.P != null && GameMng.P.GetComponent<Unit>() != null)
+            // Try to find player - wait up to 5 seconds max to avoid infinite wait
+            float timeWaited = 0;
+            float maxWaitTime = 5f;
+            
+            while (timeWaited < maxWaitTime)
             {
-                playerTransform = GameMng.P.GetComponent<Unit>().transform;
-            }
-            else if (GameMng.GM.Targets.Length > 1 && GameMng.GM.Targets[1] != null)
-            {
-                // Use player base station as fallback
-                playerTransform = GameMng.GM.Targets[1].transform;
+                if (TryFindPlayer())
+                {
+                    isInitialized = true;
+                    isRunning = true;
+                    
+                    // Generate initial sectors once player is found
+                    currentPlayerSector = WorldToSector(playerTransform.position);
+                    GenerateInitialSectors();
+                    
+                    Debug.Log($"[ProceduralWorld] Successfully initialized. Player found at sector {currentPlayerSector}");
+                    
+                    yield break;
+                }
+                
+                yield return new WaitForSeconds(0.5f);
+                timeWaited += 0.5f;
             }
             
-            if (playerTransform != null)
+            Debug.LogWarning("[ProceduralWorld] Could not initialize after waiting. Will not generate sectors.");
+        }
+        
+        private bool TryFindPlayer()
+        {
+            try
             {
-                // Generate initial sectors
-                currentPlayerSector = WorldToSector(playerTransform.position);
-                GenerateInitialSectors();
+                // Try to get player from GameMng first
+                if (GameMng.GM != null && GameMng.P != null)
+                {
+                    Unit playerUnit = GameMng.P.GetComponent<Unit>();
+                    if (playerUnit != null)
+                    {
+                        playerTransform = playerUnit.transform;
+                        return true;
+                    }
+                }
+                
+                // Try to get base station from GameMng as fallback
+                if (GameMng.GM != null && GameMng.GM.Targets != null && GameMng.GM.Targets.Length > 1 && GameMng.GM.Targets[1] != null)
+                {
+                    playerTransform = GameMng.GM.Targets[1].transform;
+                    return true;
+                }
+                
+                // If GameMng approach fails, try to find main camera as a last resort
+                if (Camera.main != null)
+                {
+                    playerTransform = Camera.main.transform;
+                    return true;
+                }
             }
-            else
+            catch (System.Exception e)
             {
-                Debug.LogError("ProceduralWorldManager could not find player or base station transform!");
+                Debug.LogError($"[ProceduralWorld] Error finding player: {e.Message}");
             }
+            
+            return false;
         }
 
         private void Update()
         {
-            if (playerTransform == null)
+            if (!isInitialized || !isRunning || playerTransform == null)
                 return;
                 
-            // Check if player has moved to a new sector
-            Vector2Int newPlayerSector = WorldToSector(playerTransform.position);
-            if (newPlayerSector != currentPlayerSector)
+            try
             {
-                // Player moved to a new sector
-                currentPlayerSector = newPlayerSector;
-                UpdateVisibleSectors();
+                // Check if player has moved to a new sector
+                Vector2Int newPlayerSector = WorldToSector(playerTransform.position);
+                if (newPlayerSector != currentPlayerSector)
+                {
+                    // Player moved to a new sector
+                    currentPlayerSector = newPlayerSector;
+                    UpdateVisibleSectors();
+                }
+                
+                // Enforce the bot limit periodically
+                if (Time.frameCount % 60 == 0) // Check every 60 frames
+                {
+                    if (activeBots.Count > maxTotalBots)
+                    {
+                        RemoveExcessBots();
+                    }
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ProceduralWorld] Error in Update: {e.Message}");
+                isRunning = false; // Stop processing to prevent more errors
             }
         }
-
-        private void InitializePools()
+        
+        private void RemoveExcessBots()
         {
-            // Initialize tile pool
-            tilePool["default"] = new Queue<GameObject>();
-            
-            // Initialize bot pools
-            botPool.Clear();
-            foreach (var setting in botSpawnSettings)
+            int excessCount = activeBots.Count - maxTotalBots;
+            if (excessCount <= 0)
+                return;
+                
+            // Remove bots starting from the end of the list (usually furthest from spawn point)
+            for (int i = activeBots.Count - 1; i >= 0 && excessCount > 0; i--)
             {
-                if (setting != null && setting.botPrefab != null)
+                if (activeBots[i] != null)
                 {
-                    botPool[setting.botPrefab] = new Queue<GameObject>();
-                }
-            }
-            
-            // Initialize resource pools
-            foreach (var resourcePrefab in resourcePrefabs)
-            {
-                if (resourcePrefab != null)
-                {
-                    resourcePool[resourcePrefab] = new Queue<GameObject>();
+                    GameObject bot = activeBots[i];
+                    activeBots.RemoveAt(i);
+                    
+                    // Update sector count
+                    Vector2Int sector = WorldToSector(bot.transform.position);
+                    if (sectorBotCounts.ContainsKey(sector))
+                    {
+                        sectorBotCounts[sector] = Mathf.Max(0, sectorBotCounts[sector] - 1);
+                    }
+                    
+                    // Return to pool or destroy
+                    RecycleBot(bot);
+                    excessCount--;
                 }
             }
         }
-
-        #region Sector Management
 
         private void GenerateInitialSectors()
         {
-            int perimeterSize = visibleGridSize + 2 * generationPerimeter;
-            int halfSize = perimeterSize / 2;
+            int fullSize = visibleGridSize + 2 * generationPerimeter;
+            int halfSize = fullSize / 2;
             
             for (int x = -halfSize; x <= halfSize; x++)
             {
@@ -191,96 +243,92 @@ namespace Cosmicrafts
 
         private void UpdateVisibleSectors()
         {
-            // Calculate new sectors to generate and old sectors to remove
-            HashSet<Vector2Int> newSectorsNeeded = new HashSet<Vector2Int>();
-            HashSet<Vector2Int> sectorsToRemove = new HashSet<Vector2Int>(generatedSectors);
-            
-            int fullSize = visibleGridSize + 2 * generationPerimeter;
-            int halfSize = fullSize / 2;
-            
-            // Determine sectors that should be active
-            for (int x = -halfSize; x <= halfSize; x++)
+            try
             {
-                for (int y = -halfSize; y <= halfSize; y++)
+                // Calculate the sectors that should be visible
+                HashSet<Vector2Int> visibleSectors = new HashSet<Vector2Int>();
+                
+                int fullSize = visibleGridSize + 2 * generationPerimeter;
+                int halfSize = fullSize / 2;
+                
+                // Determine sectors that should be active
+                for (int x = -halfSize; x <= halfSize; x++)
                 {
-                    Vector2Int sectorCoord = new Vector2Int(currentPlayerSector.x + x, currentPlayerSector.y + y);
-                    newSectorsNeeded.Add(sectorCoord);
-                    sectorsToRemove.Remove(sectorCoord); // Keep this sector
+                    for (int y = -halfSize; y <= halfSize; y++)
+                    {
+                        Vector2Int sectorCoord = new Vector2Int(currentPlayerSector.x + x, currentPlayerSector.y + y);
+                        visibleSectors.Add(sectorCoord);
+                        
+                        // Generate any new sectors needed
+                        if (!generatedSectors.ContainsKey(sectorCoord))
+                        {
+                            GenerateSector(sectorCoord);
+                        }
+                    }
+                }
+                
+                // Find sectors to remove (those that are no longer visible)
+                List<Vector2Int> sectorsToRemove = new List<Vector2Int>();
+                foreach (var sector in generatedSectors.Keys)
+                {
+                    if (!visibleSectors.Contains(sector))
+                    {
+                        sectorsToRemove.Add(sector);
+                    }
+                }
+                
+                // Remove sectors that are too far away
+                foreach (Vector2Int sector in sectorsToRemove)
+                {
+                    RemoveSector(sector);
                 }
             }
-            
-            // Generate new sectors
-            foreach (Vector2Int coord in newSectorsNeeded)
+            catch (System.Exception e)
             {
-                if (!generatedSectors.Contains(coord))
-                {
-                    GenerateSector(coord);
-                }
-            }
-            
-            // Remove sectors that are too far away
-            foreach (Vector2Int coord in sectorsToRemove)
-            {
-                RemoveSector(coord);
+                Debug.LogError($"[ProceduralWorld] Error updating sectors: {e.Message}");
             }
         }
 
         private void GenerateSector(Vector2Int sectorCoord)
         {
-            if (generatedSectors.Contains(sectorCoord))
+            if (generatedSectors.ContainsKey(sectorCoord))
                 return;
+            
+            try
+            {
+                // Mark as generated
+                generatedSectors[sectorCoord] = true;
+                sectorBotCounts[sectorCoord] = 0;
                 
-            // Create sector data object
-            Sector newSector = ScriptableObject.CreateInstance<Sector>();
-            newSector.sectorName = $"Sector ({sectorCoord.x}, {sectorCoord.y})";
-            newSector.coordinate = sectorCoord;
-            
-            // Add to tracking collections
-            sectors[sectorCoord] = newSector;
-            generatedSectors.Add(sectorCoord);
-            sectorBotCounts[sectorCoord] = 0;
-            
-            // Generate tiles for this sector
-            GenerateTiles(sectorCoord);
-            
-            // Generate bots for this sector
-            GenerateBots(sectorCoord);
-            
-            // Generate resources for this sector
-            GenerateResources(sectorCoord);
+                // Only generate bots if we're under the limit
+                if (activeBots.Count < maxTotalBots)
+                {
+                    GenerateBots(sectorCoord);
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ProceduralWorld] Error generating sector {sectorCoord}: {e.Message}");
+            }
         }
 
         private void RemoveSector(Vector2Int sectorCoord)
         {
-            if (!generatedSectors.Contains(sectorCoord))
+            if (!generatedSectors.ContainsKey(sectorCoord))
                 return;
-                
-            // Get the sector
-            if (sectors.TryGetValue(sectorCoord, out Sector sector))
+            
+            try
             {
-                // Return all objects for this sector to pools
+                // Delete all objects in this sector
                 RecycleObjectsInSector(sectorCoord);
                 
-                // Stop any respawn coroutines for this sector
-                if (sectorRespawnCoroutines.TryGetValue(sectorCoord, out Coroutine coroutine))
-                {
-                    if (coroutine != null)
-                    {
-                        StopCoroutine(coroutine);
-                    }
-                    sectorRespawnCoroutines.Remove(sectorCoord);
-                }
-                
-                // Clean up sector data
-                sectors.Remove(sectorCoord);
+                // Remove from tracking
                 generatedSectors.Remove(sectorCoord);
                 sectorBotCounts.Remove(sectorCoord);
-                
-                // Destroy the sector ScriptableObject
-                if (Application.isPlaying)
-                {
-                    Destroy(sector);
-                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ProceduralWorld] Error removing sector {sectorCoord}: {e.Message}");
             }
         }
 
@@ -288,17 +336,6 @@ namespace Cosmicrafts
         {
             Vector3 sectorBottomLeft = SectorToWorld(sectorCoord);
             Vector3 sectorTopRight = sectorBottomLeft + new Vector3(sectorSize, 0, sectorSize);
-            
-            // Recycle tiles
-            for (int i = activeTiles.Count - 1; i >= 0; i--)
-            {
-                GameObject tile = activeTiles[i];
-                if (tile != null && IsPositionInSector(tile.transform.position, sectorBottomLeft, sectorTopRight))
-                {
-                    RecycleTile(tile);
-                    activeTiles.RemoveAt(i);
-                }
-            }
             
             // Recycle bots
             for (int i = activeBots.Count - 1; i >= 0; i--)
@@ -308,23 +345,6 @@ namespace Cosmicrafts
                 {
                     RecycleBot(bot);
                     activeBots.RemoveAt(i);
-                    
-                    // Reduce bot count for this sector
-                    if (sectorBotCounts.ContainsKey(sectorCoord))
-                    {
-                        sectorBotCounts[sectorCoord] = Mathf.Max(0, sectorBotCounts[sectorCoord] - 1);
-                    }
-                }
-            }
-            
-            // Recycle resources
-            for (int i = activeResources.Count - 1; i >= 0; i--)
-            {
-                GameObject resource = activeResources[i];
-                if (resource != null && IsPositionInSector(resource.transform.position, sectorBottomLeft, sectorTopRight))
-                {
-                    RecycleResource(resource);
-                    activeResources.RemoveAt(i);
                 }
             }
         }
@@ -335,149 +355,96 @@ namespace Cosmicrafts
                    position.z >= sectorBottomLeft.z && position.z < sectorTopRight.z;
         }
 
-        #endregion
-
-        #region Tile Generation
-
-        private void GenerateTiles(Vector2Int sectorCoord)
-        {
-            if (tilePrefab == null)
-                return;
-                
-            // Calculate world position of sector
-            Vector3 sectorPosition = SectorToWorld(sectorCoord);
-            
-            // Determine how many tiles we need based on sector and tile size
-            int tilesPerRow = Mathf.CeilToInt(sectorSize / tileSize);
-            
-            for (int x = 0; x < tilesPerRow; x++)
-            {
-                for (int z = 0; z < tilesPerRow; z++)
-                {
-                    // Calculate tile position within sector
-                    Vector3 tilePosition = sectorPosition + new Vector3(x * tileSize, 0, z * tileSize);
-                    
-                    // Get tile from pool
-                    GameObject tile = GetTileFromPool();
-                    
-                    // Position the tile
-                    tile.transform.position = tilePosition;
-                    
-                    // Apply random variation
-                    if (tileMaterials.Count > 0 && Random.value < tileVariationChance)
-                    {
-                        Renderer renderer = tile.GetComponent<Renderer>();
-                        if (renderer != null)
-                        {
-                            renderer.material = tileMaterials[Random.Range(0, tileMaterials.Count)];
-                        }
-                    }
-                    
-                    // Add to active tiles list
-                    activeTiles.Add(tile);
-                }
-            }
-        }
-
-        private GameObject GetTileFromPool()
-        {
-            string poolKey = "default";
-            
-            // Check if pool exists and has available tiles
-            if (tilePool.TryGetValue(poolKey, out Queue<GameObject> pool) && pool.Count > 0)
-            {
-                GameObject tile = pool.Dequeue();
-                tile.SetActive(true);
-                return tile;
-            }
-            
-            // Create new tile if none in pool
-            GameObject newTile = Instantiate(tilePrefab, transform);
-            return newTile;
-        }
-
-        private void RecycleTile(GameObject tile)
-        {
-            if (tile == null)
-                return;
-                
-            string poolKey = "default";
-            
-            // Reset tile properties
-            tile.SetActive(false);
-            
-            // Return to pool
-            if (!tilePool.ContainsKey(poolKey))
-            {
-                tilePool[poolKey] = new Queue<GameObject>();
-            }
-            
-            tilePool[poolKey].Enqueue(tile);
-        }
-
-        #endregion
-
-        #region Bot Generation
-
         private void GenerateBots(Vector2Int sectorCoord)
         {
             if (botSpawnSettings == null || botSpawnSettings.Count == 0)
                 return;
-            
-            // Calculate world position of sector
-            Vector3 sectorPosition = SectorToWorld(sectorCoord);
-            
-            // Get current bot count for this sector
-            int currentBotCount = sectorBotCounts.TryGetValue(sectorCoord, out int count) ? count : 0;
-            
-            // Calculate how many more bots to spawn
-            int botsToSpawn = maxBotsPerSector - currentBotCount;
-            
-            // Spawn bots up to the max
-            for (int i = 0; i < botsToSpawn; i++)
-            {
-                // Get a random bot prefab based on spawn rates
-                GameObject botPrefab = GetRandomBotPrefabByWeight();
                 
-                if (botPrefab != null)
+            if (activeBots.Count >= maxTotalBots)
+                return;
+                
+            try
+            {
+                // Calculate world position of sector
+                Vector3 sectorPosition = SectorToWorld(sectorCoord);
+                
+                // Get current bot count for this sector
+                int currentBotCount = sectorBotCounts.ContainsKey(sectorCoord) ? sectorBotCounts[sectorCoord] : 0;
+                
+                // Calculate how many more bots to spawn
+                int botsToSpawn = Mathf.Min(
+                    maxBotsPerSector - currentBotCount,
+                    maxTotalBots - activeBots.Count
+                );
+                
+                // Spawn bots up to the max
+                for (int i = 0; i < botsToSpawn; i++)
                 {
-                    // Calculate random position within sector (avoid edges)
+                    // Get a random bot prefab based on spawn rates
+                    GameObject botPrefab = GetRandomBotPrefab();
+                    if (botPrefab == null) continue;
+                    
+                    // Calculate position
                     Vector3 botPosition = sectorPosition + new Vector3(
                         Random.Range(0.1f * sectorSize, 0.9f * sectorSize),
-                        0, // Y position (height) - can adjust if needed
+                        0,
                         Random.Range(0.1f * sectorSize, 0.9f * sectorSize)
                     );
                     
                     // Spawn bot
-                    GameObject spawnedBot = SpawnBot(botPrefab, botPosition);
+                    GameObject bot = SpawnBot(botPrefab, botPosition);
+                    if (bot == null) continue;
                     
-                    if (spawnedBot != null)
+                    // Add to tracking
+                    activeBots.Add(bot);
+                    
+                    // Increment sector bot count
+                    if (!sectorBotCounts.ContainsKey(sectorCoord))
                     {
-                        // Add to active bots list
-                        activeBots.Add(spawnedBot);
-                        
-                        // Increment bot count for this sector
-                        sectorBotCounts[sectorCoord]++;
-                        
-                        // Add event listener for bot death
-                        Unit unitComponent = spawnedBot.GetComponent<Unit>();
-                        if (unitComponent != null)
+                        sectorBotCounts[sectorCoord] = 0;
+                    }
+                    sectorBotCounts[sectorCoord]++;
+                    
+                    // Setup death events
+                    Unit unitComponent = bot.GetComponent<Unit>();
+                    if (unitComponent != null)
+                    {
+                        // Store the sector coordinates for later use
+                        Vector2Int sectorCopy = sectorCoord;
+                        unitComponent.OnUnitDeath += (deadUnit) => 
                         {
-                            unitComponent.OnUnitDeath += (deadUnit) => OnBotDeath(deadUnit, sectorCoord);
-                        }
+                            // Decrement the sector bot count
+                            if (sectorBotCounts.ContainsKey(sectorCopy))
+                            {
+                                sectorBotCounts[sectorCopy] = Mathf.Max(0, sectorBotCounts[sectorCopy] - 1);
+                            }
+                            
+                            // Remove from active list
+                            if (activeBots.Contains(deadUnit.gameObject))
+                            {
+                                activeBots.Remove(deadUnit.gameObject);
+                            }
+                            
+                            // Return to pool
+                            RecycleBot(deadUnit.gameObject);
+                        };
                     }
                 }
             }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"[ProceduralWorld] Error generating bots: {e.Message}");
+            }
         }
 
-        // Gets a random bot prefab based on spawn rates
-        private GameObject GetRandomBotPrefabByWeight()
+        private GameObject GetRandomBotPrefab()
         {
-            if (botPool.Count == 0)
+            if (botSpawnSettings == null || botSpawnSettings.Count == 0)
                 return null;
-
-            // Sum total weight
+                
             float totalWeight = 0f;
+            
+            // Calculate total weight
             foreach (var setting in botSpawnSettings)
             {
                 if (setting != null && setting.botPrefab != null && setting.spawnRate > 0f)
@@ -485,15 +452,14 @@ namespace Cosmicrafts
                     totalWeight += setting.spawnRate;
                 }
             }
-
+            
             if (totalWeight <= 0f)
                 return null;
-
-            // Get random value based on total weight
+                
+            // Select based on weight
             float randomValue = Random.Range(0f, totalWeight);
             float currentTotal = 0f;
-
-            // Find the bot prefab that corresponds to the random value
+            
             foreach (var setting in botSpawnSettings)
             {
                 if (setting != null && setting.botPrefab != null && setting.spawnRate > 0f)
@@ -505,8 +471,8 @@ namespace Cosmicrafts
                     }
                 }
             }
-
-            // Fallback to first valid prefab if something went wrong
+            
+            // Fallback to first valid
             foreach (var setting in botSpawnSettings)
             {
                 if (setting != null && setting.botPrefab != null && setting.spawnRate > 0f)
@@ -514,7 +480,7 @@ namespace Cosmicrafts
                     return setting.botPrefab;
                 }
             }
-
+            
             return null;
         }
 
@@ -523,40 +489,46 @@ namespace Cosmicrafts
             if (botPrefab == null)
                 return null;
                 
-            // Check if we have this bot type in the pool
-            if (botPool.TryGetValue(botPrefab, out Queue<GameObject> pool) && pool.Count > 0)
+            try
             {
-                // Get bot from pool
-                GameObject botInstance = pool.Dequeue();
-                
-                // Reactivate and position the bot
-                botInstance.SetActive(true);
-                botInstance.transform.position = position;
-                
-                // Reset bot state if it has a Unit component
-                Unit unitComponent = botInstance.GetComponent<Unit>();
-                if (unitComponent != null)
+                // Get from pool if available 
+                if (botPool.Count > 0)
                 {
-                    unitComponent.IsDeath = false;
-                    unitComponent.HitPoints = unitComponent.GetMaxHitPoints();
-                    unitComponent.Shield = unitComponent.GetMaxShield();
+                    GameObject bot = botPool.Dequeue();
+                    
+                    // Reset and position
+                    bot.SetActive(true);
+                    bot.transform.position = position;
+                    
+                    // Reset unit component
+                    Unit unit = bot.GetComponent<Unit>();
+                    if (unit != null)
+                    {
+                        unit.IsDeath = false;
+                        unit.HitPoints = unit.GetMaxHitPoints();
+                        unit.Shield = unit.GetMaxShield();
+                    }
+                    
+                    return bot;
                 }
                 
-                return botInstance;
+                // Create new if pool empty
+                GameObject newBot = Instantiate(botPrefab, position, Quaternion.identity);
+                
+                // Set to enemy faction
+                Unit newUnit = newBot.GetComponent<Unit>();
+                if (newUnit != null)
+                {
+                    newUnit.MyFaction = Faction.Enemy;
+                }
+                
+                return newBot;
             }
-            
-            // Create new bot if none in pool
-            GameObject newBot = Instantiate(botPrefab, position, Quaternion.identity);
-            
-            // Setup any additional bot properties here
-            // For example, setting Team, Faction, etc.
-            Unit unit = newBot.GetComponent<Unit>();
-            if (unit != null)
+            catch (System.Exception e)
             {
-                unit.MyFaction = Faction.Enemy; // Set faction to enemy
+                Debug.LogError($"[ProceduralWorld] Error spawning bot: {e.Message}");
+                return null;
             }
-            
-            return newBot;
         }
 
         private void RecycleBot(GameObject bot)
@@ -564,181 +536,27 @@ namespace Cosmicrafts
             if (bot == null)
                 return;
                 
-            // First try to find which prefab this bot is based on
-            GameObject matchingPrefab = null;
-            foreach (var setting in botSpawnSettings)
+            try
             {
-                if (setting != null && setting.botPrefab != null && 
-                    bot.name.Contains(setting.botPrefab.name))
-                {
-                    matchingPrefab = setting.botPrefab;
-                    break;
-                }
-            }
-            
-            // If we found the prefab, return to pool
-            if (matchingPrefab != null)
-            {
-                // Deactivate the bot
+                // Deactivate
                 bot.SetActive(false);
                 
-                // Initialize pool queue if needed
-                if (!botPool.ContainsKey(matchingPrefab))
+                // Limit pool size
+                if (botPool.Count < 20)
                 {
-                    botPool[matchingPrefab] = new Queue<GameObject>();
+                    botPool.Enqueue(bot);
                 }
-                
-                // Return to pool
-                botPool[matchingPrefab].Enqueue(bot);
+                else
+                {
+                    Destroy(bot);
+                }
             }
-            else
+            catch (System.Exception e)
             {
-                // If we can't determine bot type, just destroy it
+                Debug.LogError($"[ProceduralWorld] Error recycling bot: {e.Message}");
                 Destroy(bot);
             }
         }
-
-        private void OnBotDeath(Unit deadUnit, Vector2Int sectorCoord)
-        {
-            if (deadUnit == null || deadUnit.gameObject == null)
-                return;
-                
-            // Remove from active bots list
-            activeBots.Remove(deadUnit.gameObject);
-            
-            // Reduce bot count for this sector
-            if (sectorBotCounts.ContainsKey(sectorCoord))
-            {
-                sectorBotCounts[sectorCoord] = Mathf.Max(0, sectorBotCounts[sectorCoord] - 1);
-            }
-            
-            // Start respawn timer for this sector
-            if (!sectorRespawnCoroutines.ContainsKey(sectorCoord))
-            {
-                sectorRespawnCoroutines[sectorCoord] = StartCoroutine(RespawnBotsInSector(sectorCoord));
-            }
-        }
-
-        private IEnumerator RespawnBotsInSector(Vector2Int sectorCoord)
-        {
-            // Wait for respawn delay
-            yield return new WaitForSeconds(respawnDelay);
-            
-            // Only respawn if sector is still active
-            if (generatedSectors.Contains(sectorCoord))
-            {
-                // Regenerate bots in this sector
-                GenerateBots(sectorCoord);
-            }
-            
-            // Clear respawn coroutine reference
-            sectorRespawnCoroutines.Remove(sectorCoord);
-        }
-
-        #endregion
-
-        #region Resource Generation
-
-        private void GenerateResources(Vector2Int sectorCoord)
-        {
-            if (resourcePrefabs == null || resourcePrefabs.Count == 0)
-                return;
-                
-            // Calculate world position of sector
-            Vector3 sectorPosition = SectorToWorld(sectorCoord);
-            
-            // Determine number of resources to spawn based on probability
-            int resourcesToSpawn = 0;
-            for (int i = 0; i < 5; i++) // Up to 5 resources per sector
-            {
-                if (Random.value < resourceSpawnChance)
-                {
-                    resourcesToSpawn++;
-                }
-            }
-            
-            // Spawn resources
-            for (int i = 0; i < resourcesToSpawn; i++)
-            {
-                // Select a random resource type
-                GameObject resourcePrefab = resourcePrefabs[Random.Range(0, resourcePrefabs.Count)];
-                
-                // Calculate random position within sector
-                Vector3 resourcePosition = sectorPosition + new Vector3(
-                    Random.Range(0f, sectorSize),
-                    Random.Range(0f, sectorSize),
-                    0
-                );
-                
-                // Spawn resource
-                GameObject resource = GetResourceFromPool(resourcePrefab);
-                
-                if (resource != null)
-                {
-                    resource.transform.position = resourcePosition;
-                    resource.SetActive(true);
-                    activeResources.Add(resource);
-                }
-            }
-        }
-
-        private GameObject GetResourceFromPool(GameObject prefab)
-        {
-            if (prefab == null)
-                return null;
-                
-            // Check if pool exists and has available resources
-            if (resourcePool.TryGetValue(prefab, out Queue<GameObject> pool) && pool.Count > 0)
-            {
-                GameObject resource = pool.Dequeue();
-                resource.SetActive(true);
-                return resource;
-            }
-            
-            // Create new resource if none in pool
-            GameObject newResource = Instantiate(prefab, transform);
-            return newResource;
-        }
-
-        private void RecycleResource(GameObject resource)
-        {
-            if (resource == null)
-                return;
-                
-            // Find which prefab this resource is based on
-            GameObject matchingPrefab = null;
-            foreach (var prefab in resourcePrefabs)
-            {
-                if (prefab != null && resource.name.Contains(prefab.name))
-                {
-                    matchingPrefab = prefab;
-                    break;
-                }
-            }
-            
-            if (matchingPrefab != null)
-            {
-                // Reset resource properties
-                resource.SetActive(false);
-                
-                // Return to pool
-                if (!resourcePool.ContainsKey(matchingPrefab))
-                {
-                    resourcePool[matchingPrefab] = new Queue<GameObject>();
-                }
-                
-                resourcePool[matchingPrefab].Enqueue(resource);
-            }
-            else
-            {
-                // If we can't determine resource type, just destroy it
-                Destroy(resource);
-            }
-        }
-
-        #endregion
-
-        #region Utility Methods
 
         private Vector2Int WorldToSector(Vector3 worldPosition)
         {
@@ -752,60 +570,53 @@ namespace Cosmicrafts
         {
             return new Vector3(
                 sectorCoord.x * sectorSize,
-                0, // Y is now height/up
+                0,
                 sectorCoord.y * sectorSize
             );
         }
 
         private void OnDrawGizmos()
         {
-            if (!showSectorBounds && !showSpawnPoints)
+            if (!showSectorBounds || !Application.isPlaying)
                 return;
                 
-            // Only show gizmos for generated sectors
-            foreach (Vector2Int sectorCoord in generatedSectors)
+            // Draw sector boundaries for debugging
+            Gizmos.color = sectorBoundColor;
+            
+            foreach (var sector in generatedSectors.Keys)
             {
-                Vector3 sectorPosition = SectorToWorld(sectorCoord);
-                
-                // Draw sector bounds
-                if (showSectorBounds)
-                {
-                    Gizmos.color = sectorBoundColor;
-                    Gizmos.DrawWireCube(
-                        sectorPosition + new Vector3(sectorSize / 2, 0, sectorSize / 2),
-                        new Vector3(sectorSize, 0.1f, sectorSize)
-                    );
-                }
-                
-                // Draw spawn points
-                if (showSpawnPoints)
-                {
-                    Gizmos.color = spawnPointColor;
-                    
-                    // Calculate spawn points
-                    for (int i = 0; i < maxBotsPerSector; i++)
-                    {
-                        Vector3 spawnPosition = sectorPosition + new Vector3(
-                            Random.Range(0.1f * sectorSize, 0.9f * sectorSize),
-                            0,
-                            Random.Range(0.1f * sectorSize, 0.9f * sectorSize)
-                        );
-                        
-                        Gizmos.DrawSphere(spawnPosition, 1f);
-                    }
-                }
+                Vector3 sectorPosition = SectorToWorld(sector);
+                Gizmos.DrawWireCube(
+                    sectorPosition + new Vector3(sectorSize / 2, 0, sectorSize / 2),
+                    new Vector3(sectorSize, 0.1f, sectorSize)
+                );
             }
         }
 
-        // Create a Sector ScriptableObject
-        [System.Serializable]
-        public class Sector : ScriptableObject
+        private void OnDestroy()
         {
-            public string sectorName;
-            public Vector2Int coordinate;
-            public List<GameObject> activeObjects = new List<GameObject>();
+            // Clean up all spawned objects when the manager is destroyed
+            isRunning = false;
+            
+            // Clean up bots
+            foreach (var bot in activeBots)
+            {
+                if (bot != null)
+                {
+                    Destroy(bot);
+                }
+            }
+            activeBots.Clear();
+            
+            // Clean up pooled objects
+            while (botPool.Count > 0)
+            {
+                GameObject bot = botPool.Dequeue();
+                if (bot != null)
+                {
+                    Destroy(bot);
+                }
+            }
         }
-
-        #endregion
     }
 } 

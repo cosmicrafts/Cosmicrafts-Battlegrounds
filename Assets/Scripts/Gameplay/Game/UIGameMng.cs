@@ -57,6 +57,13 @@
         // Keep track of whether player UI has been initialized
         private bool playerUIInitialized = false;
 
+        // Respawn UI elements
+        [Header("Respawn UI")]
+        public GameObject respawnPanel;
+        public TMP_Text respawnCountdownText;
+        public Button respawnButton;
+        private Coroutine countdownCoroutine;
+
         private void Awake()
         {
             // Set the UI controller
@@ -303,6 +310,76 @@
         public Color GetShieldBarColor(bool isEnnemy)
         {
             return isEnnemy ? EnemyShieldBarColor : FriendShieldBarColor;
+        }
+
+        // Shows the respawn UI with countdown
+        public void ShowRespawnCountdown(float respawnTime)
+        {
+            if (respawnPanel != null)
+            {
+                respawnPanel.SetActive(true);
+                
+                // Set up the respawn button
+                if (respawnButton != null)
+                {
+                    // Find player unit to connect the button
+                    if (GameMng.P != null)
+                    {
+                        Unit playerUnit = GameMng.P.GetComponent<Unit>();
+                        if (playerUnit != null)
+                        {
+                            // Clear previous listeners to avoid duplicates
+                            respawnButton.onClick.RemoveAllListeners();
+                            respawnButton.onClick.AddListener(playerUnit.TriggerRespawn);
+                        }
+                    }
+                }
+                
+                // Start countdown
+                if (countdownCoroutine != null)
+                {
+                    StopCoroutine(countdownCoroutine);
+                }
+                countdownCoroutine = StartCoroutine(UpdateRespawnCountdown(respawnTime));
+            }
+        }
+        
+        // Hide respawn UI
+        public void HideRespawnUI()
+        {
+            if (respawnPanel != null)
+            {
+                respawnPanel.SetActive(false);
+            }
+            
+            if (countdownCoroutine != null)
+            {
+                StopCoroutine(countdownCoroutine);
+                countdownCoroutine = null;
+            }
+        }
+        
+        // Coroutine to update countdown text
+        private IEnumerator UpdateRespawnCountdown(float totalTime)
+        {
+            float remainingTime = totalTime;
+            
+            while (remainingTime > 0)
+            {
+                if (respawnCountdownText != null)
+                {
+                    int seconds = Mathf.CeilToInt(remainingTime);
+                    respawnCountdownText.text = $"Respawn in: {seconds}s";
+                }
+                
+                yield return new WaitForSeconds(0.1f);
+                remainingTime -= 0.1f;
+            }
+            
+            if (respawnCountdownText != null)
+            {
+                respawnCountdownText.text = "Ready to Respawn";
+            }
         }
     }
 }

@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI; // Required for UI
+using Cosmicrafts; // For faction access
 
 public class CameraController : MonoBehaviour
 {
@@ -14,6 +15,11 @@ public class CameraController : MonoBehaviour
     public Vector3 offset = new Vector3(0, 90f, -30f); // Back to original offset
     public bool followTarget = true;
     
+    [Header("Death Camera Settings")]
+    public float deathZoomIn = 40f; // Zoom in amount during death
+    public float deathZoomTransitionSpeed = 2f; // How fast to zoom
+    public GameObject deathEffectOverlay; // Optional UI overlay for death effect
+    
     [Header("UI Buttons (Optional)")]
     public Button zoomInButton;
     public Button zoomOutButton;
@@ -24,11 +30,22 @@ public class CameraController : MonoBehaviour
     private bool isSearchingForBaseStation = true;
     private float searchInterval = 0.5f;
     private float nextSearchTime = 0f;
+    
+    // Death camera state variables
+    private float originalZoom;
+    private bool inDeathSequence = false;
 
     void Start()
     {
         cam = GetComponent<Camera>();
         targetZoom = cam.orthographicSize;
+        originalZoom = targetZoom;
+        
+        // Make sure death effect overlay is initially disabled
+        if (deathEffectOverlay != null)
+        {
+            deathEffectOverlay.SetActive(false);
+        }
 
         // Assign button events (if buttons exist)
         if (zoomInButton != null) zoomInButton.onClick.AddListener(ZoomIn);
@@ -52,10 +69,9 @@ public class CameraController : MonoBehaviour
     
     void LateUpdate()
     {
-        // Simple following - no extra adjustments
+        // Simple following with original offset
         if (targetToFollow != null && followTarget)
         {
-            // Just directly set position to target + offset
             transform.position = targetToFollow.position + offset;
         }
     }
@@ -107,7 +123,7 @@ public class CameraController : MonoBehaviour
     {
         float scrollInput = Input.mouseScrollDelta.y;
 
-        if (scrollInput != 0f)
+        if (scrollInput != 0f && !inDeathSequence)
         {
             targetZoom -= scrollInput * zoomSpeed;
             targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
@@ -119,14 +135,20 @@ public class CameraController : MonoBehaviour
 
     public void ZoomIn()
     {
-        targetZoom -= zoomSpeed;
-        targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+        if (!inDeathSequence)
+        {
+            targetZoom -= zoomSpeed;
+            targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+        }
     }
 
     public void ZoomOut()
     {
-        targetZoom += zoomSpeed;
-        targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+        if (!inDeathSequence)
+        {
+            targetZoom += zoomSpeed;
+            targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+        }
     }
     
     // Method to manually set the follow target
@@ -143,5 +165,36 @@ public class CameraController : MonoBehaviour
     public void ForceBaseStationSearch()
     {
         isSearchingForBaseStation = true;
+    }
+    
+    // Start the death camera sequence - simplified to just zoom in
+    public void StartDeathSequence()
+    {
+        inDeathSequence = true;
+        
+        // Store original zoom and set target zoom for death - zoom in close
+        originalZoom = cam.orthographicSize;
+        targetZoom = deathZoomIn;
+        
+        // Enable death effect overlay if available
+        if (deathEffectOverlay != null)
+        {
+            deathEffectOverlay.SetActive(true);
+        }
+    }
+    
+    // Reset camera to normal
+    public void ResetCamera()
+    {
+        inDeathSequence = false;
+        
+        // Reset zoom to original
+        targetZoom = originalZoom;
+        
+        // Disable death effect overlay
+        if (deathEffectOverlay != null)
+        {
+            deathEffectOverlay.SetActive(false);
+        }
     }
 }

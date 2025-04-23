@@ -406,16 +406,123 @@ namespace Cosmicrafts
             // Handle companion death/destruction
             DestroyCompanions();
             
-            // For non-player units, destroy after animation time
-            // Player will be respawned by GameMng through the OnUnitDeath event
+            // Special player death handling
             bool isPlayerCharacter = (GameMng.P != null && GameMng.P.GetComponent<Unit>() == this);
-            if (!isPlayerCharacter)
+            if (isPlayerCharacter)
             {
-                Destroy(gameObject, 2f); // Give time for death animation
+                // Dramatic camera effect
+                var mainCamera = Camera.main;
+                if (mainCamera != null)
+                {
+                    CameraController cameraController = mainCamera.GetComponent<CameraController>();
+                    if (cameraController != null)
+                    {
+                        cameraController.StartDeathSequence();
+                    }
+                }
+                
+                // Create visual soul effect
+                StartCoroutine(TransformToSoulState());
+                
+                Debug.Log($"PLAYER DEATH HANDLED: {name} - starting soul transformation");
             }
             else
             {
-                Debug.Log($"PLAYER DEATH HANDLED: {name} - control handed to GameMng.HandlePlayerBaseStationDeath");
+                // For non-player units, destroy after animation time
+                Destroy(gameObject, 2f); // Give time for death animation
+            }
+        }
+
+        // Soul state transformation
+        private IEnumerator TransformToSoulState()
+        {
+            // Wait for death animation
+            yield return new WaitForSeconds(1.5f);
+            
+            // Apply ghost/soul effect
+            if (Mesh != null)
+            {
+                // Make the mesh ghostly
+                Renderer[] renderers = Mesh.GetComponentsInChildren<Renderer>();
+                foreach (Renderer rend in renderers)
+                {
+                    // Store original materials for restoration
+                    Material[] originalMaterials = rend.materials;
+                    Material[] soulMaterials = new Material[originalMaterials.Length];
+                    
+                    // Create soul versions of each material
+                    for (int i = 0; i < originalMaterials.Length; i++)
+                    {
+                        soulMaterials[i] = new Material(originalMaterials[i]);
+                        Color soulColor = new Color(0.7f, 0.7f, 1f, 0.7f); // Ethereal blue-white
+                        soulMaterials[i].color = soulColor;
+                        
+                        // Try to make it transparent if shader supports it
+                        if (soulMaterials[i].HasProperty("_Mode"))
+                        {
+                            soulMaterials[i].SetFloat("_Mode", 3); // Transparent mode
+                            soulMaterials[i].SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                            soulMaterials[i].SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                            soulMaterials[i].SetInt("_ZWrite", 0);
+                            soulMaterials[i].DisableKeyword("_ALPHATEST_ON");
+                            soulMaterials[i].EnableKeyword("_ALPHABLEND_ON");
+                            soulMaterials[i].DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                            soulMaterials[i].renderQueue = 3000;
+                        }
+                    }
+                    
+                    // Apply soul materials
+                    rend.materials = soulMaterials;
+                }
+            }
+            
+            // Update camera to grayscale effect
+            var mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                CameraController cameraController = mainCamera.GetComponent<CameraController>();
+                if (cameraController != null)
+                {
+                    cameraController.StartDeathSequence();
+                }
+            }
+            
+            // Add basic explosion effect - safely check for existence
+            if (Explosion != null)
+            {
+                GameObject effect = Instantiate(Explosion, transform.position, Quaternion.identity);
+                effect.transform.localScale = transform.localScale * 0.5f;
+                Destroy(effect, 2f);
+            }
+            
+            // Show respawn UI with countdown
+            ShowRespawnUI();
+        }
+        
+        // Show respawn UI with countdown
+        private void ShowRespawnUI()
+        {
+            if (GameMng.UI != null)
+            {
+                // Check if UI has a method to show respawn UI
+                GameMng.UI.ShowRespawnCountdown(GameMng.GM.respawnDelay);
+            }
+            else
+            {
+                Debug.LogWarning("GameMng.UI is null, cannot show respawn UI");
+            }
+        }
+        
+        // Method that can be called by a respawn button
+        public void TriggerRespawn()
+        {
+            if (IsDeath && GameMng.P != null && GameMng.P.GetComponent<Unit>() == this)
+            {
+                // Notify the game manager to respawn player immediately
+                if (GameMng.GM != null)
+                {
+                    GameMng.GM.ForcePlayerRespawn();
+                }
             }
         }
 

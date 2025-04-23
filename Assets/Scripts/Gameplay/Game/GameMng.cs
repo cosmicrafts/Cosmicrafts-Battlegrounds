@@ -38,6 +38,10 @@
         private TimeSpan timeOut;
         private DateTime startTime;
 
+        // Variables to control respawn handling
+        private Unit pendingRespawnUnit = null;
+        private Coroutine respawnCoroutine = null;
+
         private void Awake()
         {
             Debug.Log("--GAME MANAGER AWAKE--");
@@ -214,34 +218,44 @@
                 return;
             }
 
-            Debug.Log("Player base station destroyed - initiating reset...");
+            Debug.Log("Player base station destroyed - initiating soul transformation...");
             
-            // IMMEDIATELY deactivate the player - don't wait for animation
-            baseStation.gameObject.SetActive(false);
+            // Don't deactivate immediately - let the soul transformation happen visually
+            // baseStation.gameObject.SetActive(false);  // Commented out to keep soul visible
             
-            // Start the reset process
-            StartCoroutine(ResetPlayerCharacter(baseStation));
+            // Track the unit being respawned
+            pendingRespawnUnit = baseStation;
+            
+            // Start the reset process with longer delay to allow for soul experience
+            respawnCoroutine = StartCoroutine(ResetPlayerCharacter(baseStation));
         }
 
-        // Completely rewrite the player reset function - make it direct and immediate
+        // Updated reset player function with countdown support
         private IEnumerator ResetPlayerCharacter(Unit playerUnit)
         {
             isRespawning = true;
+
+            // Allow time for the soul experience
+            yield return new WaitForSeconds(respawnDelay);
+
+            yield return StartCoroutine(CompletePlayerRespawn(playerUnit));
+        }
+        
+        // Separate coroutine for the actual respawn mechanics
+        private IEnumerator CompletePlayerRespawn(Unit playerUnit)
+        {
+            if (GameOver) // Check if game ended during delay
+            {
+                isRespawning = false;
+                pendingRespawnUnit = null;
+                yield break;
+            }
 
             // Determine the correct spawn position based on the player's faction
             Team playerTeam = FactionManager.ConvertFactionToTeam(P.MyFaction);
             int playerBaseIndex = playerTeam == Team.Blue ? 1 : 0;
             Vector3 respawnPosition = BS_Positions[playerBaseIndex];
-
-            // Wait for respawn delay with object disabled
-            yield return new WaitForSeconds(respawnDelay);
-
-            if (GameOver) // Check if game ended during delay
-            {
-                isRespawning = false;
-                yield break;
-            }
-
+            
             // Create respawn effect if available
             if (respawnEffectPrefab != null)
             {
@@ -297,17 +311,112 @@
                 anim.SetBool("Idle", true);
             }
             
-            // Make mesh visible
+            // Reset mesh appearance (remove soul effect)
             if (playerUnit.Mesh != null)
             {
+                // Make sure mesh is visible
                 playerUnit.Mesh.SetActive(true);
+                
+                // Reset any material changes from soul state
+                Renderer[] renderers = playerUnit.Mesh.GetComponentsInChildren<Renderer>();
+                foreach (Renderer rend in renderers)
+                {
+                    // Reset material properties if they were modified
+                    Material[] materials = rend.materials;
+                    foreach (Material mat in materials)
+                    {
+                        // Reset transparency
+                        if (mat.HasProperty("_Mode"))
+                        {
+                            mat.SetFloat("_Mode", 0); // Opaque mode
+                            mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.One);
+                            mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.Zero);
+                            mat.SetInt("_ZWrite", 1);
+                            mat.DisableKeyword("_ALPHATEST_ON");
+                            mat.DisableKeyword("_ALPHABLEND_ON");
+                            mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+                            mat.renderQueue = -1;
+                        }
+                        
+                        // Reset color tint
+                        if (mat.HasProperty("_Color"))
+                        {
+                            mat.color = Color.white;
+                        }
+                    }
+                }
+                
+                // Reset transform position in case it was modified by floating animation
+                playerUnit.Mesh.transform.localPosition = Vector3.zero;
+                playerUnit.Mesh.transform.localRotation = Quaternion.identity;
+            }
+
+            // Reset camera to normal view
+            var mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                CameraController cameraController = mainCamera.GetComponent<CameraController>();
+                if (cameraController != null)
+                {
+                    cameraController.ResetCamera();
+                }
             }
 
             // AFTER everything is set up, activate the player object
             playerUnit.gameObject.SetActive(true);
             
+            // Hide respawn UI
+            if (UI != null)
+            {
+                UI.HideRespawnUI();
+            }
+            
+            // CRITICAL FIX: Force enemy detector to reset and re-detect enemies in range
+            StartCoroutine(ResetEnemyDetection(playerUnit));
+            
             Debug.Log($"PLAYER RESET COMPLETE - HP: {playerUnit.HitPoints}/{playerUnit.GetMaxHitPoints()}");
             isRespawning = false;
+            pendingRespawnUnit = null;
+        }
+        
+        // Helper method to force enemy detection refresh after respawn
+        private IEnumerator ResetEnemyDetection(Unit playerUnit)
+        {
+            // Wait one frame to ensure everything is initialized
+            yield return null;
+            
+            // Get the shooter component
+            Shooter shooter = playerUnit.GetComponent<Shooter>();
+            if (shooter != null && shooter.EnemyDetector != null)
+            {
+                // Temporarily disable and re-enable the enemy detector collider
+                // This forces OnTriggerEnter to fire again for all overlapping objects
+                bool wasEnabled = shooter.EnemyDetector.enabled;
+                shooter.EnemyDetector.enabled = false;
+                
+                // Wait another frame
+                yield return null;
+                
+                // Re-enable and force radius update
+                shooter.EnemyDetector.enabled = wasEnabled;
+                shooter.EnemyDetector.radius = shooter.GetWorldDetectionRange();
+                
+                // Find all enemy units in range manually
+                List<Unit> units = GetUnitsListClone();
+                foreach (Unit unit in units)
+                {
+                    if (unit != null && !unit.IsDeath && unit.MyFaction != playerUnit.MyFaction)
+                    {
+                        float distance = Vector3.Distance(playerUnit.transform.position, unit.transform.position);
+                        if (distance <= shooter.GetWorldDetectionRange())
+                        {
+                            shooter.AddEnemy(unit);
+                        }
+                    }
+                }
+                
+                Debug.Log($"Player Shooter: Re-detected {(shooter.GetIdTarget() != 0 ? "found target" : "no target found")}");
+            }
         }
 
         public Unit CreateUnit(GameObject obj, Vector3 position, Team team, string nftKey = "none", int playerId = -1)
@@ -649,6 +758,22 @@
         {
             // Create a copy of the units list to avoid modification issues during iteration
             return new List<Unit>(units);
+        }
+
+        // Force an immediate player respawn (called by respawn button)
+        public void ForcePlayerRespawn()
+        {
+            if (isRespawning && pendingRespawnUnit != null)
+            {
+                // Stop the current respawn coroutine
+                if (respawnCoroutine != null)
+                {
+                    StopCoroutine(respawnCoroutine);
+                }
+                
+                // Skip the wait and respawn immediately
+                StartCoroutine(CompletePlayerRespawn(pendingRespawnUnit));
+            }
         }
     }
 }

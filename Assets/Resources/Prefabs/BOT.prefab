@@ -182,11 +182,11 @@ MonoBehaviour:
   prefabBaseStation: {fileID: 2198226034328220048}
   DeckUnits:
   - {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-  CurrentEnergy: 21.3
-  MaxEnergy: 10
-  SpeedEnergy: 25.4
-  waitSpawn: 0.5
-  maxActiveUnits: 12
+  CurrentEnergy: 0
+  MaxEnergy: 1
+  SpeedEnergy: 0.1
+  waitSpawn: 1.5
+  maxActiveUnits: 2
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -227,8 +227,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   IsDeath: 0
-  PlayerId: 1
-  MyTeam: 0
+  MyFaction: 0
   HitPoints: 5000
   Shield: 5000
   ShieldDelay: 1

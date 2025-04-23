@@ -28,6 +28,10 @@ namespace Cosmicrafts
         [Range(0.5f, 10f)] public float defaultLifetime = 3f;
         [Range(0.1f, 2f)] public float impactLifetime = 0.5f;
 
+        [Header("VFX Scaling")]
+        [Tooltip("Global scale multiplier for all VFX - default is 3x larger than original size")]
+        [Range(0.5f, 10f)] public float globalScaleMultiplier = 3f;
+
         // Internal pools mapped by prefab reference
         private readonly Dictionary<GameObject, Queue<GameObject>> _pools = new();
 
@@ -142,7 +146,7 @@ namespace Cosmicrafts
 
             instance.transform.position = position;
             instance.transform.rotation = Quaternion.identity;
-            instance.transform.localScale = Vector3.one * scale;
+            instance.transform.localScale = Vector3.one * scale * globalScaleMultiplier;
             instance.SetActive(true);
 
             // Restart particle system if present
@@ -172,6 +176,9 @@ namespace Cosmicrafts
             
             var instance = GetFromPool(prefab);
             if (instance == null) return null;
+            
+            // Apply global scale
+            instance.transform.localScale = Vector3.one * globalScaleMultiplier;
             
             // Reset the projectile
             var projectile = instance.GetComponent<Projectile>();
@@ -221,7 +228,7 @@ namespace Cosmicrafts
             
             instance.transform.position = position;
             instance.transform.rotation = rotation;
-            instance.transform.localScale = Vector3.one * scale;
+            instance.transform.localScale = Vector3.one * scale * globalScaleMultiplier;
             instance.SetActive(true);
             
             // Restart particle system if present

@@ -305,7 +305,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &252843774
 RectTransform:
   m_ObjectHideFlags: 0
@@ -345,7 +345,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: 3ea0692ee6a30a248bffe8d32f8f46ba, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2222,11 +2222,21 @@ MonoBehaviour:
   - {fileID: 6271241949191652176, guid: 739d19610906a434a8d67ca770434aca, type: 3}
   - {fileID: 6549543012873742316, guid: 85df402618e06014dbc12715d31c1f54, type: 3}
   - {fileID: 389972561583142955, guid: a6a02baceacd0a34892152a14a057b79, type: 3}
-  projectilePrefabs: []
+  projectilePrefabs:
+  - {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
+  - {fileID: 8362349209469777719, guid: 1835dbeede209484cb976155d1b75638, type: 3}
+  - {fileID: 8102155473089344357, guid: d56b87557a2d32340bf36655f72d7ef8, type: 3}
+  - {fileID: 3053724306134487678, guid: 825fa02a7f86dd74cb5fae9038304906, type: 3}
+  - {fileID: 5295586122231405360, guid: 76ff8ef44a10b794bb0f8ff177b9ca27, type: 3}
+  - {fileID: 647104670885987435, guid: 4779b010dbd1403488ea49e9d17ffd85, type: 3}
+  - {fileID: 8530891135317232908, guid: 0318a5d4e9f35b3499c3a51e7e053320, type: 3}
+  - {fileID: 3010895046562501561, guid: 357ca1f3c55d5aa46a0e1bea4f0109ba, type: 3}
+  - {fileID: 8434842591292709995, guid: 12c1bc4b21c3ca24bb5ed6e2758da356, type: 3}
   impactPrefabs: []
-  poolSizePerPrefab: 10
-  defaultLifetime: 3
+  poolSizePerPrefab: 50
+  defaultLifetime: 1
   impactLifetime: 0.5
+  globalScaleMultiplier: 2.65
 --- !u!114 &697417429954438965
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2239,8 +2249,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99f71c7655d017b42aceb44d68bb64c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sectorSize: 1000
-  visibleGridSize: 3
+  sectorSize: 100
+  visibleGridSize: 1
   generationPerimeter: 1
   tilePrefab: {fileID: 252843773}
   tileSize: 10

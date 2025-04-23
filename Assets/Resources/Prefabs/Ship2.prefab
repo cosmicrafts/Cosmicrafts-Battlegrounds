@@ -810,7 +810,7 @@ GameObject:
   - component: {fileID: 2198226034328220042}
   - component: {fileID: 2198226034328220043}
   m_Layer: 3
-  m_Name: Compa
+  m_Name: Ship2
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -895,8 +895,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   IsDeath: 0
   MyFaction: 0
-  HitPoints: 800
-  Shield: 800
+  HitPoints: 80
+  Shield: 80
   ShieldDelay: 1.41
   Size: 3
   SpawnAreaSize: 0
@@ -922,7 +922,7 @@ MonoBehaviour:
   AvoidanceRange: 0.25
   RotationDamping: 0.1
   AlignRotationWithMovement: 1
-  ShieldRegenRate: 3.3
+  ShieldRegenRate: 1
   RegenShieldWhileDamaged: 0
   HPRegenRate: 0
   HPRegenDelay: 5
@@ -952,12 +952,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
-  DetectionRange: 150
-  AttackRange: 56.4
+  DetectionRange: 95.9
+  AttackRange: 83.5
   CanAttack: 1
   CoolDown: 0.25
   BulletSpeed: 99
-  BulletDamage: 48
+  BulletDamage: 1
   criticalStrikeChance: 0.25
   criticalStrikeMultiplier: 2
   RotateToEnemy: 1
@@ -968,7 +968,7 @@ MonoBehaviour:
   - {fileID: 1478323959484795093}
   rangeVisualizationType: 1
   lineSegments: 12
-  rangeColor: {r: 0.32682443, g: 1, b: 0.015686274, a: 1}
+  rangeColor: {r: 1, g: 0.10047615, b: 0.015686274, a: 1}
   rangeLineWidth: 0.1
 --- !u!135 &2198226034328220042
 SphereCollider:

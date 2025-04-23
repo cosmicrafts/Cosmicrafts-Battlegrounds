@@ -1,5 +1,6 @@
 using UnityEngine;
 using SensorToolkit; // Add missing namespace for SteeringRig
+using System.Collections.Generic;
 
 namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.cs
 {
@@ -34,6 +35,10 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
         private bool isAbandoning = false;
         private float abandonTimer = 0f;
         private SteeringRig mySteeringRig; // Cache the steering rig if ship uses one
+        
+        // Timer for periodic enemy detection refresh
+        private float detectionRefreshTimer = 0f;
+        private const float DETECTION_REFRESH_INTERVAL = 2.0f; // Refresh every 2 seconds
 
         void Awake()
         {
@@ -65,7 +70,14 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
             currentOrbitAngle = Random.Range(0f, 360f); 
             
             // Ensure ship is configured correctly
-            ConfigureShipForCompanion(); 
+            ConfigureShipForCompanion();
+            
+            // Force detection immediately to find enemies at spawn time
+            // This ensures companions don't need to wait until enemies enter their trigger
+            if (myShooter != null)
+            {
+                ForceEnemyDetection();
+            }
         }
         
         /// <summary>
@@ -115,10 +127,38 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                      }
                      // Initialize filter with references to this companion and its unit
                      filter.Initialize(this, myUnit, myShooter);
+                     
+                     // IMPORTANT: Force immediate detection by temporarily toggling the collider
+                     bool wasEnabled = myShooter.EnemyDetector.enabled;
+                     myShooter.EnemyDetector.enabled = false;
+                     myShooter.EnemyDetector.enabled = wasEnabled;
+                     
+                     // Force radius to match shooter settings with world scale
+                     myShooter.EnemyDetector.radius = myShooter.GetWorldDetectionRange();
+                     
+                     // CRITICAL: Manually find nearby enemies - use GameMng to get all units
+                     if (GameMng.GM != null)
+                     {
+                         List<Unit> allUnits = GameMng.GM.GetUnitsListClone();
+                         foreach (Unit unit in allUnits)
+                         {
+                             if (unit != null && !unit.GetIsDeath() && myUnit.IsEnemy(unit) && !IsFriendly(unit))
+                             {
+                                 float distance = Vector3.Distance(transform.position, unit.transform.position);
+                                 if (distance <= myShooter.GetWorldDetectionRange())
+                                 {
+                                     myShooter.AddEnemy(unit);
+                                 }
+                             }
+                         }
+                     }
                  }
                  
                  // Immediately stop any attack to clear potential friendly target
                  myShooter.StopAttack();
+                 
+                 // Re-enable shooting
+                 myShooter.CanAttack = true;
                     
                  // Debug.Log($"Configured shooter targeting for companion {gameObject.name} to only target enemies");
             }
@@ -191,6 +231,21 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
             {
                  if(myShip != null) myShip.SetDestination(transform.position, 0.1f); // Tell ship to stop
                  return;
+            }
+            
+            // Periodically refresh enemy detection to ensure we detect new enemies
+            detectionRefreshTimer -= Time.deltaTime;
+            if (detectionRefreshTimer <= 0f)
+            {
+                if (myShooter != null)
+                {
+                    // Only force detection if shooter doesn't have any targets
+                    if (myShooter.GetIdTarget() == 0)
+                    {
+                        ForceEnemyDetection();
+                    }
+                }
+                detectionRefreshTimer = DETECTION_REFRESH_INTERVAL;
             }
             
             // Calculate the desired orbit position based on selected style
@@ -324,6 +379,49 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
             if (other == null || myUnit == null) return false;
             
             return (other == parentUnit) || (other.MyFaction == myUnit.MyFaction);
+        }
+        
+        /// <summary>
+        /// Forces the companion to scan for enemies in range. 
+        /// Can be called externally to refresh targeting.
+        /// </summary>
+        public void ForceEnemyDetection()
+        {
+            if (myShooter == null || myUnit == null || myShooter.EnemyDetector == null)
+                return;
+                
+            // Force enemy detector to refresh by toggling
+            bool wasEnabled = myShooter.EnemyDetector.enabled;
+            myShooter.EnemyDetector.enabled = false;
+            myShooter.EnemyDetector.enabled = wasEnabled;
+            
+            // Force radius update
+            myShooter.EnemyDetector.radius = myShooter.GetWorldDetectionRange();
+            
+            // Manually check for nearby enemies
+            if (GameMng.GM != null)
+            {
+                List<Unit> allUnits = GameMng.GM.GetUnitsListClone();
+                int enemiesFound = 0;
+                
+                foreach (Unit unit in allUnits)
+                {
+                    if (unit != null && !unit.GetIsDeath() && myUnit.IsEnemy(unit) && !IsFriendly(unit))
+                    {
+                        float distance = Vector3.Distance(transform.position, unit.transform.position);
+                        if (distance <= myShooter.GetWorldDetectionRange())
+                        {
+                            myShooter.AddEnemy(unit);
+                            enemiesFound++;
+                        }
+                    }
+                }
+                
+                // Debug.Log($"Companion {gameObject.name} found {enemiesFound} enemies in detection range");
+            }
+            
+            // Make sure shooting is enabled
+            myShooter.CanAttack = true;
         }
     }
     

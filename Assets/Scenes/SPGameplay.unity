@@ -1600,6 +1600,9 @@ MonoBehaviour:
   targetToFollow: {fileID: 0}
   offset: {x: 0, y: 0, z: 0}
   followTarget: 1
+  deathZoomIn: 40
+  deathZoomTransitionSpeed: 2
+  deathEffectOverlay: {fileID: 0}
   zoomInButton: {fileID: 464097783}
   zoomOutButton: {fileID: 716109333}
 --- !u!1 &697417429613703969
@@ -4204,6 +4207,9 @@ MonoBehaviour:
   Players:
   - {fileID: 0}
   - {fileID: 0}
+  respawnPanel: {fileID: 0}
+  respawnCountdownText: {fileID: 0}
+  respawnButton: {fileID: 0}
 --- !u!114 &697417430798489179
 MonoBehaviour:
   m_ObjectHideFlags: 0

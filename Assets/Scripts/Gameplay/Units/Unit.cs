@@ -6,7 +6,7 @@ using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System;
-using Cosmicrafts.Units; // Add namespace for CompanionController
+using Cosmicrafts.Units; // Required for CompanionController
 
 namespace Cosmicrafts
 {
@@ -224,7 +224,7 @@ namespace Cosmicrafts
             if (MyOutline != null)
             {
                 MyOutline.SetColor(GameMng.GM.GetColorUnit(MyFaction));
-                MyOutline.SetThickness(Size * 0.0000420f);
+                MyOutline.SetThickness(Size * 0.00000420f);
             }
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
@@ -879,11 +879,13 @@ namespace Cosmicrafts
                         companionShooter.StopAttack();
                     }
                     
-                    // Apply configuration to the companion
+                    // Get or add CompanionController component (now added dynamically)
                     CompanionController controller = companionGO.GetComponent<CompanionController>();
                     if (controller == null)
                     {
+                        // Add the controller component only if not already present
                         controller = companionGO.AddComponent<CompanionController>();
+                        Debug.Log($"Added CompanionController to {companionGO.name} dynamically");
                     }
                     
                     // Apply configuration settings
@@ -914,10 +916,18 @@ namespace Cosmicrafts
         /// </summary>
         private void SetupCompanionBehavior(GameObject companionGO, CompanionBehaviorType behaviorType)
         {
+            // Make sure the companion has all necessary components for the behavior type
             Shooter shooter = companionGO.GetComponent<Shooter>();
             Ship companionShip = companionGO.GetComponent<Ship>();
             Unit companionUnit = companionGO.GetComponent<Unit>();
             CompanionController controller = companionGO.GetComponent<CompanionController>();
+            
+            // Controller is essential for all behaviors - should be added by SpawnCompanions but check again
+            if (controller == null)
+            {
+                controller = companionGO.AddComponent<CompanionController>();
+                controller.SetParent(this);
+            }
             
             switch (behaviorType)
             {
@@ -931,6 +941,20 @@ namespace Cosmicrafts
                         shooter.CoolDown = 0.5f;      // Fast firing rate
                         shooter.BulletDamage = 2;    // Lower damage than typical units
                         shooter.DetectionRange = shooter.AttackRange * 1.2f; // Set detection range larger than attack range
+                        
+                        // Create EnemyDetector if needed
+                        if (shooter.EnemyDetector == null)
+                        {
+                            GameObject detectorObj = new GameObject("EnemyDetector");
+                            detectorObj.transform.parent = companionGO.transform;
+                            detectorObj.transform.localPosition = Vector3.zero;
+                            
+                            SphereCollider detector = detectorObj.AddComponent<SphereCollider>();
+                            detector.isTrigger = true;
+                            detector.radius = shooter.DetectionRange;
+                            
+                            shooter.EnemyDetector = detector;
+                        }
                         
                         // Try to find a bullet prefab from parent if available
                         Shooter parentShooter = GetComponent<Shooter>();
@@ -955,11 +979,25 @@ namespace Cosmicrafts
                         }
                     }
                     
+                    // Make sure Cannons is set up with at least one transform
+                    if (shooter.Cannons == null || shooter.Cannons.Length == 0)
+                    {
+                        shooter.Cannons = new Transform[] { companionGO.transform };
+                    }
+                    
                     // Ensure ranges are consistent
                     if (shooter != null)
                     {
                         shooter.AttackRange = 10f;
+                        shooter.DetectionRange = 12f;
                         shooter.UpdateRangeVisualizer();
+                        shooter.CanAttack = true;
+                        
+                        // Force initial enemy detection
+                        if (controller != null)
+                        {
+                            controller.ForceEnemyDetection();
+                        }
                     }
                     break;
                     
@@ -997,6 +1035,14 @@ namespace Cosmicrafts
                     break;
                     
                 case CompanionBehaviorType.Scout:
+                    // Create Ship component if needed
+                    if (companionShip == null)
+                    {
+                        companionShip = companionGO.AddComponent<Ship>();
+                        companionShip.MaxSpeed = 10f;
+                        companionShip.TurnSpeed = 5f;
+                    }
+                    
                     // Increase movement speed and detection range for scouting
                     if (controller != null)
                     {

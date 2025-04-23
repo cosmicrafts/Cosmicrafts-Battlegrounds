@@ -218,13 +218,7 @@ namespace Cosmicrafts
             // If we have a target, handle pursuit and attack
             if (_currentTarget != null)
             {
-                // Always rotate towards current target, even if out of attack range
-                if (RotateToEnemy)
-                {
-                    RotateTowardsTarget();
-                }
-                
-                // Is target in attack range?
+                // Calculate distance to target
                 float distToTarget = Vector3.Distance(transform.position, _currentTarget.transform.position);
                 float scaledAttackRange = GetScaledAttackRange();
                 
@@ -233,19 +227,37 @@ namespace Cosmicrafts
                     // Target is in attack range - attack!
                     ChangeState(ShooterState.Attacking);
                     
+                    // Only rotate towards target when actually attacking
+                    if (RotateToEnemy)
+                    {
+                        RotateTowardsTarget();
+                    }
+                    
                     // Try to attack (cooldown handled internally)
                     TryAttack();
                 }
-                else
+                else if (distToTarget <= GetScaledDetectionRange())
                 {
-                    // Target is out of attack range - pursue
+                    // Target is out of attack range but within detection range - pursue
                     ChangeState(ShooterState.Pursuing);
+                    
+                    // Only rotate towards target when actively pursuing
+                    if (RotateToEnemy)
+                    {
+                        RotateTowardsTarget();
+                    }
                     
                     // Move towards target if we can
                     if (_myShip != null && StopToAttack)
                     {
                         _myShip.SetDestination(_currentTarget.transform.position, scaledAttackRange * 0.9f);
                     }
+                }
+                else
+                {
+                    // Target is outside detection range - should no longer be valid
+                    _currentTarget = null;
+                    ChangeState(ShooterState.Idle);
                 }
             }
             else
@@ -268,7 +280,17 @@ namespace Cosmicrafts
             {
                 foreach (var target in _potentialTargets)
                 {
-                    _currentTarget = target;
+                    // Check if target is still within detection range
+                    float distToTarget = Vector3.Distance(transform.position, target.transform.position);
+                    if (distToTarget <= GetScaledDetectionRange())
+                    {
+                        _currentTarget = target;
+                    }
+                    else
+                    {
+                        _currentTarget = null;
+                        _potentialTargets.Remove(target);
+                    }
                     return;
                 }
             }
@@ -279,7 +301,12 @@ namespace Cosmicrafts
             {
                 if (target != null && !target.GetIsDeath() && _myUnit.IsEnemy(target))
                 {
-                    _validTargetsCache.Add(target);
+                    // Check if target is still within detection range
+                    float distToTarget = Vector3.Distance(transform.position, target.transform.position);
+                    if (distToTarget <= GetScaledDetectionRange())
+                    {
+                        _validTargetsCache.Add(target);
+                    }
                 }
             }
             

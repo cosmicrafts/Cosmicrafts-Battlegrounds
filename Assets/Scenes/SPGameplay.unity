@@ -2248,8 +2248,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99f71c7655d017b42aceb44d68bb64c8, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sectorSize: 250
-  visibleGridSize: 2
+  sectorSize: 1000
+  visibleGridSize: 1
   generationPerimeter: 0
   maxBotsPerSector: 1
   maxTotalBots: 4

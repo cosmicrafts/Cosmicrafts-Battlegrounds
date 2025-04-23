@@ -42,7 +42,7 @@ public class BotEnemy : MonoBehaviour
     public GameObject prefabBaseStation;
 
     //Prefabs Deck units (assign in inspector)
-    public ShipsDataBase[] DeckUnits = new ShipsDataBase[8];
+    public UnitsDataBase[] DeckUnits = new UnitsDataBase[8];
     
     //Current Energy
     [Range(0, 99)]
@@ -64,7 +64,7 @@ public class BotEnemy : MonoBehaviour
     [Header("Object Pooling")]
     public int maxActiveUnits = 8; // Maximum active units for this bot
     private List<Unit> activeUnits = new List<Unit>(); // Currently active units
-    private Dictionary<ShipsDataBase, List<Unit>> unitPool = new Dictionary<ShipsDataBase, List<Unit>>(); // Pooled units by type
+    private Dictionary<UnitsDataBase, List<Unit>> unitPool = new Dictionary<UnitsDataBase, List<Unit>>(); // Pooled units by type
 
     //Delta time to make a decision
     WaitForSeconds IADelta;
@@ -73,7 +73,7 @@ public class BotEnemy : MonoBehaviour
     List<Unit> MyUnits;
 
     //NFTs data
-    Dictionary<ShipsDataBase, NFTsUnit> DeckNfts;
+    Dictionary<UnitsDataBase, NFTsUnit> DeckNfts;
 
     //Bot's enemy base station
     Unit TargetUnit;
@@ -104,8 +104,8 @@ public class BotEnemy : MonoBehaviour
         TargetUnit = GameMng.GM.Targets[1];
 
         //Init Deck Cards info with the units prefabs info
-        DeckNfts = new Dictionary<ShipsDataBase, NFTsUnit>();
-        unitPool = new Dictionary<ShipsDataBase, List<Unit>>();
+        DeckNfts = new Dictionary<UnitsDataBase, NFTsUnit>();
+        unitPool = new Dictionary<UnitsDataBase, List<Unit>>();
         
         for (int i = 0; i < DeckUnits.Length; i++)
         {
@@ -170,7 +170,7 @@ public class BotEnemy : MonoBehaviour
     }
     
     // Get a unit from the pool or create a new one if none available
-    private Unit GetUnitFromPool(ShipsDataBase unitData, Vector3 position)
+    private Unit GetUnitFromPool(UnitsDataBase unitData, Vector3 position)
     {
         if (unitData == null || unitData.prefab == null)
         {
@@ -226,7 +226,7 @@ public class BotEnemy : MonoBehaviour
     }
     
     // Helper method to create a new unit
-    private Unit CreateNewUnit(ShipsDataBase unitData, Vector3 position)
+    private Unit CreateNewUnit(UnitsDataBase unitData, Vector3 position)
     {
         if (unitData.prefab == null)
         {
@@ -255,7 +255,7 @@ public class BotEnemy : MonoBehaviour
         }
         
         // Find which unit type this is
-        ShipsDataBase unitType = null;
+        UnitsDataBase unitType = null;
         foreach (var kvp in DeckNfts)
         {
             if (!string.IsNullOrEmpty(unit.getKey()) && unit.getKey() == kvp.Value.KeyId)
@@ -315,7 +315,7 @@ public class BotEnemy : MonoBehaviour
             }
             
             // Get only non-null units from the deck
-            ShipsDataBase[] validUnits = DeckUnits.Where(unit => unit != null).ToArray();
+            UnitsDataBase[] validUnits = DeckUnits.Where(unit => unit != null).ToArray();
             
             // Skip if there are no valid units
             if (validUnits.Length == 0)
@@ -325,7 +325,7 @@ public class BotEnemy : MonoBehaviour
             }
             
             //Select first unit as default to spawn
-            ShipsDataBase SelectedUnit = validUnits[0];
+            UnitsDataBase SelectedUnit = validUnits[0];
             
             //Mix game cards
             validUnits = validUnits.OrderBy(r => rng.Next()).ToArray();

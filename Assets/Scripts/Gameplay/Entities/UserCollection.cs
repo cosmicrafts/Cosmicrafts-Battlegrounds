@@ -211,7 +211,7 @@ public void InitDecks()
 }
 
     //Build a testing collection
-public void AddUnitsAndCharactersDefault(List<ShipsDataBase> listAlliance = null, List<ShipsDataBase> listSpirats = null, List<ShipsDataBase> listWebe = null)
+public void AddUnitsAndCharactersDefault(List<UnitsDataBase> listAlliance = null, List<UnitsDataBase> listSpirats = null, List<UnitsDataBase> listWebe = null)
 {
     // CHARACTERS
     Characters.Add(DefaultCharacter);
@@ -224,25 +224,25 @@ public void AddUnitsAndCharactersDefault(List<ShipsDataBase> listAlliance = null
     // ALLIANCE
     if (listAlliance != null)
     {
-        foreach (ShipsDataBase shipsDataBase in listAlliance)
+        foreach (UnitsDataBase UnitsDataBase in listAlliance)
         {
-            Cards.Add(shipsDataBase.ToNFTCard());
+            Cards.Add(UnitsDataBase.ToNFTCard());
         }
     }
 
     if (listWebe != null)
     {
-        foreach (ShipsDataBase shipsDataBase in listWebe)
+        foreach (UnitsDataBase UnitsDataBase in listWebe)
         {
-            Cards.Add(shipsDataBase.ToNFTCard());
+            Cards.Add(UnitsDataBase.ToNFTCard());
         }
     }
 
     if (listSpirats != null)
     {
-        foreach (ShipsDataBase shipsDataBase in listSpirats)
+        foreach (UnitsDataBase UnitsDataBase in listSpirats)
         {
-            Cards.Add(shipsDataBase.ToNFTCard());
+            Cards.Add(UnitsDataBase.ToNFTCard());
         }
     }
 

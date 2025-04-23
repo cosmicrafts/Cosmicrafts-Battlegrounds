@@ -3,25 +3,25 @@
     using System.Collections.Generic;
     using UnityEngine;
 
-    [CreateAssetMenu(fileName ="New Ship", menuName ="Create New Ship")]
-    public class ShipsDataBase : ScriptableObject
+    [CreateAssetMenu(fileName ="New Unit", menuName ="Create New Unit")]
+    public class UnitsDataBase : ScriptableObject
     {
         #region DataBase
 
         //----Prefab-----------------------------------------------------------
-        [Tooltip("Associated Prefab")]
+        [Tooltip("Associated Unit Prefab")]
         [Header("Prefab")]
         [SerializeField]
         protected GameObject Prefab;
 
-        //----Ship's Icon-----------------------------------------------------------
+        //----Unit's Icon-----------------------------------------------------------
         [Tooltip("Unit icon sprite")]
         [Header("Unit Icon")]
         [SerializeField]
         protected Sprite IconSprite;
 
-        //----Ship's name-----------------------------------------------------------
-        [Tooltip("Name of the card")]
+        //----Unit's name-----------------------------------------------------------
+        [Tooltip("Name of the unit")]
         [Header("Unit Name")]
         [SerializeField]
         protected string Name;
@@ -73,7 +73,7 @@
         protected int Damage;
 
         //----Unit Speed-----------------------------------------------------------
-        [Tooltip("Ship speed")]
+        [Tooltip("Unit movement speed")]
         [Header("Movement Speed")]
         [SerializeField]
         [Range(0, 99)]
@@ -85,6 +85,19 @@
         [SerializeField]
         [Range(1, 99)]
         protected int Level;
+        
+        //----Attack Range-----------------------------------------------------------
+        [Tooltip("Maximum range at which the unit can attack targets")]
+        [Header("Combat Properties")]
+        [SerializeField]
+        [Range(1, 50)]
+        protected float AttackRange = 10f;
+        
+        //----Detection Range-----------------------------------------------------------
+        [Tooltip("Maximum range at which the unit can detect enemies")]
+        [SerializeField]
+        [Range(1, 50)]
+        protected float DetectionRange = 15f;
 
         #endregion
 
@@ -113,6 +126,10 @@
         public float speed => Speed;
 
         public int level => Level;
+        
+        public float attackRange => AttackRange;
+        
+        public float detectionRange => DetectionRange;
 
         public NFTsUnit ToNFTCard()
         {
@@ -129,6 +146,8 @@
                 FactionPrefix = NFTsCollection.NFTsFactionsPrefixs[(Factions)faction],
                 Level = level,
                 Speed = speed,
+                AttackRange = attackRange,
+                DetectionRange = detectionRange,
                 Prefab = prefab,
                 IconSprite = iconSprite // Use the sprite directly from the SO
             };

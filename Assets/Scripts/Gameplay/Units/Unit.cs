@@ -858,11 +858,11 @@ namespace Cosmicrafts
             // Spawn each configured companion
             foreach (CompanionConfig config in companions)
             {
-                if (config == null || config.companionPrefab == null)
+                if (config == null || config.unitData == null)
                     continue;
                     
                 // Instantiate the companion prefab
-                GameObject companionGO = Instantiate(config.companionPrefab, transform.position, transform.rotation);
+                GameObject companionGO = Instantiate(config.unitData.prefab, transform.position, transform.rotation);
                 Unit companionUnit = companionGO.GetComponent<Unit>();
                 
                 if (companionUnit != null)
@@ -905,7 +905,7 @@ namespace Cosmicrafts
                 }
                 else
                 {
-                    Debug.LogError($"Companion prefab {config.companionPrefab.name} is missing the Unit component!", config.companionPrefab);
+                    Debug.LogError($"Companion prefab {config.unitData.prefab.name} is missing the Unit component!", config.unitData.prefab);
                     Destroy(companionGO); // Clean up invalid instance
                 }
             }
@@ -1224,7 +1224,8 @@ namespace Cosmicrafts
     public class CompanionConfig
     {
         public string name = "Companion";
-        public GameObject companionPrefab;
+        [Tooltip("Scriptable object defining the companion unit")]
+        public UnitsDataBase unitData;
         
         [Header("Behavior")]
         public CompanionBehaviorType behaviorType = CompanionBehaviorType.Default;

@@ -236,7 +236,7 @@ MonoBehaviour:
   Level: 1
   companions:
   - name: compa
-    companionPrefab: {fileID: 2198226034328220048, guid: 21b572bfec81502488150050624ed5d4, type: 3}
+    unitData: {fileID: 11400000, guid: 6b11b1a5a1ce7b14eb603b23057cf63a, type: 2}
     behaviorType: 0
     orbitDistance: 2.42
     orbitSpeed: 41.7

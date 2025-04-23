@@ -159,7 +159,7 @@ public class Player : MonoBehaviour
         int uniqueIdCounter = 1; // Used to create unique IDs for duplicates
         foreach (ScriptableObject card in TestingDeck)
         {
-            if (card is ShipsDataBase shipCard)
+            if (card is UnitsDataBase shipCard)
             {
                 NFTsUnit cardData = shipCard.ToNFTCard();
                 

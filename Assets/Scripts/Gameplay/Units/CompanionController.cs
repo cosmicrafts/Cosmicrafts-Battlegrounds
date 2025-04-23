@@ -1,6 +1,7 @@
 using UnityEngine;
 using SensorToolkit; // Add missing namespace for SteeringRig
 using System.Collections.Generic;
+using Cosmicrafts; // Add for UnitsDataBase access
 
 namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.cs
 {
@@ -188,6 +189,32 @@ namespace Cosmicrafts.Units // Match the namespace for easier access from Unit.c
                     {
                         renderer.material.color = config.tintColor;
                     }
+                }
+            }
+            
+            // Apply stats from SO data if available
+            if (config.unitData != null && myUnit != null)
+            {
+                // Create an NFT unit from the SO data to apply stats
+                NFTsUnit unitData = config.unitData.ToNFTCard();
+                
+                // Apply the data to the unit
+                myUnit.SetNfts(unitData);
+                
+                // Configure shooter component with data from the SO
+                if (myShooter != null)
+                {
+                    myShooter.BulletDamage = unitData.Damage;
+                    myShooter.CoolDown = 1.0f; // Default value if not specified in SO
+                    
+                    // Let the shooter handle its own range settings via InitStatsFromNFT
+                    myShooter.InitStatsFromNFT(unitData);
+                }
+                
+                // Configure ship component with data from the SO
+                if (myShip != null)
+                {
+                    myShip.MaxSpeed = unitData.Speed;
                 }
             }
             

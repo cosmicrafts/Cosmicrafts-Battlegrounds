@@ -243,7 +243,7 @@ Companions use the `CompanionTargetFilter` component to ensure they:
 - Uses object pooling for efficient unit management
 - `GetUnitFromPool()`: Retrieves or creates units as needed
 - `ReturnUnitToPool()`: Returns units to pool on death instead of destroying
-- Pool organized by unit type (`Dictionary<ShipsDataBase, List<Unit>>`)
+- Pool organized by unit type (`Dictionary<UnitsDataBase, List<Unit>>`)
 
 ### Unit Creation Process
 ```csharp
@@ -339,7 +339,7 @@ public class BotEnemy : MonoBehaviour
     
     // Unit management
     private List<Unit> activeUnits = new List<Unit>();
-    private Dictionary<ShipsDataBase, List<Unit>> unitPool;
+    private Dictionary<UnitsDataBase, List<Unit>> unitPool;
     
     // AI loop
     private IEnumerator IA() {

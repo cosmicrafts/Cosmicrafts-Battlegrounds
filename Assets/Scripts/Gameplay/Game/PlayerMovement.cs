@@ -264,6 +264,13 @@ namespace Cosmicrafts
                     playerCollider.enabled = false;
                 }
                 
+                // Trigger warp animation on unit
+                Unit playerUnit = GetComponent<Unit>();
+                if (playerUnit != null)
+                {
+                    playerUnit.PlayWarpAnimation();
+                }
+                
                 // Consume energy using GameMng.P
                 if (!bypassEnergyCheck && GameMng.P != null)
                 {
@@ -671,6 +678,12 @@ namespace Cosmicrafts
         public bool IsDashing()
         {
             return isDashing;
+        }
+        
+        // Public property for animation system to detect warping
+        public bool IsWarping
+        {
+            get { return isDashing; }
         }
         
         // Public accessor for the player's movement direction - used by spells for aiming

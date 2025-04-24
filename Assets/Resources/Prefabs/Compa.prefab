@@ -806,7 +806,6 @@ GameObject:
   - component: {fileID: 2198226034328220052}
   - component: {fileID: 4985161326094170274}
   - component: {fileID: 6982720608951721540}
-  - component: {fileID: 2198226034328220053}
   - component: {fileID: 2198226034328220054}
   - component: {fileID: 2198226034328220042}
   - component: {fileID: 2198226034328220043}
@@ -931,31 +930,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Alias: Barracuda
   UnitMesh: {fileID: 6245011729380265433}
---- !u!114 &2198226034328220053
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2198226034328220048}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4b0a022c518df8c4a93db57a89a8b10c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  Aceleration: 99
-  MaxSpeed: 99
-  DragSpeed: 0.25
-  TurnSpeed: 60
-  StopSpeed: 99
-  StoppingDistance: 2.5
-  AvoidanceRange: 0.25
-  RotationDamping: 0.1
-  AlignRotationWithMovement: 1
-  ShieldRegenRate: 3.3
-  RegenShieldWhileDamaged: 0
-  HPRegenRate: 0
-  HPRegenDelay: 5
 --- !u!114 &2198226034328220054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1152,7 +1126,7 @@ Animator:
   m_GameObject: {fileID: 6245011729380265433}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: c38a66a9a50de1d42a4fb37025b84129, type: 2}
+  m_Controller: {fileID: 9100000, guid: ea34ec62c62657842ad2daecde52f113, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -1197,6 +1171,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  movementBlendTime: 0.25
+  syncAttackWithWeaponSpeed: 1
+  debugAnimations: 0
+  autoPlayEntryAnimation: 1
+  autoUpdateAnimatorParams: 1
+  updateFrequency: 0.1
 --- !u!1001 &180155165942315878
 PrefabInstance:
   m_ObjectHideFlags: 0

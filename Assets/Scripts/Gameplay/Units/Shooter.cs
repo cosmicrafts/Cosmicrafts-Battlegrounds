@@ -890,6 +890,29 @@ namespace Cosmicrafts
             }
         }
         
+        /// <summary>
+        /// Returns true if the shooter is actually firing at this moment
+        /// (useful for triggering attack animations)
+        /// </summary>
+        public bool IsShooting()
+        {
+            return _currentState == ShooterState.Attacking && 
+                   _attackCooldownTimer <= 0.05f && 
+                   _currentTarget != null &&
+                   !_currentTarget.GetIsDeath() && 
+                   Vector3.Distance(transform.position, _currentTarget.transform.position) <= GetScaledAttackRange();
+        }
+        
+        /// <summary>
+        /// Returns the normalized cooldown progress (0 = just fired, 1 = ready to fire)
+        /// Useful for animation timing
+        /// </summary>
+        public float GetAttackCooldownProgress()
+        {
+            if (CoolDown <= 0) return 1f; // Avoid division by zero
+            return 1f - Mathf.Clamp01(_attackCooldownTimer / CoolDown);
+        }
+        
         #endregion
     }
 }

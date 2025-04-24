@@ -1,219 +1,374 @@
 ﻿namespace Cosmicrafts {
     using UnityEngine;
-    using UnityEngine.Animations;
-    using System.Collections.Generic;
+    using System.Collections;
 
 /*
  * The animation controller script for units
+ * 
+ * This handles all animation states for spaceships and units:
+ * - Idle: Default state when not moving
+ * - Moving: When the unit is in motion (looping animation)
+ * - Attacking: When the unit is firing weapons (looping animation)
+ * - Warp: Special effect for teleporting/dashing (one-shot animation)
+ * - PowerUp: Special effect for spell buffs (one-shot animation)
+ * - Entry: Intro animation played when unit first appears (one-shot animation)
+ * - Death: Final animation on unit destruction
  */
 
 public class UnitAnimLis : MonoBehaviour
 {
-    //Unit data reference
-    Unit MyUnit;
+    [Header("Animation Settings")]
+    [Tooltip("Blend time between idle and movement animations")]
+    public float movementBlendTime = 0.25f;
+    [Tooltip("Use attack animation speed based on weapon cooldown")]
+    public bool syncAttackWithWeaponSpeed = true;
+    [Tooltip("Enable debug logs for animation state changes")]
+    public bool debugAnimations = false;
+    [Tooltip("Automatically play entry animation when unit spawns")]
+    public bool autoPlayEntryAnimation = true;
     
-    [Header("Animation Loop Control")]
-    [Tooltip("Enable custom loop section within the Idle animation")]
-    public bool useCustomLoopSection = false;
-    [Tooltip("Time marker name for loop start in Idle animation")]
-    public string loopStartMarker = "LoopStart";
-    [Tooltip("Time marker name for loop end in Idle animation")]
-    public string loopEndMarker = "LoopEnd";
+    [Header("Advanced Animation")]
+    [Tooltip("Enable automatic animator parameter updates")]
+    public bool autoUpdateAnimatorParams = true;
+    [Tooltip("Update frequency in seconds")]
+    public float updateFrequency = 0.1f;
     
-    // Loop tracking variables
-    private bool isInLoopSection = false;
-    private float loopStartTime = -1f;
-    private float loopEndTime = -1f;
+    // Unit data reference
+    private Unit myUnit;
+    // Shooter reference
+    private Shooter myShooter;
+    // Player movement reference (if this is a player unit)
+    private PlayerMovement playerMovement;
+    // Animator reference
     private Animator animator;
-
+    
+    // Animation state tracking
+    private bool wasMoving = false;
+    private bool wasAttacking = false;
+    private bool isDead = false;
+    private bool hasPlayedEntryAnimation = false;
+    
+    // Update timer
+    private float updateTimer = 0f;
+    
     // Start is called before the first frame update
     void Start()
     {
-        //Get unit data
-        MyUnit = transform.parent.GetComponent<Unit>();
+        // Get unit data
+        myUnit = transform.parent.GetComponent<Unit>();
+        
+        // Get shooter component if available
+        myShooter = transform.parent.GetComponent<Shooter>();
+        
+        // Get player movement component if available
+        playerMovement = transform.parent.GetComponent<PlayerMovement>();
+        
+        // Get animator component
         animator = GetComponent<Animator>();
         
         // Ensure the animator exists
         if (animator == null)
         {
-            Debug.LogError($"No Animator component found on {gameObject.name}!");
+            Debug.LogError($"No Animator component found on {gameObject.name}! Animation control will not function.");
             return;
         }
         
-        // Find animation loop markers in the animations
-        FindAnimationLoopMarkers();
+        // Verify animator has required parameters
+        VerifyAnimatorParameters();
         
-        //Set the attack animation speed
-        // Ensure MyUnit and Animator are valid before proceeding
-        if (MyUnit != null && MyUnit.GetAnimator() != null)
+        // Set initial animation states
+        UpdateAnimationStates();
+        
+        // Configure attack animation speed if needed
+        if (syncAttackWithWeaponSpeed && myShooter != null && animator != null)
         {
-            AnimationClip attack_clip = MyUnit.GetAnimationClip("Attack");
-            Shooter shooter = transform.parent.GetComponent<Shooter>();
-            if (attack_clip != null && shooter != null && shooter.CoolDown > 0) // Added check for CoolDown > 0
+            AnimationClip attackClip = GetAnimationClip("Attack");
+            if (attackClip != null && myShooter.CoolDown > 0)
             {
-                 MyUnit.GetAnimator().SetFloat("AttackSpeed", attack_clip.length / shooter.CoolDown * 2);
-            }
-            else if (shooter != null && shooter.CoolDown <= 0)
-            {
-                Debug.LogWarning($"Shooter CoolDown is zero or negative for {MyUnit.gameObject.name}, cannot set AttackSpeed.");
+                float attackSpeed = attackClip.length / myShooter.CoolDown;
+                animator.SetFloat("AttackSpeed", attackSpeed);
+                
+                if (debugAnimations)
+                {
+                    Debug.Log($"Attack animation speed set to {attackSpeed} based on weapon cooldown {myShooter.CoolDown}s");
+                }
             }
         }
-        else
+        
+        // Play entry animation if enabled
+        if (autoPlayEntryAnimation && HasParameter("Entry") && !hasPlayedEntryAnimation)
         {
-            Debug.LogWarning($"Unit or Animator not found when trying to set AttackSpeed in UnitAnimLis for {transform.parent?.name}");
+            PlayEntryAnimation();
         }
     }
     
-    private void Update()
-    {
-        // Handle animation loop logic if enabled
-        if (useCustomLoopSection && animator != null && loopStartTime >= 0 && loopEndTime >= 0)
-        {
-            ManageAnimationLoop();
-        }
-    }
-    
-    /// <summary>
-    /// Finds animation loop markers in the Idle animation
-    /// </summary>
-    private void FindAnimationLoopMarkers()
+    // Verify animator has required parameters
+    private void VerifyAnimatorParameters()
     {
         if (animator == null) return;
         
-        // Get all animation clips from the animator
-        AnimationClip[] clips = null;
+        // Verify essential parameters
+        CheckParameter("Idle", AnimatorControllerParameterType.Bool);
+        CheckParameter("Moving", AnimatorControllerParameterType.Bool);
+        CheckParameter("Attacking", AnimatorControllerParameterType.Bool);
+        CheckParameter("Die", AnimatorControllerParameterType.Trigger);
+        CheckParameter("Warp", AnimatorControllerParameterType.Trigger);
+        CheckParameter("PowerUp", AnimatorControllerParameterType.Trigger);
+        CheckParameter("Entry", AnimatorControllerParameterType.Trigger);
         
-        // Try to get animation clips from the runtime animator controller
-        if (animator.runtimeAnimatorController != null)
+        // Optional parameters
+        CheckParameter("AttackSpeed", AnimatorControllerParameterType.Float, false);
+        CheckParameter("MoveSpeed", AnimatorControllerParameterType.Float, false);
+    }
+    
+    // Check if parameter exists and is the right type
+    private void CheckParameter(string paramName, AnimatorControllerParameterType expectedType, bool required = true)
+    {
+        bool paramExists = false;
+        bool typeCorrect = false;
+        
+        foreach (AnimatorControllerParameter param in animator.parameters)
         {
-            clips = animator.runtimeAnimatorController.animationClips;
+            if (param.name == paramName)
+            {
+                paramExists = true;
+                typeCorrect = param.type == expectedType;
+                break;
+            }
         }
         
-        if (clips == null || clips.Length == 0)
+        if (required && !paramExists)
         {
-            Debug.LogWarning("Could not find animation clips in controller");
+            Debug.LogWarning($"Required animator parameter '{paramName}' missing on {gameObject.name}. Add a {expectedType} parameter.");
+        }
+        else if (paramExists && !typeCorrect)
+        {
+            Debug.LogWarning($"Animator parameter '{paramName}' exists but is wrong type. Should be {expectedType}.");
+        }
+    }
+    
+    // Get AnimationClip by name
+    private AnimationClip GetAnimationClip(string clipName)
+    {
+        if (animator == null || animator.runtimeAnimatorController == null) return null;
+        
+        AnimationClip[] clips = animator.runtimeAnimatorController.animationClips;
+        foreach (AnimationClip clip in clips)
+        {
+            if (clip.name.Contains(clipName))
+            {
+                return clip;
+            }
+        }
+        
+        return null;
+    }
+    
+    // Update is called every frame
+    void Update()
+    {
+        // Skip if unit or animator is missing
+        if (myUnit == null || animator == null) return;
+        
+        // Don't update animations if unit is dead
+        if (myUnit.GetIsDeath())
+        {
+            if (!isDead)
+            {
+                isDead = true;
+                // This will be handled by the Die() call in Unit.cs
+            }
             return;
         }
         
-        foreach (AnimationClip clip in clips)
+        // Only update on timer if auto-update is enabled
+        if (autoUpdateAnimatorParams)
         {
-            // Skip null clips
-            if (clip == null) continue;
-            
-            // Look for the Idle animation
-            if (clip.name.Contains("Idle") || clip.name.Contains("Movement"))
+            updateTimer -= Time.deltaTime;
+            if (updateTimer <= 0f)
             {
-                // Find animation events that mark loop points
-                foreach (AnimationEvent animEvent in clip.events)
-                {
-                    if (animEvent.functionName == loopStartMarker)
-                    {
-                        loopStartTime = animEvent.time;
-                        Debug.Log($"Found loop start marker at time: {loopStartTime}");
-                    }
-                    else if (animEvent.functionName == loopEndMarker)
-                    {
-                        loopEndTime = animEvent.time;
-                        Debug.Log($"Found loop end marker at time: {loopEndTime}");
-                    }
-                }
-                
-                // Check if we found both markers
-                if (loopStartTime >= 0 && loopEndTime >= 0)
-                {
-                    Debug.Log($"Animation loop section defined in {clip.name}: {loopStartTime} to {loopEndTime}");
-                    break;
-                }
+                updateTimer = updateFrequency;
+                UpdateAnimationStates();
             }
         }
         
-        // Warn if loop points weren't found but were requested
-        if (useCustomLoopSection && (loopStartTime < 0 || loopEndTime < 0))
+        // Always check for warp animation from player movement
+        if (playerMovement != null && playerMovement.IsWarping)
         {
-            Debug.LogWarning($"Custom loop section enabled but markers '{loopStartMarker}' and '{loopEndMarker}' were not found in any animation!");
+            if (debugAnimations)
+            {
+                Debug.Log($"Triggered Warp animation from PlayerMovement on {gameObject.name}");
+            }
+            animator.SetTrigger("Warp");
         }
     }
     
-    /// <summary>
-    /// Controls the animation loop logic
-    /// </summary>
-    private void ManageAnimationLoop()
+    // Update animation states based on unit properties
+    public void UpdateAnimationStates()
     {
-        // Check if we're in the Idle state
-        if (animator.GetCurrentAnimatorStateInfo(0).IsName("Idle") || 
-            animator.GetCurrentAnimatorStateInfo(0).IsName("Movement"))
+        if (myUnit == null || animator == null || myUnit.GetIsDeath()) return;
+        
+        // Get current states
+        bool isMoving = myUnit.IsMoving();
+        bool isAttacking = myShooter != null && myShooter.IsEngagingTarget();
+        
+        // Set animator parameters
+        animator.SetBool("Moving", isMoving);
+        animator.SetBool("Attacking", isAttacking);
+        animator.SetBool("Idle", !isMoving && !isAttacking);
+        
+        // Set normalized move speed for blend trees (if exists)
+        if (HasParameter("MoveSpeed"))
         {
-            // Get normalized time and convert to actual time
-            float stateTime = animator.GetCurrentAnimatorStateInfo(0).normalizedTime;
-            AnimatorClipInfo[] clipInfo = animator.GetCurrentAnimatorClipInfo(0);
-            
-            if (clipInfo.Length > 0)
+            animator.SetFloat("MoveSpeed", myUnit.GetNormalizedSpeed());
+        }
+        
+        // Log state changes for debugging
+        if (debugAnimations && (isMoving != wasMoving || isAttacking != wasAttacking))
+        {
+            Debug.Log($"Animation state change for {gameObject.name}: Moving={isMoving}, Attacking={isAttacking}");
+        }
+        
+        // Remember states for next frame
+        wasMoving = isMoving;
+        wasAttacking = isAttacking;
+    }
+    
+    // Check if animator has a specific parameter
+    private bool HasParameter(string paramName)
+    {
+        if (animator == null) return false;
+        
+        foreach (AnimatorControllerParameter param in animator.parameters)
+        {
+            if (param.name == paramName)
             {
-                float clipTime = stateTime * clipInfo[0].clip.length;
-                
-                // If we've reached the end of our loop section, jump back to start
-                if (clipTime >= loopEndTime)
-                {
-                    // Set the normalized time to jump back to loop start
-                    float normalizedLoopStart = loopStartTime / clipInfo[0].clip.length;
-                    animator.Play("Idle", 0, normalizedLoopStart);
-                    isInLoopSection = true;
-                }
-                else if (clipTime >= loopStartTime && !isInLoopSection)
-                {
-                    // Just entered the loop section
-                    isInLoopSection = true;
-                }
-                else if (clipTime < loopStartTime)
-                {
-                    // Before the loop section
-                    isInLoopSection = false;
-                }
+                return true;
             }
         }
-        else
+        
+        return false;
+    }
+    
+    // Play entry animation manually
+    public void PlayEntryAnimation()
+    {
+        if (animator != null && HasParameter("Entry"))
         {
-            // Not in Idle/Movement state
-            isInLoopSection = false;
+            if (debugAnimations)
+            {
+                Debug.Log($"Playing Entry animation on {gameObject.name}");
+            }
+            
+            animator.SetTrigger("Entry");
+            hasPlayedEntryAnimation = true;
+        }
+    }
+
+    // Animation Event Handlers
+    // These are called directly from animation events
+
+    // Called when entry animation starts
+    public void AE_EntryStart()
+    {
+        if (debugAnimations)
+        {
+            Debug.Log($"Entry animation started on {gameObject.name}");
+        }
+        
+        // Add entry visual effects, particle systems, etc.
+    }
+    
+    // Called when entry animation ends
+    public void AE_EntryEnd()
+    {
+        if (debugAnimations)
+        {
+            Debug.Log($"Entry animation completed on {gameObject.name}");
+        }
+        
+        // Can enable unit interactions or behaviors after intro completes
+    }
+    
+    // Called when a power-up animation starts
+    public void AE_PowerUpStart()
+    {
+        if (debugAnimations)
+        {
+            Debug.Log($"Power-Up animation started on {gameObject.name}");
+        }
+        
+        // Add visual effects, particle systems, etc.
+    }
+    
+    // Called when a power-up animation ends
+    public void AE_PowerUpEnd()
+    {
+        if (debugAnimations)
+        {
+            Debug.Log($"Power-Up animation completed on {gameObject.name}");
         }
     }
     
-    // Animation Event Handlers
-    // These are called directly from animation events
-    
-    // Called when loop section should start
-    public void AE_LoopStart()
+    // Called when warp animation starts
+    public void AE_WarpStart()
     {
-        isInLoopSection = true;
-        Debug.Log("Animation loop section started");
+        if (debugAnimations)
+        {
+            Debug.Log($"Warp animation started on {gameObject.name}");
+        }
+        
+        // Add warp visual effects, particle systems, etc.
     }
     
-    // Called when loop section should end and loop back
-    public void AE_LoopEnd()
+    // Called when warp animation ends
+    public void AE_WarpEnd()
     {
-        // This will reset back to loop start on next frame
-        Debug.Log("Animation loop section ended, looping back");
+        if (debugAnimations)
+        {
+            Debug.Log($"Warp animation completed on {gameObject.name}");
+        }
+    }
+    
+    // Called when attack animation starts
+    public void AE_AttackStart()
+    {
+        if (debugAnimations)
+        {
+            Debug.Log($"Attack animation started on {gameObject.name}");
+        }
+    }
+    
+    // Called when attack animation reaches its firing point
+    public void AE_FireWeapon()
+    {
+        if (debugAnimations)
+        {
+            Debug.Log($"Fire weapon event on {gameObject.name}");
+        }
+        
+        // Could trigger weapon effects here
     }
 
-    //Called when the deth animation ends
+    // Called when the death animation ends
     public void AE_EndDeath()
     {
         // Don't destroy units, reset them for infinite play instead
-        if (MyUnit != null)
+        if (myUnit != null)
         {
             // For Red team (enemy) units, respawn them
-            if (FactionManager.ConvertFactionToTeam(MyUnit.MyFaction) == Team.Red)
+            if (FactionManager.ConvertFactionToTeam(myUnit.MyFaction) == Team.Red)
             {
-                Debug.Log($"Respawning enemy unit {MyUnit.gameObject.name} instead of destroying it");
+                Debug.Log($"Respawning enemy unit {myUnit.gameObject.name} instead of destroying it");
                 
                 // Reset the unit instead of destroying it
-                MyUnit.ResetUnit();
+                myUnit.ResetUnit();
                 
                 // Teleport back to a suitable position if needed
                 if (GameMng.GM != null)
                 {
                     Vector3 respawnPos = GameMng.GM.GetDefaultTargetPosition(Team.Red);
-                    MyUnit.transform.position = respawnPos + new Vector3(
+                    myUnit.transform.position = respawnPos + new Vector3(
                         Random.Range(-10f, 10f),
                         0,
                         Random.Range(-10f, 10f)
@@ -224,16 +379,16 @@ public class UnitAnimLis : MonoBehaviour
             {
                 // For player units, they already handle respawning through GameMng
                 // We shouldn't need to do anything here
-                Debug.Log($"Player unit death animation completed: {MyUnit.gameObject.name}");
+                Debug.Log($"Player unit death animation completed: {myUnit.gameObject.name}");
             }
         }
     }
 
-    //Called an explosion effect
+    // Called to trigger an explosion effect
     public void AE_BlowUpUnit()
     {
-        //Kill the unit
-        MyUnit.BlowUpEffect();
+        // Kill the unit
+        myUnit.BlowUpEffect();
     }
 }
 }

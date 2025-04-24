@@ -1761,6 +1761,99 @@ namespace Cosmicrafts
 
             return enemyOutput;
         }
+
+        // --- Animation System Methods ---
+        
+        /// <summary>
+        /// Returns true if the unit is currently in motion
+        /// </summary>
+        public bool IsMoving()
+        {
+            // For units with movement capability, check current speed
+            if (HasMovement)
+            {
+                return _currentSpeed > 0.1f;
+            }
+            return false;
+        }
+        
+        /// <summary>
+        /// Returns the current movement speed (for animation blending)
+        /// </summary>
+        public float GetCurrentSpeed()
+        {
+            return HasMovement ? _currentSpeed : 0f;
+        }
+        
+        /// <summary>
+        /// Returns movement speed as a normalized value (0-1)
+        /// </summary>
+        public float GetNormalizedSpeed()
+        {
+            if (!HasMovement || MaxSpeed <= 0) return 0f;
+            return Mathf.Clamp01(_currentSpeed / MaxSpeed);
+        }
+        
+        /// <summary>
+        /// Triggers a power-up animation
+        /// </summary>
+        public void PlayPowerUpAnimation()
+        {
+            if (MyAnim != null)
+            {
+                MyAnim.SetTrigger("PowerUp");
+                Debug.Log($"Power-up animation triggered on {gameObject.name}");
+            }
+        }
+        
+        /// <summary>
+        /// Triggers warp/dash animation
+        /// </summary>
+        public void PlayWarpAnimation()
+        {
+            // Find the UnitAnimLis component on children
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            
+            // If found and we have an animator, trigger the warp animation
+            if (animController != null)
+            {
+                Animator animator = GetAnimator();
+                if (animator != null)
+                {
+                    animator.SetTrigger("Warp");
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Forces animation update to ensure state is correct
+        /// </summary>
+        public void RefreshAnimationState()
+        {
+            if (MyAnim != null)
+            {
+                // Set basic states
+                bool moving = IsMoving();
+                bool attacking = GetComponent<Shooter>()?.IsEngagingTarget() ?? false;
+                
+                MyAnim.SetBool("Moving", moving);
+                MyAnim.SetBool("Idle", !moving && !attacking);
+                MyAnim.SetBool("Attacking", attacking);
+            }
+        }
+
+        // Trigger entry animation (intro animation)
+        public void PlayEntryAnimation()
+        {
+            // Find the UnitAnimLis component on children
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            
+            // If found, use its dedicated method
+            if (animController != null)
+            {
+                animController.PlayEntryAnimation();
+            }
+        }
     }
     
     /// <summary>

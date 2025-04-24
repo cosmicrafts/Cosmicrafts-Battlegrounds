@@ -67,6 +67,12 @@ public class Spell_01 : Spell
         // Find the player character for the appropriate team using the utility
         _playerUnit = SpellUtils.FindPlayerCharacter(MyFaction);
         
+        // Trigger power-up animation on the player when cast
+        if (_playerUnit != null)
+        {
+            _playerUnit.PlayPowerUpAnimation();
+        }
+        
         // Setup the layer mask for target detection
         _targetLayerMask = LayerMask.GetMask("Unit", "Default");
         

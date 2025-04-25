@@ -188,6 +188,9 @@
             playerUnit.OnUnitDeath += HandlePlayerBaseStationDeath;
 
             Debug.Log($"Player base spawned: {playerUnit.gameObject.name} | HP: {playerUnit.HitPoints}/{playerUnit.GetMaxHitPoints()} | Shield: {playerUnit.Shield}/{playerUnit.GetMaxShield()}");
+            
+            // Play entry animation
+            playerUnit.PlayEntryAnimation();
         }
 
         // --- New Enemy Spawning Function ---
@@ -246,6 +249,9 @@
             // Optionally subscribe to enemy death: enemyUnit.OnUnitDeath += HandleEnemyBaseStationDeath;
 
             Debug.Log($"Enemy base spawned: {enemyUnit.gameObject.name} | HP: {enemyUnit.HitPoints}/{enemyUnit.GetMaxHitPoints()} | Shield: {enemyUnit.Shield}/{enemyUnit.GetMaxShield()} | Bot Component: N/A");
+            
+            // Play entry animation
+            enemyUnit.PlayEntryAnimation();
         }
 
         // Handle player base station death - make this much more direct and aggressive
@@ -355,14 +361,42 @@
                 shooter.ResetShooter();
             }
             
-            // Reset animator
-            if (playerUnit.GetAnimator() != null)
+            // First try to reset UnitAnimLis if available
+            UnitAnimLis animLis = playerUnit.GetComponent<UnitAnimLis>();
+            if (animLis != null)
+            {
+                // Use the proper animation reset method
+                animLis.ResetAnimationState();
+                
+                // After reset, we can trigger a new entry animation if needed
+                // Note: this will only play if autoPlayEntryAnimation is true on the UnitAnimLis
+                if (animLis.autoPlayEntryAnimation)
+                {
+                    animLis.PlayEntryAnimation();
+                }
+                
+                // Force kinetic transform back to neutral state just to be sure
+                if (animLis.kineticTransform != null)
+                {
+                    // We'll let ResetAnimationState handle this now, as it uses the stored initial values
+                    // The ResetAnimationState method already resets position, rotation and scale properly
+                    // using kineticInitialPosition, kineticInitialRotation, and kineticInitialScale
+                }
+            }
+            // Fallback to animator reset if present
+            else if (playerUnit.GetAnimator() != null)
             {
                 Animator anim = playerUnit.GetAnimator();
                 anim.Rebind();
                 anim.Update(0f);
                 anim.ResetTrigger("Die");
                 anim.SetBool("Idle", true);
+                
+                // Reset any animation specific parameters
+                anim.SetBool("IsMoving", false);
+                anim.SetBool("IsAttacking", false);
+                anim.SetBool("IsDead", false);
+                anim.SetFloat("Speed", 0f);
             }
             
             // Reset mesh appearance (remove soul effect)
@@ -530,6 +564,9 @@
                 AddUnit(unit);
 
                 //Debug.Log($"Unit created: {unit.gameObject.name} | HP: {unit.HitPoints}/{unit.GetMaxHitPoints()} | Shield: {unit.Shield}/{unit.GetMaxShield()} | Team: {unit.MyFaction}");
+                
+                // Play entry animation
+                unit.PlayEntryAnimation();
             }
             else
             {

@@ -440,8 +440,23 @@ namespace Cosmicrafts
             // Fire projectiles
             FireProjectiles();
             
-            // Trigger attack animation
-            _myUnit?.GetAnimator()?.SetTrigger("Attack");
+            // Trigger attack animation - first check for UnitAnimLis, then fallback to Animator
+            Unit unit = _myUnit;
+            if (unit != null)
+            {
+                // First check for UnitAnimLis component (kinetic animations)
+                UnitAnimLis animController = unit.GetComponentInChildren<UnitAnimLis>();
+                if (animController != null)
+                {
+                    // Use the dedicated method for attack animations
+                    animController.TriggerAttackAnimation();
+                }
+                // Otherwise try traditional animator method
+                else if (unit.GetAnimator() != null)
+                {
+                    unit.GetAnimator().SetTrigger("Attack");
+                }
+            }
             
             // Reset cooldown
             _attackCooldownTimer = CoolDown;

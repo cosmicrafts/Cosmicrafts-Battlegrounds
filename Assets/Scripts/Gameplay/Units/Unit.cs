@@ -620,8 +620,13 @@ namespace Cosmicrafts
 
         protected virtual void CastComplete()
         {
-            MyAnim.SetBool("Idle", true);
-            MyAnim.speed = 1;
+            // Make sure MyAnim exists before trying to use it
+            if (MyAnim != null)
+            {
+                MyAnim.SetBool("Idle", true);
+                MyAnim.speed = 1;
+            }
+            
             if (SpawnAreaSize > 0f && MyFaction == GameMng.P.MyFaction)
             {
                 SA.SetActive(true);
@@ -782,7 +787,20 @@ namespace Cosmicrafts
                 UI.HideUI();
             }
             if (SA != null) SA.SetActive(false);
-            if (MyAnim != null) MyAnim.SetTrigger("Die");
+            
+            // Play death animation - use UnitAnimLis first if available
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            if (animController != null)
+            {
+                // Use kinetic animation system
+                animController.PlayDeathAnimation();
+            }
+            else if (MyAnim != null)
+            {
+                // Fallback to animator trigger
+                MyAnim.SetTrigger("Die");
+            }
+            
             if (SolidBase != null) SolidBase.enabled = false;
             
             // Handle companion death/destruction
@@ -1089,9 +1107,16 @@ namespace Cosmicrafts
                     UI.Canvas.SetActive(true);
             }
             
-            // Reset animation state if needed
-            if (MyAnim != null) {
-                // Ensure animator controller is valid before resetting triggers
+            // Reset animation state
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            if (animController != null)
+            {
+                // Use the UnitAnimLis reset method for kinetic or traditional animations
+                animController.ResetAnimationState();
+            }
+            else if (MyAnim != null)
+            {
+                // Fallback to basic animator reset
                 if (MyAnim.runtimeAnimatorController != null) {
                     // Force a complete reset of the animator state
                     MyAnim.Rebind();
@@ -1795,18 +1820,6 @@ namespace Cosmicrafts
         }
         
         /// <summary>
-        /// Triggers a power-up animation
-        /// </summary>
-        public void PlayPowerUpAnimation()
-        {
-            if (MyAnim != null)
-            {
-                MyAnim.SetTrigger("PowerUp");
-                Debug.Log($"Power-up animation triggered on {gameObject.name}");
-            }
-        }
-        
-        /// <summary>
         /// Triggers warp/dash animation
         /// </summary>
         public void PlayWarpAnimation()
@@ -1814,14 +1827,58 @@ namespace Cosmicrafts
             // Find the UnitAnimLis component on children
             UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
             
-            // If found and we have an animator, trigger the warp animation
+            // If found, use its kinetic animation or animator trigger
             if (animController != null)
             {
-                Animator animator = GetAnimator();
-                if (animator != null)
-                {
-                    animator.SetTrigger("Warp");
-                }
+                animController.PlayWarpAnimation();
+            }
+            else if (MyAnim != null)
+            {
+                // Fallback to direct animator trigger
+                MyAnim.SetTrigger("Warp");
+                Debug.Log($"Warp animation triggered on {gameObject.name}");
+            }
+        }
+        
+        /// <summary>
+        /// Triggers entry animation (intro animation)
+        /// </summary>
+        public void PlayEntryAnimation()
+        {
+            // Find the UnitAnimLis component on children
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            
+            // If found, use its kinetic animation or animator trigger
+            if (animController != null)
+            {
+                animController.PlayEntryAnimation();
+            }
+            else if (MyAnim != null)
+            {
+                // Fallback to direct animator trigger
+                MyAnim.SetTrigger("Entry");
+                Debug.Log($"Entry animation triggered on {gameObject.name}");
+            }
+        }
+        
+        /// <summary>
+        /// Triggers a power-up animation
+        /// </summary>
+        public void PlayPowerUpAnimation()
+        {
+            // Find the UnitAnimLis component on children
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            
+            // If found, use its kinetic animation or animator trigger
+            if (animController != null)
+            {
+                animController.PlayPowerUpAnimation();
+            }
+            else if (MyAnim != null)
+            {
+                // Fallback to direct animator trigger
+                MyAnim.SetTrigger("PowerUp");
+                Debug.Log($"Power-up animation triggered on {gameObject.name}");
             }
         }
         
@@ -1830,28 +1887,23 @@ namespace Cosmicrafts
         /// </summary>
         public void RefreshAnimationState()
         {
-            if (MyAnim != null)
+            // Find the UnitAnimLis component on children
+            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
+            
+            // If found, reset its state
+            if (animController != null)
             {
-                // Set basic states
+                animController.ResetAnimationState();
+            }
+            else if (MyAnim != null)
+            {
+                // Fallback to basic animator parameters
                 bool moving = IsMoving();
                 bool attacking = GetComponent<Shooter>()?.IsEngagingTarget() ?? false;
                 
                 MyAnim.SetBool("Moving", moving);
                 MyAnim.SetBool("Idle", !moving && !attacking);
                 MyAnim.SetBool("Attacking", attacking);
-            }
-        }
-
-        // Trigger entry animation (intro animation)
-        public void PlayEntryAnimation()
-        {
-            // Find the UnitAnimLis component on children
-            UnitAnimLis animController = GetComponentInChildren<UnitAnimLis>();
-            
-            // If found, use its dedicated method
-            if (animController != null)
-            {
-                animController.PlayEntryAnimation();
             }
         }
     }

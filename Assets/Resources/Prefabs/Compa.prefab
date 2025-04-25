@@ -915,7 +915,7 @@ MonoBehaviour:
   flagShield: 0
   _defaultTarget: {fileID: 0}
   UI: {fileID: 8725141663424671622}
-  MyAnim: {fileID: 6364282005187429036}
+  MyAnim: {fileID: 0}
 --- !u!114 &6982720608951721540
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1090,7 +1090,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 6764808752486651747}
-  - component: {fileID: 6364282005187429036}
   - component: {fileID: 953729098420294387}
   - component: {fileID: 6800171134341490053}
   m_Layer: 0
@@ -1116,28 +1115,6 @@ Transform:
   - {fileID: 1362081951402712035}
   m_Father: {fileID: 2198226034328220055}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!95 &6364282005187429036
-Animator:
-  serializedVersion: 7
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 6245011729380265433}
-  m_Enabled: 1
-  m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: ea34ec62c62657842ad2daecde52f113, type: 2}
-  m_CullingMode: 0
-  m_UpdateMode: 0
-  m_ApplyRootMotion: 0
-  m_LinearVelocityBlending: 0
-  m_StabilizeFeet: 0
-  m_AnimatePhysics: 0
-  m_WarningMessage: 
-  m_HasTransformHierarchy: 1
-  m_AllowConstantClipSamplingOptimization: 1
-  m_KeepAnimatorStateOnDisable: 0
-  m_WriteDefaultValuesOnDisable: 0
 --- !u!135 &953729098420294387
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1171,12 +1148,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  movementBlendTime: 0.25
-  syncAttackWithWeaponSpeed: 1
   debugAnimations: 0
+  kineticTransform: {fileID: 1362081951402712035}
   autoPlayEntryAnimation: 1
-  autoUpdateAnimatorParams: 1
-  updateFrequency: 0.1
+  idleStyle: 0
+  moveStyle: 0
+  attackStyle: 0
+  entryStyle: 0
+  warpStyle: 0
+  powerUpStyle: 0
+  deathStyle: 0
+  currentHoverAmount: 0
+  currentHoverSpeed: 0
+  currentIdleWobbleAmount: 0
+  currentMaxBankAngle: 0
+  currentBankSpeed: 0
+  currentMaxPitchAngle: 0
+  currentPitchSpeed: 0
+  currentForwardLeanAngle: 0
+  currentAttackRecoilAngle: 0
+  currentRecoilRecoverySpeed: 0
+  currentAttackShakeAmount: 0
+  currentSyncAttackTiming: 0
+  currentEntryDuration: 0
+  currentWarpDuration: 0
+  currentPowerUpDuration: 0
+  currentDeathDuration: 0
 --- !u!1001 &180155165942315878
 PrefabInstance:
   m_ObjectHideFlags: 0

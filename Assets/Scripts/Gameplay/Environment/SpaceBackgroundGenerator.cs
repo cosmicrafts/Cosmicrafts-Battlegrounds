@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -17,7 +18,15 @@ namespace Cosmicrafts
         [Tooltip("Number of tiles in the grid (e.g., 3x3, 5x5)")]
         public int gridSize = 3;
         [Tooltip("Y position for the background grid (lower values = further below)")]
-        public float backgroundY = -10f;
+        public float backgroundY = -32f;
+        
+        [Header("Performance Settings")]
+        [Tooltip("Use progressive loading to improve startup time")]
+        public bool useProgressiveLoading = true;
+        [Tooltip("Starting grid size during progressive loading")]
+        public int initialGridSize = 1;
+        [Tooltip("Whether to use a shared texture for all tiles")]
+        public bool useSharedTexture = true;
 
         [Header("Rendering Settings")]
         [Tooltip("Does your game use 2D sorting layers or 3D depth?")]
@@ -80,6 +89,9 @@ namespace Cosmicrafts
         private float moveThreshold;
         private Material sharedMaterial;
         private int currentSeed;
+        private bool isInitialized = false;
+        private Dictionary<string, Texture2D> textureCache = new Dictionary<string, Texture2D>();
+        private bool isProgressiveLoadingComplete = false;
 
         private void Start()
         {
@@ -104,32 +116,128 @@ namespace Cosmicrafts
                 gridSize++;
                 Debug.LogWarning($"Grid size adjusted to {gridSize} (must be odd for proper centering)");
             }
+            if (initialGridSize % 2 == 0) initialGridSize++;
+            
+            // Set the initial grid size for progressive loading
+            int startingGridSize = useProgressiveLoading ? initialGridSize : gridSize;
 
             // Create a shared material for all planes
             CreateSharedMaterial();
 
             // Initialize grid and threshold
             activeChunks = new GameObject[gridSize, gridSize];
-            moveThreshold = tileWorldSize * 0.3f; // Move when 30% of the way into a new cell
+            moveThreshold = tileWorldSize * 0.2f; // Move when 20% of the way into a new cell
 
             // Get initial grid coordinate
             currentCenterCoord = GetGridCoord(targetToFollow.position);
 
-            // Set up the initial grid
-            InitializeGrid();
+            // Start progressive loading or initialize everything at once
+            if (useProgressiveLoading)
+            {
+                StartCoroutine(ProgressiveGridLoading(startingGridSize));
+            }
+            else
+            {
+                // Set up the initial grid
+                InitializeGrid();
+                isInitialized = true;
+                isProgressiveLoadingComplete = true;
+            }
+        }
+
+        private IEnumerator ProgressiveGridLoading(int startingGridSize)
+        {
+            // First create just the immediate tiles
+            InitializePartialGrid(startingGridSize);
+            isInitialized = true; // Allow updates to happen with the partial grid
+            
+            yield return new WaitForSeconds(0.1f); // Give time for initial rendering
+            
+            // Then gradually add the rest of the tiles
+            if (startingGridSize < gridSize)
+            {
+                int currentSize = startingGridSize;
+                while (currentSize < gridSize)
+                {
+                    currentSize += 2; // Add 2 to keep it odd
+                    if (currentSize > gridSize) currentSize = gridSize;
+                    
+                    ExpandGrid(currentSize);
+                    yield return new WaitForSeconds(0.05f); // Space out the loading
+                }
+            }
+            
+            isProgressiveLoadingComplete = true;
+        }
+
+        private void InitializePartialGrid(int size)
+        {
+            int halfGrid = size / 2;
+            for (int x = gridSize/2 - halfGrid; x <= gridSize/2 + halfGrid; x++)
+            {
+                for (int y = gridSize/2 - halfGrid; y <= gridSize/2 + halfGrid; y++)
+                {
+                    if (x >= 0 && x < gridSize && y >= 0 && y < gridSize)
+                    {
+                        // Position tiles centered around currentCenterCoord
+                        Vector2Int tileCoord = new Vector2Int(
+                            currentCenterCoord.x + (x - gridSize/2),
+                            currentCenterCoord.y + (y - gridSize/2)
+                        );
+                        activeChunks[x, y] = CreateBackgroundTile(tileCoord);
+                    }
+                }
+            }
+        }
+
+        private void ExpandGrid(int size)
+        {
+            int halfGrid = size / 2;
+            for (int x = gridSize/2 - halfGrid; x <= gridSize/2 + halfGrid; x++)
+            {
+                for (int y = gridSize/2 - halfGrid; y <= gridSize/2 + halfGrid; y++)
+                {
+                    if (x >= 0 && x < gridSize && y >= 0 && y < gridSize && activeChunks[x, y] == null)
+                    {
+                        // Position tiles centered around currentCenterCoord
+                        Vector2Int tileCoord = new Vector2Int(
+                            currentCenterCoord.x + (x - gridSize/2),
+                            currentCenterCoord.y + (y - gridSize/2)
+                        );
+                        activeChunks[x, y] = CreateBackgroundTile(tileCoord);
+                    }
+                }
+            }
+        }
+
+        private void InitializeGrid()
+        {
+            int halfGrid = gridSize / 2;
+            for (int x = 0; x < gridSize; x++)
+            {
+                for (int y = 0; y < gridSize; y++)
+                {
+                    // Position tiles centered around currentCenterCoord
+                    Vector2Int tileCoord = new Vector2Int(
+                        currentCenterCoord.x + (x - halfGrid),
+                        currentCenterCoord.y + (y - halfGrid)
+                    );
+                    activeChunks[x, y] = CreateBackgroundTile(tileCoord);
+                }
+            }
         }
 
         private void Update()
         {
-            if (targetToFollow == null) return;
+            if (targetToFollow == null || !isInitialized) return;
 
             // Calculate target position and grid coordinate
             Vector2Int targetCoord = GetGridCoord(targetToFollow.position);
-            Vector2Int offset = targetCoord - currentCenterCoord;
-
+            
             // Check if we need to shift the grid
-            if (offset.x != 0 || offset.y != 0)
+            if (targetCoord.x != currentCenterCoord.x || targetCoord.y != currentCenterCoord.y)
             {
+                Vector2Int offset = targetCoord - currentCenterCoord;
                 ShiftGrid(offset);
                 currentCenterCoord = targetCoord;
             }
@@ -146,65 +254,73 @@ namespace Cosmicrafts
             sharedMaterial.mainTexture = generatedTexture;
         }
 
-        private void InitializeGrid()
-        {
-            int halfGrid = gridSize / 2;
-            for (int x = 0; x < gridSize; x++)
-            {
-                for (int y = 0; y < gridSize; y++)
-                {
-                    // Position tiles centered around currentCenterCoord
-                    Vector2Int tileCoord = currentCenterCoord + new Vector2Int(x - halfGrid, y - halfGrid);
-                    activeChunks[x, y] = CreateBackgroundTile(tileCoord);
-                }
-            }
-        }
-
         private void ShiftGrid(Vector2Int offset)
         {
             // Create a new grid with shifted content
             GameObject[,] newGrid = new GameObject[gridSize, gridSize];
             int halfGrid = gridSize / 2;
 
+            // Keep track of reused tiles to avoid returning them to the pool
+            HashSet<GameObject> reusedTiles = new HashSet<GameObject>();
+
+            // First, determine which tiles to keep and which new ones to create
             for (int x = 0; x < gridSize; x++)
             {
                 for (int y = 0; y < gridSize; y++)
                 {
-                    // Calculate where this tile should come from in the old grid
-                    int oldX = x - offset.x;
-                    int oldY = y - offset.y;
+                    // Calculate the grid coordinates for this position
+                    Vector2Int newCoord = new Vector2Int(
+                        currentCenterCoord.x + (x - halfGrid) + offset.x,
+                        currentCenterCoord.y + (y - halfGrid) + offset.y
+                    );
 
-                    if (oldX >= 0 && oldX < gridSize && oldY >= 0 && oldY < gridSize)
+                    // See if we can find an existing tile at these coordinates
+                    GameObject existingTile = null;
+                    Vector2Int oldPos = new Vector2Int(-1, -1);
+
+                    // Search in the old grid
+                    for (int oldX = 0; oldX < gridSize; oldX++)
                     {
-                        // This tile still exists in the grid, just moved
-                        newGrid[x, y] = activeChunks[oldX, oldY];
+                        for (int oldY = 0; oldY < gridSize; oldY++)
+                        {
+                            if (activeChunks[oldX, oldY] != null)
+                            {
+                                Vector2Int oldCoord = new Vector2Int(
+                                    currentCenterCoord.x + (oldX - halfGrid),
+                                    currentCenterCoord.y + (oldY - halfGrid)
+                                );
+
+                                if (oldCoord.x == newCoord.x && oldCoord.y == newCoord.y)
+                                {
+                                    existingTile = activeChunks[oldX, oldY];
+                                    oldPos = new Vector2Int(oldX, oldY);
+                                    break;
+                                }
+                            }
+                        }
+                        if (existingTile != null) break;
+                    }
+
+                    // If we found an existing tile, reuse it
+                    if (existingTile != null)
+                    {
+                        newGrid[x, y] = existingTile;
+                        reusedTiles.Add(existingTile);
                     }
                     else
                     {
-                        // This is a new tile that needs to be created
-                        Vector2Int tileCoord = currentCenterCoord + new Vector2Int(x - halfGrid, y - halfGrid) + offset;
-                        newGrid[x, y] = CreateBackgroundTile(tileCoord);
+                        // Create a new tile
+                        newGrid[x, y] = CreateBackgroundTile(newCoord);
                     }
                 }
             }
 
-            // Find tiles that are no longer needed and return them to the pool
+            // Return unused tiles to the pool
             for (int x = 0; x < gridSize; x++)
             {
                 for (int y = 0; y < gridSize; y++)
                 {
-                    bool stillInNewGrid = false;
-                    // Check if this tile is still in the new grid
-                    foreach (GameObject tile in newGrid)
-                    {
-                        if (activeChunks[x, y] == tile)
-                        {
-                            stillInNewGrid = true;
-                            break;
-                        }
-                    }
-
-                    if (!stillInNewGrid && activeChunks[x, y] != null)
+                    if (activeChunks[x, y] != null && !reusedTiles.Contains(activeChunks[x, y]))
                     {
                         ReturnTileToPool(activeChunks[x, y]);
                     }
@@ -227,6 +343,12 @@ namespace Cosmicrafts
                 tile = chunkPool.Dequeue();
                 tile.SetActive(true);
                 tile.transform.position = position;
+                
+                // Update texture if not using shared texture
+                if (!useSharedTexture)
+                {
+                    UpdateTileTexture(tile, coord);
+                }
                 
                 // Update rendering settings based on rendering mode
                 if (use2DRendering)
@@ -251,8 +373,11 @@ namespace Cosmicrafts
                     spriteRenderer.sortingOrder = sortingOrder;
                     
                     // Create the texture and assign it
-                    Texture2D uniqueTexture = GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
-                    Sprite sprite = Sprite.Create(uniqueTexture, new Rect(0, 0, uniqueTexture.width, uniqueTexture.height), 
+                    Texture2D tileTexture = useSharedTexture ? 
+                        sharedMaterial.mainTexture as Texture2D : 
+                        GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
+                        
+                    Sprite sprite = Sprite.Create(tileTexture, new Rect(0, 0, tileTexture.width, tileTexture.height), 
                                                   new Vector2(0.5f, 0.5f), 100f);
                     spriteRenderer.sprite = sprite;
                     
@@ -272,11 +397,19 @@ namespace Cosmicrafts
                     // Set material
                     Renderer renderer = tile.GetComponent<Renderer>();
                     
-                    // Create a unique copy of the material for this tile with a unique texture
-                    Material uniqueMaterial = new Material(sharedMaterial);
-                    Texture2D uniqueTexture = GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
-                    uniqueMaterial.mainTexture = uniqueTexture;
-                    renderer.material = uniqueMaterial;
+                    if (useSharedTexture)
+                    {
+                        // Use shared material for better performance
+                        renderer.material = sharedMaterial;
+                    }
+                    else
+                    {
+                        // Create a unique copy of the material for this tile with a unique texture
+                        Material uniqueMaterial = new Material(sharedMaterial);
+                        Texture2D uniqueTexture = GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
+                        uniqueMaterial.mainTexture = uniqueTexture;
+                        renderer.material = uniqueMaterial;
+                    }
                 }
                 
                 // Common setup
@@ -288,8 +421,34 @@ namespace Cosmicrafts
             return tile;
         }
 
+        private void UpdateTileTexture(GameObject tile, Vector2Int coord)
+        {
+            if (use2DRendering)
+            {
+                SpriteRenderer spriteRenderer = tile.GetComponent<SpriteRenderer>();
+                if (spriteRenderer != null && spriteRenderer.sprite != null)
+                {
+                    Texture2D newTexture = GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
+                    Sprite newSprite = Sprite.Create(newTexture, new Rect(0, 0, newTexture.width, newTexture.height),
+                                                    new Vector2(0.5f, 0.5f), 100f);
+                    spriteRenderer.sprite = newSprite;
+                }
+            }
+            else
+            {
+                Renderer renderer = tile.GetComponent<Renderer>();
+                if (renderer != null)
+                {
+                    Texture2D newTexture = GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
+                    renderer.material.mainTexture = newTexture;
+                }
+            }
+        }
+
         private void ReturnTileToPool(GameObject tile)
         {
+            if (tile == null) return;
+            
             tile.SetActive(false);
             chunkPool.Enqueue(tile);
         }
@@ -304,6 +463,15 @@ namespace Cosmicrafts
 
         private Texture2D GenerateSpaceTexture(int textureSeed, Vector2 offset)
         {
+            // Check if we already have a texture in the cache for these coordinates
+            string textureKey = $"{textureSeed}_{offset.x}_{offset.y}";
+            
+            // Return from cache if it exists
+            if (textureCache.ContainsKey(textureKey))
+            {
+                return textureCache[textureKey];
+            }
+            
             // Create a new texture
             Texture2D texture = new Texture2D(textureSize, textureSize, TextureFormat.RGBA32, false);
             texture.filterMode = FilterMode.Bilinear;
@@ -327,6 +495,9 @@ namespace Cosmicrafts
             // Apply the pixels to the texture
             texture.SetPixels(pixels);
             texture.Apply();
+            
+            // Cache the texture
+            textureCache[textureKey] = texture;
 
             return texture;
         }
@@ -682,6 +853,16 @@ namespace Cosmicrafts
         // Cleanup on destroy
         private void OnDestroy()
         {
+            // Clean up texture cache
+            foreach (var texture in textureCache.Values)
+            {
+                if (texture != null)
+                {
+                    Destroy(texture);
+                }
+            }
+            textureCache.Clear();
+            
             // Clean up pooled objects
             foreach (var chunk in chunkPool)
             {
@@ -710,11 +891,46 @@ namespace Cosmicrafts
             }
         }
 
+        // Cleanup when disabled
+        private void OnDisable()
+        {
+            // When disabled, return all active tiles to pool
+            if (activeChunks != null)
+            {
+                for (int x = 0; x < gridSize; x++)
+                {
+                    for (int y = 0; y < gridSize; y++)
+                    {
+                        if (activeChunks[x, y] != null)
+                        {
+                            ReturnTileToPool(activeChunks[x, y]);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Clear the texture cache to free memory
+        public void ClearTextureCache()
+        {
+            foreach (var texture in textureCache.Values)
+            {
+                if (texture != null)
+                {
+                    Destroy(texture);
+                }
+            }
+            textureCache.Clear();
+        }
+
         // Helper method to manually regenerate textures (can be called via Inspector button)
         [ContextMenu("Regenerate Textures")]
         public void RegenerateTextures()
         {
             if (seed == 0) currentSeed = Random.Range(1, 10000);
+            
+            // Clear texture cache
+            ClearTextureCache();
             
             // Regenerate material if it exists
             if (sharedMaterial != null)
@@ -730,23 +946,52 @@ namespace Cosmicrafts
                 {
                     for (int y = 0; y < gridSize; y++)
                     {
-                        if (activeChunks[x, y] != null)
+                        if (activeChunks[x, y] != null && !useSharedTexture)
                         {
                             Vector2Int coord = GetGridCoord(activeChunks[x, y].transform.position);
-                            Renderer renderer = activeChunks[x, y].GetComponent<Renderer>();
-                            
-                            if (renderer != null)
-                            {
-                                // Create new unique texture for this tile
-                                Texture2D uniqueTexture = GenerateSpaceTexture(currentSeed, new Vector2(coord.x, coord.y));
-                                renderer.material.mainTexture = uniqueTexture;
-                            }
+                            UpdateTileTexture(activeChunks[x, y], coord);
                         }
                     }
                 }
             }
             
             Debug.Log("Regenerated all textures with new seed: " + currentSeed);
+        }
+
+        // Method to reset the grid position if needed (can be called externally)
+        public void ResetGridPosition()
+        {
+            if (targetToFollow == null) return;
+            
+            // Return all active tiles to pool
+            if (activeChunks != null)
+            {
+                for (int x = 0; x < gridSize; x++)
+                {
+                    for (int y = 0; y < gridSize; y++)
+                    {
+                        if (activeChunks[x, y] != null)
+                        {
+                            ReturnTileToPool(activeChunks[x, y]);
+                            activeChunks[x, y] = null;
+                        }
+                    }
+                }
+            }
+            
+            // Get current grid coordinate
+            currentCenterCoord = GetGridCoord(targetToFollow.position);
+            
+            // Re-initialize grid
+            if (useProgressiveLoading && !isProgressiveLoadingComplete)
+            {
+                int startingGridSize = initialGridSize;
+                StartCoroutine(ProgressiveGridLoading(startingGridSize));
+            }
+            else
+            {
+                InitializeGrid();
+            }
         }
 
         // Helper method to randomize the look (can be called via Inspector button)
@@ -813,10 +1058,13 @@ namespace Cosmicrafts
             // New random seed
             currentSeed = Random.Range(1, 10000);
             
+            // Clear texture cache
+            ClearTextureCache();
+            
             // Regenerate textures
             RegenerateTextures();
             
             Debug.Log($"Randomized to {sceneType} with seed {currentSeed}");
         }
     }
-} 
+}

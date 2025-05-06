@@ -135,7 +135,6 @@ GameObject:
   - component: {fileID: 2198226034328220043}
   - component: {fileID: 533185655302995515}
   - component: {fileID: 1834384603915026443}
-  - component: {fileID: 4848225874277129380}
   m_Layer: 3
   m_Name: Sentinel
   m_TagString: Player
@@ -193,10 +192,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2198226034328220048}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 100
-  m_Drag: 1
-  m_AngularDrag: 4
+  m_LinearDamping: 1
+  m_AngularDamping: 4
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -431,67 +430,28 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2198226034328220048}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugAnimations: 0
-  kineticTransform: {fileID: 550036377824184396}
+  modelTransform: {fileID: 0}
   autoPlayEntryAnimation: 1
-  idleStyle: 1
+  idleIntensity: 3
+  movementIntensity: 3
+  attackIntensity: 4
+  specialIntensity: 3
+  useHover: 1
+  useRotation: 1
+  useAttackRecoil: 1
+  useEntryAnimation: 1
+  idleStyle: 0
   moveStyle: 1
-  attackStyle: 0
+  attackStyle: 1
   entryStyle: 1
-  warpStyle: 0
+  warpStyle: 2
   powerUpStyle: 1
   deathStyle: 1
-  currentHoverAmount: 0
-  currentHoverSpeed: 0
-  currentIdleWobbleAmount: 0
-  currentMaxBankAngle: 0
-  currentBankSpeed: 0
-  currentMaxPitchAngle: 0
-  currentPitchSpeed: 0
-  currentForwardLeanAngle: 0
-  currentAttackRecoilAngle: 0
-  currentRecoilRecoverySpeed: 0
-  currentAttackShakeAmount: 0
-  currentSyncAttackTiming: 0
-  currentEntryDuration: 0
-  currentWarpDuration: 0
-  currentPowerUpDuration: 0
-  currentDeathDuration: 0
---- !u!114 &4848225874277129380
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2198226034328220048}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aaf13380dd3fe5b46ae4a7accbce1574, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  animationIntensityMultiplier: 6.15
-  applyOnStart: 1
-  forceInitialization: 1
-  boostIdleAnimations: 1
-  idleBoostFactor: 3.01
-  boostMovementAnimations: 1
-  movementBoostFactor: 2.5
-  boostAttackAnimations: 1
-  attackBoostFactor: 2
-  boostSpecialAnimations: 1
-  specialBoostFactor: 1.5
-  fixMissingKineticTransform: 1
-  overrideKineticTransform: {fileID: 0}
-  enableDebugLogs: 1
-  attackRecoilAngle: 25
-  attackRecoverySpeed: 5
-  attackShakeMagnitude: 0.25
-  extendAttackVisibility: 1
 --- !u!1 &5171655099922868828
 GameObject:
   m_ObjectHideFlags: 0

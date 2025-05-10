@@ -846,10 +846,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2198226034328220048}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 100
-  m_Drag: 1
-  m_AngularDrag: 4
+  m_LinearDamping: 1
+  m_AngularDamping: 4
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -1148,9 +1148,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  debugAnimations: 0
-  kineticTransform: {fileID: 1362081951402712035}
+  modelTransform: {fileID: 1362081951402712035}
   autoPlayEntryAnimation: 1
+  idleIntensity: 3
+  movementIntensity: 3
+  attackIntensity: 4
+  specialIntensity: 3
+  useHover: 1
+  useRotation: 1
+  useAttackRecoil: 1
+  useEntryAnimation: 1
   idleStyle: 0
   moveStyle: 0
   attackStyle: 0
@@ -1158,22 +1165,6 @@ MonoBehaviour:
   warpStyle: 0
   powerUpStyle: 0
   deathStyle: 0
-  currentHoverAmount: 0
-  currentHoverSpeed: 0
-  currentIdleWobbleAmount: 0
-  currentMaxBankAngle: 0
-  currentBankSpeed: 0
-  currentMaxPitchAngle: 0
-  currentPitchSpeed: 0
-  currentForwardLeanAngle: 0
-  currentAttackRecoilAngle: 0
-  currentRecoilRecoverySpeed: 0
-  currentAttackShakeAmount: 0
-  currentSyncAttackTiming: 0
-  currentEntryDuration: 0
-  currentWarpDuration: 0
-  currentPowerUpDuration: 0
-  currentDeathDuration: 0
 --- !u!1001 &180155165942315878
 PrefabInstance:
   m_ObjectHideFlags: 0

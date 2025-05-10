@@ -685,7 +685,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelTransform: {fileID: 0}
+  modelTransform: {fileID: 4089687110842853895}
   autoPlayEntryAnimation: 1
   idleIntensity: 3
   movementIntensity: 3

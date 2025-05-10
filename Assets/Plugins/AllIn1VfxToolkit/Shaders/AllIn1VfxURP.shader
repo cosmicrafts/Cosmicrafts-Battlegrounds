@@ -320,7 +320,7 @@
             	#if OFFSETSTREAM_ON && !SHAPEWEIGHTS_ON
                 half2 customData1 : TEXCOORD1; //x and y are the shapes uv offset
             	#elif SHAPEWEIGHTS_ON
-            	half3 customData1 : TEXCOORD1; //z is the shapes weight offset
+                half3 customData1 : TEXCOORD1; //z is the shapes weight offset
             	#endif
 
             	#if VERTOFFSET_ON || RIM_ON || BACKFACETINT_ON || LIGHTANDSHADOW_ON
@@ -364,7 +364,7 @@
 				#endif
 
             	#if CAMDISTFADE_ON || SHAPE1SCREENUV_ON || SHAPE2SCREENUV_ON || SHAPE3SCREENUV_ON
-				half4 worldPos : TEXCOORD7;
+				half3 worldPos : TEXCOORD7;
 				#endif
 
             	#if RIM_ON || BACKFACETINT_ON || LIGHTANDSHADOW_ON
@@ -625,13 +625,13 @@
 
             v2f vert(appdata v)
             {
-                v2f o;
+                v2f o = (v2f)0; // Initialize all fields to zero to ensure complete initialization
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(o);
                 UNITY_TRANSFER_INSTANCE_ID(v, o);
                 o.uvSeed = v.uv;
                 o.color = v.color;
-
+                
                 #if VERTOFFSET_ON
                 #if TIMEISCUSTOM_ON
                 const half time = v.uv.z + globalCustomTime.y;
@@ -641,14 +641,14 @@
                 half4 offsetUv = half4(TRANSFORM_TEX(v.uv.xy, _VertOffsetTex), 0, 0);
                 offsetUv.x += (time * _VertOffsetTexXSpeed) % 1;
                 offsetUv.y += (time * _VertOffsetTexYSpeed) % 1;
-                half offsetAmount = pow(tex2Dlod(_VertOffsetTex, offsetUv).r, _VertOffsetPower);
+                half offsetAmount = pow(abs(tex2Dlod(_VertOffsetTex, offsetUv).x), _VertOffsetPower);
                 v.vertex.xyz += v.normal * _VertOffsetAmount * offsetAmount;
                 #endif
 
                 o.vertex = TransformObjectToHClip(v.vertex.xyz);
 
                 #if CAMDISTFADE_ON || SHAPE1SCREENUV_ON || SHAPE2SCREENUV_ON || SHAPE3SCREENUV_ON
-                o.worldPos = mul(unity_ObjectToWorld, v.vertex);
+                o.worldPos = mul(unity_ObjectToWorld, v.vertex).xyz;
                 #endif
             	
 				#if OFFSETSTREAM_ON || SHAPEWEIGHTS_ON
@@ -681,7 +681,8 @@
                 #endif
 
                 #if SCREENDISTORTION_ON || SHAPE1SCREENUV_ON || SHAPE2SCREENUV_ON || SHAPE3SCREENUV_ON || SOFTPART_ON || DEPTHGLOW_ON || (SCREENDISTORTION_ON && DISTORTONLYBACK_ON)
-                o.screenCoord = ComputeScreenPos(o.vertex, _ProjectionParams.x);
+                float4 pos = o.vertex;
+                o.screenCoord = ComputeScreenPos(pos, _ProjectionParams.x);
                 #endif
 
                 #if DISTORT_ON && !POLARUVDISTORT_ON
@@ -798,7 +799,8 @@
 				#if ATLAS_ON
 				i.uvDistTex = half2((i.uvDistTex.x - _MinXUV) / (_MaxXUV - _MinXUV), (i.uvDistTex.y - _MinYUV) / (_MaxYUV - _MinYUV));
 				#endif
-				half distortAmnt = (tex2D(_DistortTex, distortUvs).r - 0.5) * 0.2 * _DistortAmount;
+                float4 distortTexSample = tex2D(_DistortTex, distortUvs);
+				half distortAmnt = (distortTexSample.x - 0.5) * 0.2 * _DistortAmount;
 				i.uvSeed.x += distortAmnt;
 				i.uvSeed.y += distortAmnt;
 				#endif
@@ -809,7 +811,8 @@
 				#endif
 
             	#if TRAILWIDTH_ON
-            	half width = pow(tex2D(_TrailWidthGradient, i.uvSeed).r, _TrailWidthPower);
+                float4 trailWidthTexSample = tex2D(_TrailWidthGradient, i.uvSeed);
+            	half width = pow(abs(trailWidthTexSample.x), _TrailWidthPower);
             	i.uvSeed.y = (i.uvSeed.y * 2 - 1) / width * 0.5 + 0.5;
             	clip(i.uvSeed.y);
             	clip(1 - i.uvSeed.y);
@@ -824,7 +827,7 @@
             	#endif
 
             	#if CAMDISTFADE_ON || SHAPE1SCREENUV_ON || SHAPE2SCREENUV_ON || SHAPE3SCREENUV_ON
-            	half camDistance = distance(i.worldPos, _WorldSpaceCameraPos);
+            	half camDistance = distance(_WorldSpaceCameraPos.xyz, i.worldPos.xyz);
 				#endif
 
                 #if SHAPE1SCREENUV_ON || SHAPE2SCREENUV_ON || SHAPE3SCREENUV_ON
@@ -873,7 +876,8 @@
             	#endif
                 sh1DistortUvs.x += ((time + seed) * _ShapeDistortXSpeed) % 1;
                 sh1DistortUvs.y += ((time + seed) * _ShapeDistortYSpeed) % 1;
-                half distortAmount = (tex2D(_ShapeDistortTex, sh1DistortUvs).r - 0.5) * 0.2 * _ShapeDistortAmount;
+                float4 shapeDistortTexSample = tex2D(_ShapeDistortTex, sh1DistortUvs);
+                half distortAmount = (shapeDistortTexSample.x - 0.5) * 0.2 * _ShapeDistortAmount;
                 shape1Uv.x += distortAmount;
                 shape1Uv.y += distortAmount;
                 #endif
@@ -912,7 +916,8 @@
             	#endif
                 sh2DistortUvs.x += ((time + seed) * _Shape2DistortXSpeed) % 1;
                 sh2DistortUvs.y += ((time + seed) * _Shape2DistortYSpeed) % 1;
-                half distortAmnt2 = (tex2D(_Shape2DistortTex, sh2DistortUvs).r - 0.5) * 0.2 * _Shape2DistortAmount;
+                float4 shape2DistortTexSample = tex2D(_Shape2DistortTex, sh2DistortUvs);
+                half distortAmnt2 = (shape2DistortTexSample.x - 0.5) * 0.2 * _Shape2DistortAmount;
                 shape2Uv.x += distortAmnt2;
                 shape2Uv.y += distortAmnt2;
                 #endif
@@ -952,7 +957,8 @@
             	#endif
                 sh3DistortUvs.x += ((time + seed) * _Shape3DistortXSpeed) % 1;
                 sh3DistortUvs.y += ((time + seed) * _Shape3DistortYSpeed) % 1;
-                half distortAmnt3 = (tex2D(_Shape3DistortTex, sh3DistortUvs).r - 0.5) * 0.3 * _Shape3DistortAmount;
+                float4 shape3DistortTexSample = tex2D(_Shape3DistortTex, sh3DistortUvs);
+                half distortAmnt3 = (shape3DistortTexSample.x - 0.5) * 0.3 * _Shape3DistortAmount;
                 shape3Uv.x += distortAmnt3;
                 shape3Uv.y += distortAmnt3;
                 #endif
@@ -1033,7 +1039,8 @@
                 #endif
 
                 #if SHAPE1MASK_ON
-            	col = lerp(col, shape1, pow(tex2D(_Shape1MaskTex, TRANSFORM_TEX(i.uvSeed.xy, _Shape1MaskTex)).r, _Shape1MaskPow));
+                float4 shape1MaskTexSample = tex2D(_Shape1MaskTex, TRANSFORM_TEX(i.uvSeed.xy, _Shape1MaskTex));
+            	col = lerp(col, shape1, pow(abs(shape1MaskTexSample.x), _Shape1MaskPow));
             	#endif
 
             	#if PREMULTIPLYCOLOR_ON
@@ -1072,18 +1079,21 @@
             	#if ADDITIVECONFIG_ON && !PREMULTIPLYCOLOR_ON
                 preFadeAlpha *= luminance;
             	#endif
-            	_FadeAmount = saturate(pow(_FadeAmount, _FadePower));
+            	_FadeAmount = saturate(pow(abs(_FadeAmount), _FadePower));
             	#if FADEBURN_ON
 				half2 tiledUvFade2 = TRANSFORM_TEX(fadeUv, _FadeBurnTex);
-				half fadeSample = tex2D(_FadeTex, tiledUvFade1).r;
+                float4 fadeTexSample = tex2D(_FadeTex, tiledUvFade1);
+				half fadeSample = fadeTexSample.x;
 				half fadeNaturalEdge = saturate(smoothstep(0.0 , _FadeTransition, RemapFloat(1.0 - _FadeAmount, 0.0, 1.0, -1.0, 1.0) + fadeSample));
             	col.a *= fadeNaturalEdge;
             	half fadeBurn = saturate(smoothstep(0.0 , _FadeTransition + _FadeBurnWidth, RemapFloat(1.0 - _FadeAmount, 0.0, 1.0, -1.0, 1.0) + fadeSample));
             	fadeBurn = fadeNaturalEdge - fadeBurn;
+                float4 fadeBurnTexSample = tex2D(_FadeBurnTex, tiledUvFade2);
 				_FadeBurnColor.rgb *= _FadeBurnGlow;
-				col.rgb += fadeBurn * tex2D(_FadeBurnTex, tiledUvFade2).rgb * _FadeBurnColor.rgb * preFadeAlpha;
+				col.rgb += fadeBurn * fadeBurnTexSample.rgb * _FadeBurnColor.rgb * preFadeAlpha;
             	#else
-				half fadeSample = tex2D(_FadeTex, tiledUvFade1).r;
+                float4 fadeTexSample = tex2D(_FadeTex, tiledUvFade1);
+				half fadeSample = fadeTexSample.x;
 				float fade = saturate(smoothstep(0.0 , _FadeTransition, RemapFloat(1.0 - _FadeAmount, 0.0, 1.0, -1.0, 1.0) + fadeSample));
 				col.a *= fade;
             	#endif
@@ -1095,7 +1105,7 @@
             	#if ALPHAFADE_ON
             	half alphaFadeLuminance;
             	_AlphaFadeAmount = saturate(_AlphaFadeAmount + (1 - i.color.a));
-            	_AlphaFadeAmount = saturate(pow(_AlphaFadeAmount, _AlphaFadePow));
+            	_AlphaFadeAmount = saturate(pow(abs(_AlphaFadeAmount), _AlphaFadePow));
             	_AlphaFadeSmooth = max(0.01, _AlphaFadeSmooth * EaseOutQuint(saturate(_AlphaFadeAmount)));
                 #if ALPHAFADEUSESHAPE1_ON
                 alphaFadeLuminance = shape1.r;
@@ -1115,12 +1125,12 @@
                 #endif
 
             	#if BACKFACETINT_ON
-            	col.rgb = lerp(col.rgb * _BackFaceTint, col.rgb * _FrontFaceTint, step(0, dot(i.normal, i.viewDir)));
+            	col.rgb = lerp(col.rgb * _BackFaceTint.rgb, col.rgb * _FrontFaceTint.rgb, step(0, dot(i.normal, i.viewDir)));
             	#endif
 
             	#if LIGHTANDSHADOW_ON
                 half NdL = saturate(dot(i.normal, -_All1VfxLightDir));
-                col.rgb += _LightColor * _LightAmount * NdL;
+                col.rgb += _LightColor.rgb * _LightAmount * NdL;
                 NdL = max(_ShadowAmount, NdL);
             	NdL = smoothstep(_ShadowStepMin, _ShadowStepMax, NdL);
             	col.rgb *= NdL;
@@ -1134,9 +1144,11 @@
                 #if COLORRAMP_ON
                 half colorRampLuminance = saturate(luminance + _ColorRampLuminosity);
                 #if COLORRAMPGRAD_ON
-                half4 colorRampRes = tex2D(_ColorRampTexGradient, half2(colorRampLuminance, 0));
+                float4 colorRampTexSample = tex2D(_ColorRampTexGradient, half2(colorRampLuminance, 0));
+                half4 colorRampRes = half4(colorRampTexSample);
                 #else
-            	half4 colorRampRes = tex2D(_ColorRampTex, half2(colorRampLuminance, 0));
+                float4 colorRampTexSample = tex2D(_ColorRampTex, half2(colorRampLuminance, 0));
+            	half4 colorRampRes = half4(colorRampTexSample);
                 #endif
             	col.rgb = saturate(lerp(saturate(col.rgb), saturate(colorRampRes.rgb), _ColorRampBlend)); //Saturate to avoid SRP volume glow scene view fullscreen bug
                 col.a = saturate(lerp(col.a, saturate(col.a * colorRampRes.a), _ColorRampBlend));
@@ -1160,7 +1172,7 @@
 
                 #if RIM_ON
 				half NdV = 1 - abs(dot(i.normal, i.viewDir));
-            	half rimFactor = saturate(_RimBias + _RimScale * pow(NdV, _RimPower));
+            	half rimFactor = saturate(_RimBias + _RimScale * pow(abs(NdV), _RimPower));
                 half4 rimCol = _RimColor * rimFactor;
                 rimCol.rgb *= _RimIntensity;
             	col.rgb = lerp(col.rgb * (rimCol.rgb + half3(1,1,1)), col.rgb + rimCol.rgb, _RimAddAmount);
@@ -1168,7 +1180,7 @@
             	#endif
 
                 #if DEPTHGLOW_ON
-                half depthGlowMask = saturate(_DepthGlowDist * pow((1 - sceneDepthDiff), _DepthGlowPow));
+                half depthGlowMask = saturate(_DepthGlowDist * pow(abs(1 - sceneDepthDiff), _DepthGlowPow));
                 col.rgb = lerp(col.rgb, _DepthGlowGlobal * col.rgb, depthGlowMask);
             	half depthGlowMult = 1;
             	#if ADDITIVECONFIG_ON
@@ -1180,7 +1192,8 @@
                 #if GLOW_ON
                 half glowMask = 1;
                 #if GLOWTEX_ON
-                glowMask = tex2D(_GlowTex, TRANSFORM_TEX(i.uvSeed.xy, _GlowTex));
+                float4 glowTexSample = tex2D(_GlowTex, TRANSFORM_TEX(i.uvSeed.xy, _GlowTex));
+                glowMask = glowTexSample.x;
                 #endif
                 col.rgb *= _GlowGlobal * glowMask;
 				half glowMult = 1;
@@ -1216,8 +1229,9 @@
             	#if POLARUV_ON
 				maskUv = prePolarUvs;
 				#endif
-            	half4 maskSample = tex2D(_MaskTex, TRANSFORM_TEX(maskUv, _MaskTex));
-                half mask = pow(min(maskSample.r, maskSample.a), _MaskPow);
+            	float4 maskTexSample = tex2D(_MaskTex, TRANSFORM_TEX(maskUv, _MaskTex));
+                half4 maskSample = half4(maskTexSample);
+                half mask = pow(abs(min(maskSample.x, maskSample.w)), _MaskPow);
                 col.a *= mask;
                 #endif
 

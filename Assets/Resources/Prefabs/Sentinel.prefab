@@ -252,11 +252,11 @@ MonoBehaviour:
   companions:
   - name: compa
     unitData: {fileID: 11400000, guid: 6b11b1a5a1ce7b14eb603b23057cf63a, type: 2}
-    behaviorType: 0
-    orbitDistance: 6.89
-    orbitSpeed: 104.4
+    behaviorType: 2
+    orbitDistance: 2.48
+    orbitSpeed: 180
     tintColor: {r: 1, g: 1, b: 1, a: 0}
-    scale: 1.024
+    scale: 1.297
   Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
   Portal: {fileID: 567947164588322215}
   ShieldGameObject: {fileID: 2614791013219909015}
@@ -286,11 +286,11 @@ MonoBehaviour:
   AttackRange: 33
   TargetUpdateInterval: 0.2
   CanAttack: 1
-  CoolDown: 0.25
+  CoolDown: 0.75
   BulletSpeed: 99
   BulletDamage: 4
   criticalStrikeChance: 0.2
-  criticalStrikeMultiplier: 2.5
+  criticalStrikeMultiplier: 2
   RotateToEnemy: 1
   StopToAttack: 1
   rotationSpeed: 5
@@ -368,7 +368,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d895adfde111ab048b5a25475843b885, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 150
+  moveSpeed: 100
   rotationSpeed: 12
   acceleration: 5
   deceleration: 8
@@ -419,9 +419,9 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  overshootAmount: 0.15
-  endSlowdownFactor: 0.708
-  trailScale: 0.89
+  overshootAmount: 0.67
+  endSlowdownFactor: 0.878
+  trailScale: 1.06
   bypassEnergyCheck: 0
 --- !u!114 &1834384603915026443
 MonoBehaviour:
@@ -430,12 +430,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2198226034328220048}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: bf03c66472a8a13448b4a024e936fc6e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  modelTransform: {fileID: 0}
+  modelTransform: {fileID: 7339719081788430705}
   autoPlayEntryAnimation: 1
   idleIntensity: 3
   movementIntensity: 3

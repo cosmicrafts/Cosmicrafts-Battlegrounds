@@ -947,7 +947,7 @@ MonoBehaviour:
   AttackRange: 56.4
   TargetUpdateInterval: 0.2
   CanAttack: 1
-  CoolDown: 0.25
+  CoolDown: 0.55
   BulletSpeed: 99
   BulletDamage: 48
   criticalStrikeChance: 0.25

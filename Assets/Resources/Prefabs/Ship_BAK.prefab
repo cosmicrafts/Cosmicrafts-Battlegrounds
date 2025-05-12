@@ -810,7 +810,7 @@ GameObject:
   - component: {fileID: 2198226034328220043}
   - component: {fileID: 4985161326094170274}
   m_Layer: 3
-  m_Name: Ship
+  m_Name: Ship_BAK
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -846,10 +846,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2198226034328220048}
-  serializedVersion: 5
+  serializedVersion: 4
   m_Mass: 100
-  m_LinearDamping: 1
-  m_AngularDamping: 4
+  m_Drag: 1
+  m_AngularDrag: 4
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -910,7 +910,7 @@ MonoBehaviour:
   - {fileID: 1478323959484795093}
   ShieldImpactEffect: {fileID: 0}
   ArmorImpactEffect: {fileID: 0}
-  rangeVisualizationType: 1
+  rangeVisualizationType: 2
   lineSegments: 12
   rangeColor: {r: 1, g: 0.10047615, b: 0.015686274, a: 1}
   rangeLineWidth: 0.1
@@ -991,8 +991,8 @@ MonoBehaviour:
   Mesh: {fileID: 6245011729380265433}
   SA: {fileID: 3966040614498046297}
   HasMovement: 1
-  Acceleration: 99
-  MaxSpeed: 99
+  Acceleration: 1
+  MaxSpeed: 10
   DragSpeed: 1
   TurnSpeed: 5
   StopSpeed: 5

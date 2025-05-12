@@ -2142,6 +2142,7 @@ GameObject:
   - component: {fileID: 697417429954438963}
   - component: {fileID: 697417429954438964}
   - component: {fileID: 697417429954438965}
+  - component: {fileID: 697417429954438966}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -2156,7 +2157,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 697417429954438960}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7cc5ffa928cbb1b4f8ae665490092a97, type: 3}
   m_Name: 
@@ -2238,7 +2239,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 697417429954438960}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 99f71c7655d017b42aceb44d68bb64c8, type: 3}
   m_Name: 
@@ -2255,6 +2256,25 @@ MonoBehaviour:
   respawnDelay: 30
   showSectorBounds: 1
   sectorBoundColor: {r: 0, g: 1, b: 0, a: 0.3}
+--- !u!114 &697417429954438966
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 697417429954438960}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 58a16141176d7a2299937e3db5a67d19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  basePositions:
+  - {x: 0, y: 0, z: -100}
+  - {x: 0, y: 0, z: 0}
+  playerPrefab: {fileID: 2198226034328220048, guid: 307a767ca9c6bca468199bea4457c637, type: 3}
+  enemyPrefab: {fileID: 2198226034328220048, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
+  respawnDelay: 3
+  respawnEffectPrefab: {fileID: 3952169841054198065, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}
 --- !u!1 &697417429969759475
 GameObject:
   m_ObjectHideFlags: 0

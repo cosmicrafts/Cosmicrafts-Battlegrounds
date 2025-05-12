@@ -474,7 +474,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 419230059809877750, guid: 0f933251899050c4dadc659948e75471, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 653037704619718272, guid: 0f933251899050c4dadc659948e75471, type: 3}
       propertyPath: m_Radius
@@ -946,6 +946,10 @@ PrefabInstance:
       propertyPath: m_Color.r
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 3437837080083151150, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4606794044662995956, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_fontAsset
       value: 
@@ -1100,7 +1104,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7641634818612591828, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_FillAmount
-      value: 0.37333333
+      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

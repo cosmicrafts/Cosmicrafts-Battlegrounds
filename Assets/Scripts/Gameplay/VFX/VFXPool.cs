@@ -24,7 +24,7 @@ namespace Cosmicrafts
         public List<GameObject> impactPrefabs = new List<GameObject>();
         
         [Header("VFX Categories")]
-        [Tooltip("Impact effects specifically for shield hits")]
+        [Tooltip("Impact effects for shield hits (VFX only, not shield triggers)")]
         public List<GameObject> shieldImpactPrefabs = new List<GameObject>();
         [Tooltip("Impact effects for armor/health damage")]
         public List<GameObject> armorImpactPrefabs = new List<GameObject>();
@@ -266,6 +266,7 @@ namespace Cosmicrafts
         
         /// <summary>
         /// Plays a shield impact effect at the specified position and returns it to the pool after a short duration.
+        /// Note: This handles only the visual impact effects, not shield triggers.
         /// </summary>
         public GameObject PlayShieldImpact(Vector3 position, Quaternion rotation, float scale = 1f, int unitId = 0)
         {
@@ -447,6 +448,7 @@ namespace Cosmicrafts
         
         /// <summary>
         /// Registers a unit's shield impact effect with the pool
+        /// Note: Only register visual impact effects here, not shield triggers
         /// </summary>
         public void RegisterUnitShieldImpact(int unitId, GameObject shieldImpactPrefab)
         {

@@ -18,8 +18,8 @@ MonoBehaviour:
   LocalID: 1
   Faction: 0
   NftType: 3
-  HitPoints: 6141
-  Shield: 150
+  HitPoints: 312
+  Shield: 2418
   EnergyCost: 1
   Damage: 12
   Speed: 15.2

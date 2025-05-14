@@ -167,7 +167,7 @@ GameObject:
   - component: {fileID: 2198226034328220043}
   - component: {fileID: 533185655302995515}
   m_Layer: 3
-  m_Name: BS_Ship2
+  m_Name: Player
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -204,10 +204,10 @@ Rigidbody:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2198226034328220048}
-  serializedVersion: 4
+  serializedVersion: 5
   m_Mass: 100
-  m_Drag: 1
-  m_AngularDrag: 4
+  m_LinearDamping: 1
+  m_AngularDamping: 4
   m_CenterOfMass: {x: 0, y: 0, z: 0}
   m_InertiaTensor: {x: 1, y: 1, z: 1}
   m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
@@ -315,7 +315,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 6.77
+  m_Radius: 2.4
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &2198226034328220043
 MonoBehaviour:
@@ -361,13 +361,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d895adfde111ab048b5a25475843b885, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  moveSpeed: 80
-  rotationSpeed: 12
+  moveSpeed: 150
+  rotationSpeed: 30
   acceleration: 5
-  deceleration: 8
+  deceleration: 10
   returnToMovementRotationDelay: 0.5
-  dashDistance: 75
-  dashDuration: 0.45
+  dashDistance: 100
+  dashDuration: 0.75
   dashCooldown: 0
   useBlink: 0
   leavesTrail: 1

@@ -27,16 +27,6 @@ using PlayerId = EdjCase.ICP.Candid.Models.Principal;
 /// </summary>
 public class ICPService : MonoBehaviour
 {
-    // Imports from JavaScriptBridge.jslib
-    [DllImport("__Internal")]
-    private static extern void RequestAuthData();
-    
-    [DllImport("__Internal")]
-    private static extern void RequestLogout();
-    
-    [DllImport("__Internal")]
-    private static extern void SavePlayerData(string playerDataJson);
-    
     // Singleton instance
     public static ICPService Instance { get; private set; }
     

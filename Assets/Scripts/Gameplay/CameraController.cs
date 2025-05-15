@@ -102,7 +102,8 @@ public class CameraController : MonoBehaviour
 
     void HandleZoom()
     {
-        float scrollInput = Input.mouseScrollDelta.y;
+        Vector2 scroll = Cosmicrafts.InputManager.GetZoomInput();
+        float scrollInput = scroll.y;
 
         if (scrollInput != 0f)
         {

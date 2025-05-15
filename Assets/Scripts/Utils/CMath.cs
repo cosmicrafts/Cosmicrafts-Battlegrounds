@@ -19,14 +19,7 @@ public static class CMath
     //Returns the world mouse position (requires a trigger collider)
     public static Vector3 GetMouseWorldPos()
     {
-        RaycastHit hit;
-
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, 1000f, 1 << 9))
-        {
-            return hit.point;
-        }
-
-        return Vector3.zero;
+        return Cosmicrafts.InputManager.GetMouseWorldPosition();
     }
 
     //Returns the Y rotation to look from vector A to vector B

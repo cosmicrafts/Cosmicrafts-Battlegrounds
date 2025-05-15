@@ -275,18 +275,26 @@ private void Start()
 
 private void Update()
 {
-    if (!InControl)
+    // Update energy
+    if (CanGenEnergy)
     {
-        return;
+        if (CurrentEnergy < MaxEnergy)
+        {
+            CurrentEnergy += SpeedEnergy * Time.deltaTime;
+            if (CurrentEnergy > MaxEnergy)
+            {
+                CurrentEnergy = MaxEnergy;
+            }
+            GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
+        }
     }
 
-    for (int i = 0; i < 8; i++)
+    // Update control state
+    if (InControl)
     {
-        if (Input.GetKeyDown(Keys[i]) && UnitDrag.IsValid())
-            DeplyUnit(PlayerDeck[i]);
+        // Any input-related code here should use InputManager
+        // For example, if you have any direct input checks, replace them with InputManager calls
     }
-
-    AddEnergy(Time.deltaTime * SpeedEnergy);
 }
 
 public void SelectCard(int idu)

@@ -26,8 +26,3 @@ MonoBehaviour:
     Target: 0
     Multiplier: 1
     ApplicationType: 0
-  - skillName: 1
-    Type: 0
-    Target: 0
-    Multiplier: 2
-    ApplicationType: 0

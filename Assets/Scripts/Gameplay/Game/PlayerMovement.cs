@@ -120,7 +120,7 @@ namespace Cosmicrafts
             }
             
             // Check for dash input if not dashing and cooldown is ready
-            if (Input.GetKeyDown(dashKey))
+            if (InputManager.GetDashPressed())
             {
                 if (isDashing)
                 {
@@ -138,23 +138,19 @@ namespace Cosmicrafts
                     return;
                 }
                 
-                // USE INPUT DIRECTION INSTEAD OF TRANSFORM.FORWARD
                 // Get current movement input
-                Vector3 input = new Vector3(
-                    Input.GetAxisRaw("Horizontal"),
-                    0,
-                    Input.GetAxisRaw("Vertical")
-                ).normalized;
+                Vector2 input = InputManager.GetMoveInput();
+                Vector3 moveInput = new Vector3(input.x, 0, input.y);
                 
                 // If we have input, use it for dash direction
-                if (input.sqrMagnitude > 0.01f)
+                if (moveInput.sqrMagnitude > 0.01f)
                 {
                     // Convert input to camera-relative direction
-                    dashDirection = GetCameraRelativeDirection(input);
+                    dashDirection = GetCameraRelativeDirection(moveInput);
                 }
                 else
                 {
-                    // Fall back to current facing direction if no input
+                    // Fall back to current facing direction
                     dashDirection = transform.forward;
                 }
                 
@@ -364,15 +360,12 @@ namespace Cosmicrafts
 
         void HandleMovementInput()
         {
-            // Get normalized input vector
-            Vector3 input = new Vector3(
-                Input.GetAxisRaw("Horizontal"),
-                0,
-                Input.GetAxisRaw("Vertical")
-            ).normalized;
+            // Get normalized input vector from InputManager
+            Vector2 input = InputManager.GetMoveInput();
+            Vector3 moveInput = new Vector3(input.x, 0, input.y);
 
             // Convert input to camera-relative direction
-            Vector3 moveDirection = GetCameraRelativeDirection(input);
+            Vector3 moveDirection = GetCameraRelativeDirection(moveInput);
 
             // Calculate target velocity
             Vector3 targetVelocity = moveDirection * moveSpeed;

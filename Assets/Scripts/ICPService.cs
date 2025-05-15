@@ -59,19 +59,25 @@ public class ICPService : MonoBehaviour
         Log("Initialized");
     }
     
-    private async void Start()
+    private void Start()
     {
+        Debug.Log("[ICPService] Starting initialization...");
+        
         // Auto-initialize in Editor with development mode if enabled
         #if UNITY_EDITOR
         if (useDevelopmentModeInEditor)
         {
-            Log("Using development mode");
-            await InitializeWithSeedPhrase(devSeedPhrase);
+            Log("Using development mode in editor");
+            InitializeWithSeedPhrase(devSeedPhrase);
         }
         #elif UNITY_WEBGL
         Log("WebGL mode - waiting for identity from web app");
         // WebGL initialization will be triggered externally
         RequestAuthenticationData();
+        #else
+        // For mobile and other platforms
+        Log("Mobile/Other platform detected - using development mode for testing");
+        InitializeWithSeedPhrase(devSeedPhrase);
         #endif
     }
     
@@ -80,9 +86,13 @@ public class ICPService : MonoBehaviour
     /// </summary>
     public async Task InitializeWithSeedPhrase(string seedPhrase)
     {
-        if (IsInitialized) return;
+        if (IsInitialized)
+        {
+            Log("Already initialized, skipping...");
+            return;
+        }
         
-        Log("Initializing with seed phrase");
+        Log($"Starting initialization with seed phrase...");
         
         try
         {
@@ -95,23 +105,25 @@ public class ICPService : MonoBehaviour
             
             // Store the principal ID
             PrincipalId = identity.GetPublicKey().ToPrincipal().ToText();
-            Log($"Identity initialized with principal: {PrincipalId}");
+            Log($"Identity initialized successfully with principal: {PrincipalId}");
             
             // Initialize the BackendApiClient with the agent and canister ID
             Principal canisterPrincipal = Principal.FromText(canisterId);
             MainCanister = new BackendApiClient(agent, canisterPrincipal);
             
             IsInitialized = true;
+            Log("Service fully initialized, fetching player data...");
             
             // Fetch player data after initialization
             await GetPlayerData();
             
             // Notify listeners that initialization is complete
             OnICPInitialized?.Invoke();
+            Log("Initialization complete and events fired");
         }
         catch (Exception e)
         {
-            LogError($"Initialization failed: {e.Message}");
+            LogError($"Initialization failed with error: {e.Message}\nStack trace: {e.StackTrace}");
             IsInitialized = false;
         }
     }
@@ -148,11 +160,11 @@ public class ICPService : MonoBehaviour
     {
         if (!IsInitialized)
         {
-            LogError("Cannot get player data: not initialized");
+            LogError("Cannot get player data: service not initialized");
             return null;
         }
         
-        Log("Fetching player data");
+        Log("Starting player data fetch...");
         
         try
         {
@@ -161,16 +173,17 @@ public class ICPService : MonoBehaviour
             if (playerInfo.HasValue)
             {
                 CurrentPlayer = playerInfo.ValueOrDefault;
-                Log($"Player found: {CurrentPlayer.Username} (Level {CurrentPlayer.Level})");
+                Log($"Player data fetched successfully: {CurrentPlayer.Username} (Level {CurrentPlayer.Level})");
                 
                 // Notify listeners
                 OnPlayerDataReceived?.Invoke(CurrentPlayer);
+                Log("Player data event fired to listeners");
                 
                 return CurrentPlayer;
             }
             else
             {
-                Log("No player found for current identity");
+                Log("No player found, attempting to create new player...");
                 
                 // Handle the case where no player is found - prompt for signup
                 await SignupNewPlayer();
@@ -180,7 +193,7 @@ public class ICPService : MonoBehaviour
         }
         catch (Exception e)
         {
-            LogError($"Error fetching player data: {e.Message}");
+            LogError($"Error fetching player data: {e.Message}\nStack trace: {e.StackTrace}");
             return null;
         }
     }

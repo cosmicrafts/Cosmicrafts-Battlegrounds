@@ -67,28 +67,8 @@
 
         private void Start()
         {
-            // Hardcoded player data for now
-            UserGeneral hardcodedPlayerData = new UserGeneral
-            {
-                NikeName = "Player1",
-                WalletId = "Wallet1",
-                Level = 10,
-                Xp = 2000,
-                Avatar = 1
-            };
-
-            UserProgress hardcodedPlayerProgress = new UserProgress
-            {
-                // Fill with appropriate hardcoded values
-            };
-
-            NFTsCharacter hardcodedPlayerCharacter = new NFTsCharacter
-            {
-                // Fill with appropriate hardcoded values
-            };
-
-            // Init the UI info of the player with hardcoded values
-            Players[GameMng.P.ID - 1].InitInfo(hardcodedPlayerData, hardcodedPlayerProgress, hardcodedPlayerCharacter);
+            // The UIPlayerGameInfo component will automatically update when ICPService data is available
+            // No need to manually initialize it here anymore
         }
 
         // Shows the game over screen

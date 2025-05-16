@@ -4854,12 +4854,15 @@ MonoBehaviour:
   damageType: 0
   explosionEffect: {fileID: 8665403994356066475}
   explosionSound: {fileID: 0}
+  useAutoTargeting: 1
+  maxTargetSearchRange: 50
+  minEnemiesForOptimalTarget: 2
   damageMultiplier: 1
   radiusMultiplier: 1
   criticalStrikeChance: 0
   criticalStrikeMultiplier: 2
   showRadiusGizmo: 1
-  gizmoColor: {r: 1, g: 0, b: 0.90361214, a: 1}
+  gizmoColor: {r: 0, g: 0, b: 0, a: 0.76862746}
 --- !u!1 &700551898306259547
 GameObject:
   m_ObjectHideFlags: 0

@@ -23,6 +23,14 @@ public class Spell_02 : Spell
     [Tooltip("Audio effect for the explosion")]
     public AudioSource explosionSound;
     
+    [Header("Auto-Targeting")]
+    [Tooltip("Whether to automatically seek the best explosion position")]
+    public bool useAutoTargeting = true;
+    [Tooltip("Maximum range to search for targets")]
+    public float maxTargetSearchRange = 50f;
+    [Tooltip("Minimum number of enemies to consider a position optimal")]
+    public int minEnemiesForOptimalTarget = 2;
+    
     // Skill modifiers
     [Header("Skill Modifiers")]
     [Tooltip("Damage multiplier from character skills")]
@@ -41,12 +49,33 @@ public class Spell_02 : Spell
     [Tooltip("Color of the radius gizmo")]
     public Color gizmoColor = new Color(1f, 0.5f, 0f, 0.3f);
     
+    // Runtime variables
+    private Unit _mainStationUnit;
+    private Vector3 _optimalPosition;
+    private bool _positionOptimized = false;
+    
     protected override void Start()
     {
         base.Start();
         
+        // Find the MainStation for the appropriate team
+        var (mainStation, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
+        _mainStationUnit = mainStationUnit;
+        
         // Apply skill modifiers to the actual values
         float finalRadius = explosionRadius * radiusMultiplier;
+        
+        // If auto-targeting is enabled, find the optimal position before exploding
+        if (useAutoTargeting && !_positionOptimized)
+        {
+            Vector3 bestPosition = FindOptimalExplosionPosition();
+            if (bestPosition != Vector3.zero)
+            {
+                transform.position = bestPosition;
+                _optimalPosition = bestPosition;
+                _positionOptimized = true;
+            }
+        }
         
         // Create the explosion
         Explode(finalRadius);
@@ -68,6 +97,102 @@ public class Spell_02 : Spell
         // Destroy after effects finish
         float particleDuration = explosionEffect != null ? explosionEffect.main.duration : 2f;
         Destroy(gameObject, particleDuration + 0.5f);
+    }
+    
+    // Find the optimal position for the explosion to hit multiple enemies
+    private Vector3 FindOptimalExplosionPosition()
+    {
+        if (_mainStationUnit == null) return Vector3.zero;
+        
+        // Get all enemy units in range
+        List<Unit> enemiesInRange = FindEnemiesInRange(_mainStationUnit.transform.position, maxTargetSearchRange);
+        
+        // If not enough enemies found, use the nearest one
+        if (enemiesInRange.Count < minEnemiesForOptimalTarget)
+        {
+            Unit nearestEnemy = Shooter.FindNearestEnemyFromPoint(_mainStationUnit.transform.position, MyTeam, maxTargetSearchRange);
+            if (nearestEnemy != null)
+            {
+                return nearestEnemy.transform.position;
+            }
+            return transform.position; // Keep current position if no enemies found
+        }
+        
+        // Find clusters of enemies to maximize explosion impact
+        Vector3 bestPosition = Vector3.zero;
+        int maxEnemiesHit = 0;
+        
+        // Try each enemy position as a center
+        foreach (Unit potentialCenter in enemiesInRange)
+        {
+            Vector3 testPosition = potentialCenter.transform.position;
+            int enemiesHit = CountEnemiesInRadius(testPosition, explosionRadius * radiusMultiplier, enemiesInRange);
+            
+            if (enemiesHit > maxEnemiesHit)
+            {
+                maxEnemiesHit = enemiesHit;
+                bestPosition = testPosition;
+            }
+        }
+        
+        // If we found a good position, use it
+        if (maxEnemiesHit >= minEnemiesForOptimalTarget)
+        {
+            Debug.Log($"Found optimal position hitting {maxEnemiesHit} enemies");
+            return bestPosition;
+        }
+        
+        // Fallback to nearest enemy
+        Unit nearest = Shooter.FindNearestEnemyFromPoint(_mainStationUnit.transform.position, MyTeam, maxTargetSearchRange);
+        if (nearest != null)
+        {
+            return nearest.transform.position;
+        }
+        
+        return transform.position; // Keep current position if all else fails
+    }
+    
+    // Find all enemy units within a specified range
+    private List<Unit> FindEnemiesInRange(Vector3 center, float range)
+    {
+        List<Unit> enemies = new List<Unit>();
+        Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
+        
+        foreach (Unit unit in allUnits)
+        {
+            // Skip units on our team, null, or dead units
+            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
+                continue;
+                
+            // Skip main stations
+            if (unit.GetComponent<MainStation>() != null)
+                continue;
+                
+            float distance = Vector3.Distance(center, unit.transform.position);
+            if (distance <= range)
+            {
+                enemies.Add(unit);
+            }
+        }
+        
+        return enemies;
+    }
+    
+    // Count how many enemies would be hit by an explosion at the given position
+    private int CountEnemiesInRadius(Vector3 center, float radius, List<Unit> enemies)
+    {
+        int count = 0;
+        foreach (Unit unit in enemies)
+        {
+            if (unit == null || unit.GetIsDeath()) continue;
+            
+            float distance = Vector3.Distance(center, unit.transform.position);
+            if (distance <= radius)
+            {
+                count++;
+            }
+        }
+        return count;
     }
     
     private void Explode(float radius)
@@ -156,7 +281,23 @@ public class Spell_02 : Spell
         if (showRadiusGizmo)
         {
             Gizmos.color = gizmoColor;
-            Gizmos.DrawSphere(transform.position, explosionRadius * radiusMultiplier);
+            float radius = explosionRadius * radiusMultiplier;
+            Gizmos.DrawSphere(transform.position, radius);
+            
+            // If auto-targeting and in play mode, show the targeting range from main station
+            if (useAutoTargeting && Application.isPlaying && _mainStationUnit != null)
+            {
+                Gizmos.color = new Color(1f, 1f, 0f, 0.2f);
+                Gizmos.DrawWireSphere(_mainStationUnit.transform.position, maxTargetSearchRange);
+                
+                // Show optimal position if found
+                if (_positionOptimized && _optimalPosition != Vector3.zero)
+                {
+                    Gizmos.color = Color.green;
+                    Gizmos.DrawLine(_mainStationUnit.transform.position, _optimalPosition);
+                    Gizmos.DrawWireCube(_optimalPosition, Vector3.one * 2f);
+                }
+            }
         }
     }
     

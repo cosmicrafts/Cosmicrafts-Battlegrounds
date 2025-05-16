@@ -26,6 +26,12 @@ public class Spell_01 : Spell
     [Header("Detection Settings")]
     [Tooltip("Multiplier applied to beam width for hit detection. Increase this if beam misses targets it should hit.")]
     public float hitDetectionWidthMultiplier = 1.5f;  // Makes hit detection wider than visual beam
+    [Tooltip("Set to true to auto-target enemies instead of firing in a fixed direction")]
+    public bool useAutoTargeting = true;
+    [Tooltip("How often to search for new targets (seconds)")]
+    public float targetSearchInterval = 0.5f;
+    [Tooltip("Maximum targeting range")]
+    public float maxTargetingRange = 50f;
     
     [Header("Critical Hit Settings")]
     [Range(0f, 1f)] public float criticalStrikeChance = 0f;
@@ -51,6 +57,10 @@ public class Spell_01 : Spell
     private Vector3[] _laserPositions = new Vector3[2];
     private int _baseDamagePerTick;
     
+    // Targeting variables
+    private float _targetSearchTimer;
+    private Unit _currentTarget;
+    
     // Cached layer mask for target detection
     private int _targetLayerMask;
     
@@ -60,6 +70,7 @@ public class Spell_01 : Spell
         
         // Initialize damage timer
         _damageTimer = damageInterval;
+        _targetSearchTimer = 0f;
         
         // Calculate base damage per tick based on DPS
         _baseDamagePerTick = Mathf.RoundToInt(damagePerSecond * damageInterval);
@@ -76,6 +87,12 @@ public class Spell_01 : Spell
         
         // Initial position update
         UpdateLaserBeam();
+        
+        // Find initial target if auto-targeting is enabled
+        if (useAutoTargeting)
+        {
+            FindBestTarget();
+        }
     }
     
     private void SetupLineRenderer()
@@ -124,7 +141,25 @@ public class Spell_01 : Spell
             _mainStationUnit = mainStationUnit;
         }
         
-        // Update laser beam position based on MainStation
+        // Update targeting if auto-targeting is enabled
+        if (useAutoTargeting)
+        {
+            _targetSearchTimer -= Time.deltaTime;
+            if (_targetSearchTimer <= 0f)
+            {
+                FindBestTarget();
+                _targetSearchTimer = targetSearchInterval;
+            }
+            
+            // Validate current target is still valid
+            if (_currentTarget != null && (_currentTarget.GetIsDeath() || !IsEnemyInRange(_currentTarget)))
+            {
+                _currentTarget = null;
+                FindBestTarget();
+            }
+        }
+        
+        // Update laser beam position based on MainStation and targeting
         UpdateLaserBeam();
         
         // Find targets in the beam path
@@ -140,6 +175,24 @@ public class Spell_01 : Spell
         {
             _damageTimer -= Time.deltaTime;
         }
+    }
+    
+    // Find the best enemy target using the Shooter's targeting algorithm
+    private void FindBestTarget()
+    {
+        if (_mainStationUnit == null) return;
+        
+        // Use the static utility method from Shooter to find the nearest enemy
+        _currentTarget = Shooter.FindNearestEnemyFromPoint(_mainStationUnit.transform.position, MyTeam, maxTargetingRange);
+    }
+    
+    // Check if an enemy is in targeting range
+    private bool IsEnemyInRange(Unit enemy)
+    {
+        if (_mainStationUnit == null || enemy == null) return false;
+        
+        float distance = Vector3.Distance(_mainStationUnit.transform.position, enemy.transform.position);
+        return distance <= maxTargetingRange;
     }
     
     private void UpdateLaserBeam()
@@ -160,15 +213,26 @@ public class Spell_01 : Spell
             stationRotation = Quaternion.identity;
         }
         
-        // Get direction toward enemy base
-        Vector3 direction = SpellUtils.GetDirectionToEnemyBase(stationPosition, MyTeam);
+        // Get direction toward target or enemy base
+        Vector3 direction;
         
-        // If direction is roughly Vector3.forward (indicates no enemy found), use a more interesting direction
-        if (Vector3.Distance(direction.normalized, Vector3.forward) < 0.1f)
+        if (useAutoTargeting && _currentTarget != null)
         {
-            // Use the rotation of the station + a time-based offset for movement
-            float angle = Time.time * 20f; // Rotate 20 degrees per second
-            direction = Quaternion.Euler(0, angle, 0) * stationRotation * Vector3.forward;
+            // Direct the beam toward the current target
+            direction = (_currentTarget.transform.position - stationPosition).normalized;
+        }
+        else
+        {
+            // Use default direction toward enemy base
+            direction = SpellUtils.GetDirectionToEnemyBase(stationPosition, MyTeam);
+            
+            // If direction is roughly Vector3.forward (indicates no enemy found), use a more interesting direction
+            if (Vector3.Distance(direction.normalized, Vector3.forward) < 0.1f)
+            {
+                // Use the rotation of the station + a time-based offset for movement
+                float angle = Time.time * 20f; // Rotate 20 degrees per second
+                direction = Quaternion.Euler(0, angle, 0) * stationRotation * Vector3.forward;
+            }
         }
         
         // Move this GameObject to follow the MainStation
@@ -370,6 +434,16 @@ public class Spell_01 : Spell
             
             // Draw main beam line
             Gizmos.DrawLine(start, end);
+            
+            // Draw targeting range if auto-targeting is enabled
+            if (useAutoTargeting && Application.isPlaying)
+            {
+                Gizmos.color = new Color(1f, 1f, 0f, 0.2f);
+                if (_mainStationUnit != null)
+                {
+                    Gizmos.DrawWireSphere(_mainStationUnit.transform.position, maxTargetingRange);
+                }
+            }
         }
     }
 }

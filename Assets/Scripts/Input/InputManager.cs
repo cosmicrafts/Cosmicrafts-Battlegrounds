@@ -22,10 +22,65 @@ namespace Cosmicrafts
             inputActions.Player.Enable();
             inputActions.UI.Enable();
             
+            // Set up card selection callbacks
+            SetupCardCallbacks();
+            
+            // Set up primary action callback
+            SetupPrimaryActionCallback();
+            
+            // Set up zoom input callback
+            SetupZoomCallback();
+            
             // Check if we're on a mobile platform
             #if UNITY_ANDROID || UNITY_IOS
                 isMobile = true;
             #endif
+            
+            Debug.Log("InputManager initialized with new Input System");
+        }
+        
+        private static void SetupCardCallbacks()
+        {
+            // Subscribe to all card selection events
+            inputActions.UI.SelectCard1.performed += ctx => InvokeCardCallback(1, ctx);
+            inputActions.UI.SelectCard2.performed += ctx => InvokeCardCallback(2, ctx);
+            inputActions.UI.SelectCard3.performed += ctx => InvokeCardCallback(3, ctx);
+            inputActions.UI.SelectCard4.performed += ctx => InvokeCardCallback(4, ctx);
+            inputActions.UI.SelectCard5.performed += ctx => InvokeCardCallback(5, ctx);
+            inputActions.UI.SelectCard6.performed += ctx => InvokeCardCallback(6, ctx);
+            inputActions.UI.SelectCard7.performed += ctx => InvokeCardCallback(7, ctx);
+            inputActions.UI.SelectCard8.performed += ctx => InvokeCardCallback(8, ctx);
+        }
+        
+        private static void SetupPrimaryActionCallback()
+        {
+            // Subscribe to primary action event
+            inputActions.UI.PrimaryAction.performed += ctx => {
+                if (primaryActionCallback != null)
+                {
+                    primaryActionCallback(ctx);
+                }
+            };
+        }
+        
+        private static void SetupZoomCallback()
+        {
+            // Subscribe to zoom input event
+            inputActions.Player.Zoom.performed += ctx => {
+                if (zoomInputCallback != null)
+                {
+                    zoomInputCallback(ctx);
+                }
+            };
+        }
+        
+        private static void InvokeCardCallback(int cardNumber, InputAction.CallbackContext ctx)
+        {
+            if (cardNumber >= 1 && cardNumber <= 8 && cardCallbacks[cardNumber - 1] != null)
+            {
+                Debug.Log($"Card {cardNumber} selected via Input System");
+                cardCallbacks[cardNumber - 1](ctx);
+            }
         }
 
         // Set the joystick pointer ID to exclude that pointer from UI operations
@@ -54,13 +109,13 @@ namespace Cosmicrafts
                 inputActions.Enable();
             }
 
-            // Use both joystick and keyboard on all platforms for better compatibility
-            Vector2 keyboardInput = inputActions.Player.Move.ReadValue<Vector2>();
+            // Read directly from the Input System
+            Vector2 moveInput = inputActions.Player.Move.ReadValue<Vector2>();
             
-            // If keyboard/gamepad input is detected, prioritize it
-            if (keyboardInput.sqrMagnitude > 0.01f)
+            // Ensure keyboard input gets priority
+            if (moveInput.sqrMagnitude > 0.01f)
             {
-                return keyboardInput;
+                return moveInput;
             }
             
             // Otherwise use virtual joystick if active
@@ -273,21 +328,17 @@ namespace Cosmicrafts
                 inputActions.Enable();
             }
             
-            // This uses the Input System package instead of the legacy Input.GetKeyDown
-            var keyboard = Keyboard.current;
-            if (keyboard == null) return false;
-            
+            // Use actual Input System actions instead of direct keyboard queries
             switch (cardNumber)
             {
-                case 1: return keyboard.digit1Key.wasPressedThisFrame;
-                case 2: return keyboard.digit2Key.wasPressedThisFrame;
-                case 3: return keyboard.digit3Key.wasPressedThisFrame;
-                case 4: return keyboard.digit4Key.wasPressedThisFrame;
-                case 5: return keyboard.digit5Key.wasPressedThisFrame;
-                case 6: return keyboard.digit6Key.wasPressedThisFrame;
-                case 7: return keyboard.digit7Key.wasPressedThisFrame;
-                case 8: return keyboard.digit8Key.wasPressedThisFrame;
-                case 9: return keyboard.digit9Key.wasPressedThisFrame;
+                case 1: return inputActions.UI.SelectCard1.WasPressedThisFrame();
+                case 2: return inputActions.UI.SelectCard2.WasPressedThisFrame();
+                case 3: return inputActions.UI.SelectCard3.WasPressedThisFrame();
+                case 4: return inputActions.UI.SelectCard4.WasPressedThisFrame();
+                case 5: return inputActions.UI.SelectCard5.WasPressedThisFrame();
+                case 6: return inputActions.UI.SelectCard6.WasPressedThisFrame();
+                case 7: return inputActions.UI.SelectCard7.WasPressedThisFrame();
+                case 8: return inputActions.UI.SelectCard8.WasPressedThisFrame();
                 default: return false;
             }
         }
@@ -301,6 +352,7 @@ namespace Cosmicrafts
                 return;
                 
             cardCallbacks[cardNumber - 1] = callback;
+            Debug.Log($"Subscribed to card {cardNumber} selection");
         }
         
         public static void UnsubscribeFromCardSelection(int cardNumber, System.Action<InputAction.CallbackContext> callback)
@@ -309,6 +361,20 @@ namespace Cosmicrafts
                 return;
                 
             cardCallbacks[cardNumber - 1] = null;
+        }
+        
+        // Zoom input callback handling
+        private static System.Action<InputAction.CallbackContext> zoomInputCallback;
+        
+        public static void SubscribeToZoomInput(System.Action<InputAction.CallbackContext> callback)
+        {
+            zoomInputCallback = callback;
+            Debug.Log("Subscribed to zoom input events");
+        }
+        
+        public static void UnsubscribeFromZoomInput(System.Action<InputAction.CallbackContext> callback)
+        {
+            zoomInputCallback = null;
         }
         
         // Primary action callback handling
@@ -322,6 +388,12 @@ namespace Cosmicrafts
         public static void UnsubscribeFromPrimaryAction(System.Action<InputAction.CallbackContext> callback)
         {
             primaryActionCallback = null;
+        }
+
+        // Check if the current platform is mobile
+        public static bool IsMobile()
+        {
+            return isMobile;
         }
     }
 } 

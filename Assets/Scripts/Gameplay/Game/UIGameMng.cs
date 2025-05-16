@@ -92,25 +92,12 @@
         
         private void Update()
         {
-            // Check for number key presses for card selection
-            for (int i = 0; i < UIDeck.Length; i++)
-            {
-                if (InputManager.IsCardSelected(i + 1))
-                {
-                    // If this card is already selected, deselect it
-                    if (selectedCardIndex == i)
-                    {
-                        DeselectCards();
-                    }
-                    else
-                    {
-                        // Otherwise, select it
-                        SelectCard(i);
-                    }
-                    
-                    break; // Only process one card selection per frame
-                }
-            }
+            //
+            // The UIGameCard instances handle number key presses through callbacks
+            // and then call UIGameMng.DeployCard or UIGameMng.SelectCard as needed
+            
+            // This is now handled by the Input System and InputManager
+            // Number key detection is done via subscribed callbacks in UIGameCard
         }
         
         private void OnPrimaryAction(InputAction.CallbackContext context)

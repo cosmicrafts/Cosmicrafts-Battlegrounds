@@ -2,6 +2,7 @@
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Cosmicrafts;
+using UnityEngine.InputSystem;
 
 /*
  * This code represents a in the game card instance
@@ -54,16 +55,62 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     private void Start()
     {
         // Register for hotkey input if this card has an IdCardDeck between 1-8
-        if (IdCardDeck >= 1 && IdCardDeck <= 8)
+        if (IdCardDeck >= 0 && IdCardDeck < 8)
         {
-            // We don't use subscription-based callbacks anymore
-            // The InputManager.IsCardSelected method is polled directly
+            // Use actual card index + 1 to match hotkey numbers (1-8)
+            int hotkeyNumber = IdCardDeck + 1;
+            
+            // Subscribe to card selection events via InputManager
+            InputManager.SubscribeToCardSelection(hotkeyNumber, OnCardHotkeyPressed);
+            
+            Debug.Log($"Card {IdCardDeck} registered for hotkey {hotkeyNumber}");
+        }
+    }
+    
+    private void OnCardHotkeyPressed(InputAction.CallbackContext context)
+    {
+        Debug.Log($"Hotkey pressed for card {IdCardDeck}");
+        
+        // Only trigger card if the context is performed
+        if (context.performed)
+        {
+            // Get reference to Player
+            Player player = GameMng.P;
+            
+            // Check if auto-deployment is enabled
+            if (player != null && player.useAutoDeployment)
+            {
+                // Auto-deploy the card if we have enough energy
+                if (player.CurrentEnergy >= EnergyCost)
+                {
+                    // Use UIGameMng to deploy the card
+                    if (uiGameMng != null)
+                    {
+                        uiGameMng.DeployCard(IdCardDeck, Vector3.zero);
+                    }
+                }
+                else
+                {
+                    Debug.Log($"Not enough energy to deploy card {IdCardDeck}");
+                }
+            }
+            else
+            {
+                // Traditional selection if auto-deployment is disabled
+                uiGameMng.DeselectCards();
+                uiGameMng.SelectCard(IdCardDeck);
+            }
         }
     }
     
     private void OnDestroy()
     {
-        // Cleanup no longer needed with new InputManager implementation
+        // Unsubscribe from card selection events
+        if (IdCardDeck >= 0 && IdCardDeck < 8)
+        {
+            int hotkeyNumber = IdCardDeck + 1;
+            InputManager.UnsubscribeFromCardSelection(hotkeyNumber, OnCardHotkeyPressed);
+        }
     }
 
     //Shows or hides the selection icon

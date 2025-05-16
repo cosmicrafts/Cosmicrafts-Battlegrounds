@@ -1568,6 +1568,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
   m_PrefabInstance: {fileID: 1750906196}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1750906199 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
+  m_PrefabInstance: {fileID: 1750906196}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1750906197}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02e479c5bf7fefc469048b81a423d6e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &2007324872
 GameObject:
   m_ObjectHideFlags: 0
@@ -2140,6 +2151,7 @@ MonoBehaviour:
   zoomSmoothTime: 0.1
   minZoom: 25
   maxZoom: 150
+  mouseWheelMultiplier: 3
   targetToFollow: {fileID: 0}
   offset: {x: 0, y: 0, z: 0}
   followTarget: 1
@@ -2454,12 +2466,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cc5ffa928cbb1b4f8ae665490092a97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Bots: []
+  Bots:
+  - {fileID: 1750906199}
   BotPrefab: {fileID: 1750906197}
   BS_Positions:
   - {x: 0, y: 0, z: -100}
   - {x: 0, y: 0, z: 0}
-  numberOfBots: 1
+  numberOfBots: 3
   botSpacing: 100
   botStartPosition: {x: 0, y: 0, z: 0}
   botSpacingDirection: {x: 1, y: 0, z: 0}
@@ -3464,6 +3477,8 @@ MonoBehaviour:
   ID: 1
   MyTeam: 0
   characterPrefab: {fileID: 1220039149}
+  spawnPoints: []
+  useAutoDeployment: 1
   CurrentEnergy: 30
   MaxEnergy: 30
   SpeedEnergy: 0.5

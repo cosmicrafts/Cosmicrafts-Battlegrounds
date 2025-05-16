@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI; // Required for UI
+using UnityEngine.InputSystem;
+using Cosmicrafts;
 
 public class CameraController : MonoBehaviour
 {
@@ -8,6 +10,8 @@ public class CameraController : MonoBehaviour
     public float zoomSmoothTime = 0.1f;
     public float minZoom = 25f;
     public float maxZoom = 100f;
+    [Tooltip("Multiplier for mouse wheel sensitivity")]
+    public float mouseWheelMultiplier = 3f;
 
     [Header("Follow Settings")]
     public Transform targetToFollow; // This will be the base station
@@ -24,6 +28,9 @@ public class CameraController : MonoBehaviour
     private bool isSearchingForBaseStation = true;
     private float searchInterval = 0.5f;
     private float nextSearchTime = 0f;
+    
+    // Track the last frame we received input to avoid processing duplicate events
+    private int lastInputFrame = -1;
 
     void Start()
     {
@@ -36,11 +43,39 @@ public class CameraController : MonoBehaviour
         
         // Try to find the base station immediately
         FindBaseStation();
+        
+        // Subscribe to scroll events from Input System
+        InputManager.SubscribeToZoomInput(HandleZoomInput);
+        
+        Debug.Log("Camera controller initialized with Input System zoom support");
+    }
+    
+    void OnDestroy()
+    {
+        // Clean up subscription
+        InputManager.UnsubscribeFromZoomInput(HandleZoomInput);
     }
 
     void Update()
     {
-        HandleZoom();
+        // Process mouse wheel zoom via Input System callback
+        // Now handled in HandleZoomInput method
+        
+        // Handle pinch zoom for mobile devices
+        if (Cosmicrafts.InputManager.IsMobile())
+        {
+            // Process pinch zoom on mobile
+            Vector2 pinchInput = Cosmicrafts.InputManager.GetZoomInput();
+            if (pinchInput.y != 0f)
+            {
+                targetZoom -= pinchInput.y * zoomSpeed;
+                targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+                Debug.Log($"Pinch zoom detected: {pinchInput.y}, target zoom: {targetZoom}");
+            }
+        }
+        
+        // Still handle the smooth zoom application here
+        ApplyZoom();
         
         // Periodically try to find the base station if we haven't found it yet
         if (isSearchingForBaseStation && Time.time > nextSearchTime)
@@ -60,6 +95,38 @@ public class CameraController : MonoBehaviour
         }
     }
     
+    // This will be called by InputManager when zoom input is detected
+    private void HandleZoomInput(InputAction.CallbackContext context)
+    {
+        // Only process if this is a new frame to avoid duplicate processing
+        if (lastInputFrame == Time.frameCount)
+            return;
+            
+        lastInputFrame = Time.frameCount;
+        
+        // Get the scroll value (typically y component of Vector2)
+        Vector2 scrollValue = context.ReadValue<Vector2>();
+        float scrollInput = scrollValue.y * mouseWheelMultiplier;
+        
+        // Mouse wheel input is inverted by default in Unity, so we flip it
+        scrollInput = -scrollInput;
+        
+        if (scrollInput != 0f)
+        {
+            // Apply zoom change
+            targetZoom -= scrollInput * zoomSpeed;
+            targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
+            Debug.Log($"Mouse wheel zoom: {scrollInput}, target zoom: {targetZoom}");
+        }
+    }
+    
+    // Apply the zoom smoothly
+    private void ApplyZoom()
+    {
+        // Apply smooth zoom transition
+        cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize, targetZoom, ref zoomVelocity, zoomSmoothTime);
+    }
+
     void FindBaseStation()
     {
         // If we already have a target and it's still valid, don't search
@@ -100,8 +167,11 @@ public class CameraController : MonoBehaviour
         }
     }
 
+    // Legacy method for mouse wheel zoom, now called by HandleZoomInput
     void HandleZoom()
     {
+        // This method is no longer needed as zoom is handled by HandleZoomInput
+        // Keeping it for backwards compatibility
         Vector2 scroll = Cosmicrafts.InputManager.GetZoomInput();
         float scrollInput = scroll.y;
 
@@ -110,9 +180,6 @@ public class CameraController : MonoBehaviour
             targetZoom -= scrollInput * zoomSpeed;
             targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
         }
-
-        // Apply smooth zoom transition
-        cam.orthographicSize = Mathf.SmoothDamp(cam.orthographicSize, targetZoom, ref zoomVelocity, zoomSmoothTime);
     }
 
     public void ZoomIn()

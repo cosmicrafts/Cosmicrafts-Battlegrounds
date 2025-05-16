@@ -300,7 +300,7 @@
             }
         }
 
-        // Update the results text panel with the game metrics
+        // Update the results text panel with the game metrics 
         public void UpdateResults()
         {
             MTxtEnergyUsed.text = GameMng.MT.GetEnergyUsed().ToString();

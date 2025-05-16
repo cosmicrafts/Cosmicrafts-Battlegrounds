@@ -1,5 +1,0 @@
-/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/.utmp/RelWithDebInfo/2o3g6h44/arm64-v8a/CMakeFiles/edit_cache.dir
-/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/.utmp/RelWithDebInfo/2o3g6h44/arm64-v8a/CMakeFiles/rebuild_cache.dir
-/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/.utmp/RelWithDebInfo/2o3g6h44/arm64-v8a/GameActivity/CMakeFiles/game.dir
-/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/.utmp/RelWithDebInfo/2o3g6h44/arm64-v8a/GameActivity/CMakeFiles/edit_cache.dir
-/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/.utmp/RelWithDebInfo/2o3g6h44/arm64-v8a/GameActivity/CMakeFiles/rebuild_cache.dir

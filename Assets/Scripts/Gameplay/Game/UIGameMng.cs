@@ -30,9 +30,6 @@
         public TMP_Text EnergyLabel;
         public Image EnergyBar;
 
-        //Trigger grid for deploy cards
-        public GameObject AreaDeploy;
-
         //Results Metrics text references
         public TMP_Text MTxtEnergyUsed;
         public TMP_Text MTxtEnergyGenerated;
@@ -105,26 +102,28 @@
             if (!context.performed || isGameOver || selectedCardIndex < 0)
                 return;
                 
-            // Check if the player clicks/taps on the deploy area when a card is selected
-            if (AreaDeploy.activeSelf)
+            // Use auto-deployment when a card is selected and the primary action is performed
+            if (selectedCardIndex >= 0)
             {
                 // Use the UI-specific pointer position method to avoid conflicts with joystick
                 Vector2 pointerPos = InputManager.GetUIPointerPosition();
                 Ray ray = Camera.main.ScreenPointToRay(pointerPos);
                 RaycastHit hit;
                 
-                // Use the AreaDeploy's layer
-                int areaLayer = AreaDeploy.layer;
-                int layerMask = 1 << areaLayer;
-                
-                if (Physics.Raycast(ray, out hit, 100f, layerMask))
+                // Try to hit anything in the game world
+                if (Physics.Raycast(ray, out hit, 100f))
                 {
                     // Deploy the card at the hit position
                     DeployCard(selectedCardIndex, hit.point);
-                    
-                    // Deselect after deployment
-                    DeselectCards();
                 }
+                else
+                {
+                    // If we don't hit anything, just auto-deploy
+                    DeployCard(selectedCardIndex, Vector3.zero);
+                }
+                
+                // Deselect after deployment
+                DeselectCards();
             }
         }
 
@@ -177,8 +176,7 @@
             {
                 UIDeck[idc].SetSelection(true);
                 selectedCardIndex = idc;
-                AreaDeploy.SetActive(true);
-                
+                // No longer need to activate AreaDeploy
                 Debug.Log($"Card {idc} selected");
             }
         }
@@ -194,7 +192,7 @@
                 }
             }
             selectedCardIndex = -1;
-            AreaDeploy.SetActive(false);
+            // Remove the reference to AreaDeploy.SetActive
         }
         
         // Deploy the selected card at a position
@@ -228,15 +226,19 @@
             {
                 Debug.Log($"Deploying card {cardIndex}");
                 
-                // Auto-deployment - directly trigger the Player's DeplyUnit method
-                if (position == Vector3.zero && GameMng.P != null && GameMng.P.useAutoDeployment)
+                // When position is Vector3.zero, it means we want to auto-deploy
+                // But we don't need to do extra logic here - Player.DeplyUnit handles it correctly
+                // Just pass the card to DeplyUnit which will use a random spawn position
+                if (GameMng.P != null)
                 {
                     // Get the card from the player's deck if available
                     List<NFTsCard> playerDeck = GameMng.P.PlayerDeck;
                     if (playerDeck != null && cardIndex < playerDeck.Count)
                     {
                         NFTsCard nftCard = playerDeck[cardIndex];
-                        GameMng.P.DeplyUnit(nftCard);
+                        
+                        // Pass the position - if zero, Player.DeplyUnit will use random spawn point
+                        GameMng.P.DeplyUnit(nftCard, position);
                         
                         // Update energy UI - handled by Player.RestEnergy, but update here to be safe
                         UpdateEnergy(GameMng.P.CurrentEnergy, GameMng.P.MaxEnergy);
@@ -247,7 +249,7 @@
                     }
                 }
                 
-                // Original manual deployment logic for backward compatibility
+                // Fallback legacy deployment logic (we shouldn't reach here normally)
                 if (GameMng.P != null)
                 {
                     // Subtract energy through the Player

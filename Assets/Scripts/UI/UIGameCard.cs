@@ -222,43 +222,24 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             canvasGroup.alpha = 1f;
             canvasGroup.blocksRaycasts = true;
             
-            // Check if the card is dropped on a valid area (AreaDeploy)
-            if (uiGameMng != null && uiGameMng.AreaDeploy != null && uiGameMng.AreaDeploy.activeSelf)
+            // Deploy the card at the pointer position without area restrictions
+            Vector2 pointerPos = eventData.position;
+            Ray ray = Camera.main.ScreenPointToRay(pointerPos);
+            RaycastHit hit;
+            
+            if (Physics.Raycast(ray, out hit, 100f))
             {
-                // Raycast to see if we're over the deploy area
-                Vector2 pointerPos = eventData.position; // Use position from event data
-                Ray ray = Camera.main.ScreenPointToRay(pointerPos);
-                RaycastHit hit;
+                // Valid drop - deploy the card at hit position
+                Debug.Log($"Card {IdCardDeck} dropped at position {hit.point}");
                 
-                // Use a default layer mask if none specified
-                int layerMask = 1 << LayerMask.NameToLayer("Default");
-                if (uiGameMng.AreaDeploy.layer != 0)
-                {
-                    layerMask = 1 << uiGameMng.AreaDeploy.layer;
-                }
-                
-                Debug.Log($"Attempting raycast for card drop at position {pointerPos}");
-                
-                if (Physics.Raycast(ray, out hit, 100f, layerMask))
-                {
-                    // Valid drop - deploy the card at hit position
-                    Debug.Log($"Card {IdCardDeck} dropped at position {hit.point}");
-                    
-                    // Deploy the card using game manager
-                    uiGameMng.DeployCard(IdCardDeck, hit.point);
-                }
-                else
-                {
-                    Debug.Log($"Card {IdCardDeck} dropped but no valid target found");
-                    // Invalid drop - return card to original position
-                    rectTransform.anchoredPosition = originalPosition;
-                }
+                // Deploy the card using game manager
+                uiGameMng.DeployCard(IdCardDeck, hit.point);
             }
             else
             {
-                Debug.Log($"Card {IdCardDeck} dropped - no area deploy available");
-                // No valid drop area - return card to original position
-                rectTransform.anchoredPosition = originalPosition;
+                // No hit - use auto-deployment
+                Debug.Log($"Card {IdCardDeck} dropped - using auto-deployment");
+                uiGameMng.DeployCard(IdCardDeck, Vector3.zero);
             }
             
             // Deselect all cards after drag

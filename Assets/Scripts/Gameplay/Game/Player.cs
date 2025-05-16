@@ -22,10 +22,12 @@ public class Player : MonoBehaviour
     
     // Spawn points for auto-deployment
     [Header("Auto Deployment")]
-    [Tooltip("Spawn points for automatically deploying units")]
-    public Transform[] spawnPoints;
+    [Tooltip("Spawn positions for automatically deploying units (in local space relative to player)")]
+    public Vector3[] spawnPositions;
     [Tooltip("Whether to automatically deploy cards without drag & drop")]
     public bool useAutoDeployment = true;
+    [Tooltip("Reference to transform that spawn positions are relative to (null = this transform)")]
+    public Transform spawnPositionReference;
 
     // Make PlayerDeck accessible
     private List<NFTsCard> playerDeck = new List<NFTsCard>();
@@ -101,25 +103,16 @@ private void Awake()
 // Initialize or create spawn points if none exist
 private void InitializeSpawnPoints()
 {
-    // If no spawn points are set up, create some automatically
-    if (spawnPoints == null || spawnPoints.Length == 0)
+    // If no spawn positions are set up, create some default positions
+    if (spawnPositions == null || spawnPositions.Length == 0)
     {
-        Debug.Log("No spawn points found for player, creating default spawn points");
-        
-        // Create a parent object for the spawn points if it doesn't exist
-        Transform spawnPointsParent = transform.Find("SpawnPoints");
-        if (spawnPointsParent == null)
-        {
-            GameObject spawnPointsObj = new GameObject("SpawnPoints");
-            spawnPointsObj.transform.SetParent(transform);
-            spawnPointsParent = spawnPointsObj.transform;
-        }
+        Debug.Log("No spawn positions found for player, creating default spawn positions");
         
         // Number of spawn points to create
         int numSpawnPoints = 5;
-        spawnPoints = new Transform[numSpawnPoints];
+        spawnPositions = new Vector3[numSpawnPoints];
         
-        // Create spawn points in an arc in front of the player
+        // Create spawn positions in an arc in front of the player (local space)
         float arcAngle = 120f; // 120-degree arc
         float radius = 20f;    // Distance from player
         
@@ -129,31 +122,48 @@ private void InitializeSpawnPoints()
             float angle = -arcAngle/2 + (arcAngle * i / (numSpawnPoints - 1));
             float radians = angle * Mathf.Deg2Rad;
             
-            // Position in front of player (assuming player faces +Z)
-            Vector3 position = transform.position + new Vector3(
+            // Position in front of player (assuming player faces +Z), in local space
+            spawnPositions[i] = new Vector3(
                 Mathf.Sin(radians) * radius,
                 0f,
                 Mathf.Cos(radians) * radius
             );
-            
-            // Create spawn point GameObject
-            GameObject spawnPoint = new GameObject($"SpawnPoint_{i+1}");
-            spawnPoint.transform.SetParent(spawnPointsParent);
-            spawnPoint.transform.position = position;
-            
-            // Add a visual indicator in the editor
-            #if UNITY_EDITOR
-            GameObject visualizer = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            visualizer.transform.SetParent(spawnPoint.transform);
-            visualizer.transform.localScale = Vector3.one * 0.5f;
-            visualizer.GetComponent<Collider>().enabled = false;
-            #endif
-            
-            spawnPoints[i] = spawnPoint.transform;
         }
         
-        Debug.Log($"Created {numSpawnPoints} default spawn points for player");
+        Debug.Log($"Created {numSpawnPoints} default spawn positions in local space");
     }
+}
+
+// Helper method to convert local spawn position to world position
+private Vector3 GetWorldSpawnPosition(int index)
+{
+    if (index < 0 || index >= spawnPositions.Length)
+    {
+        Debug.LogWarning($"Invalid spawn position index: {index}");
+        return transform.position; // Fallback to player position
+    }
+    
+    // First try to use the specified reference transform
+    if (spawnPositionReference != null)
+    {
+        return spawnPositionReference.TransformPoint(spawnPositions[index]);
+    }
+    
+    // Then try to use the base station from GameMng if available
+    if (MyCharacter != null && MyCharacter.characterBaseSO != null && 
+        GameMng.GM != null && GameMng.GM.Targets != null)
+    {
+        // Get the appropriate base station based on team
+        int baseIndex = MyTeam == Team.Blue ? 1 : 0;
+        if (GameMng.GM.Targets.Length > baseIndex && GameMng.GM.Targets[baseIndex] != null)
+        {
+            Transform baseTransform = GameMng.GM.Targets[baseIndex].transform;
+            return baseTransform.TransformPoint(spawnPositions[index]);
+        }
+    }
+    
+    // Finally, fall back to this transform
+    return transform.TransformPoint(spawnPositions[index]);
 }
 
 private void Start()
@@ -538,18 +548,32 @@ public void PrepareDeploy(GameObject preview, float cost)
     UnitDrag.TargetCost = cost;
 }
 
+// Original method with no specific position (uses random spawn position)
 public void DeplyUnit(NFTsCard nftcard)
+{
+    DeplyUnit(nftcard, Vector3.zero);
+}
+
+// New overloaded method that accepts a position parameter
+public void DeplyUnit(NFTsCard nftcard, Vector3 targetPosition)
 {
     if (nftcard.EnergyCost <= CurrentEnergy)
     {
         // Get a spawn position
         Vector3 spawnPosition;
         
-        if (useAutoDeployment && spawnPoints != null && spawnPoints.Length > 0)
+        // If targetPosition is not zero, use it directly
+        if (targetPosition != Vector3.zero)
         {
-            // Use a random spawn point if auto-deployment is enabled and spawn points exist
-            int randomIndex = Random.Range(0, spawnPoints.Length);
-            spawnPosition = spawnPoints[randomIndex].position;
+            spawnPosition = targetPosition;
+        }
+        // Otherwise use auto-deployment with random spawn position
+        else if (useAutoDeployment && spawnPositions != null && spawnPositions.Length > 0)
+        {
+            // Use a random spawn position if auto-deployment is enabled and spawn positions exist
+            int randomIndex = Random.Range(0, spawnPositions.Length);
+            spawnPosition = GetWorldSpawnPosition(randomIndex);
+            Debug.Log($"Auto-deploying at spawn position {randomIndex}: {spawnPosition}");
         }
         else
         {
@@ -597,15 +621,16 @@ public void DeplyUnit(NFTsCard nftcard)
             
             if (spellPrefab != null)
             {
-                Vector3 targetPosition = spawnPosition;
+                Vector3 targetSpellPosition = spawnPosition;
                 
-                // If auto-deployment is enabled, try to find a suitable target
-                if (useAutoDeployment)
+                // If auto-deployment is enabled and we're using random spawn position,
+                // try to find a suitable target for the spell
+                if (useAutoDeployment && targetPosition == Vector3.zero)
                 {
                     Unit targetUnit = FindNearestEnemyUnit(spawnPosition);
                     if (targetUnit != null)
                     {
-                        targetPosition = targetUnit.transform.position;
+                        targetSpellPosition = targetUnit.transform.position;
                     }
                 }
                 
@@ -613,7 +638,7 @@ public void DeplyUnit(NFTsCard nftcard)
                 NFTsSpell spellCard = nftcard as NFTsSpell;
                 if (spellCard != null)
                 {
-                    Spell spell = GameMng.GM.CreateSpell(spellPrefab, targetPosition, MyTeam, nftcard.KeyId);
+                    Spell spell = GameMng.GM.CreateSpell(spellPrefab, targetSpellPosition, MyTeam, nftcard.KeyId);
                     if (spell != null)
                     {
                         spell.PlayerId = ID; // Ensure PlayerId is set to match the player

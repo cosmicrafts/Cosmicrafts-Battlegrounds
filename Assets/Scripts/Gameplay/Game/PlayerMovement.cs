@@ -376,12 +376,6 @@ namespace Cosmicrafts
             // Get normalized input vector from InputManager
             Vector2 input = InputManager.GetMoveInput();
             
-            // Debug to check if input is being received
-            if (input.sqrMagnitude > 0.01f)
-            {
-                Debug.Log($"Movement input received: {input}");
-            }
-            
             Vector3 moveInput = new Vector3(input.x, 0, input.y);
 
             // Convert input to camera-relative direction

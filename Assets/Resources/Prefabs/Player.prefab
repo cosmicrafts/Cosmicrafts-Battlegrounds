@@ -587,7 +587,7 @@ GameObject:
   m_Icon: {fileID: 7174288486110832750, guid: 0000000000000000d000000000000000, type: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3901668664073840903
 Transform:
   m_ObjectHideFlags: 0
@@ -597,7 +597,7 @@ Transform:
   m_GameObject: {fileID: 8177689688189077924}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -10, y: 0, z: 0}
+  m_LocalPosition: {x: -3.1, y: 0, z: -4.15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -618,7 +618,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8177689688189077924}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -829,7 +829,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 653037704619718272, guid: 0f933251899050c4dadc659948e75471, type: 3}
       propertyPath: m_Radius
-      value: 0.76
+      value: 0.59
       objectReference: {fileID: 0}
     - target: {fileID: 1052354846185911372, guid: 0f933251899050c4dadc659948e75471, type: 3}
       propertyPath: m_RootOrder
@@ -891,6 +891,14 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2220727566171213603, guid: 0f933251899050c4dadc659948e75471, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3af5e999b9d65a849b81b2325439e8a3, type: 2}
+    - target: {fileID: 4122320594922208233, guid: 0f933251899050c4dadc659948e75471, type: 3}
+      propertyPath: m_Mesh
+      value: 
+      objectReference: {fileID: 10207, guid: 0000000000000000e000000000000000, type: 0}
     - target: {fileID: 6874089768797499904, guid: 0f933251899050c4dadc659948e75471, type: 3}
       propertyPath: m_Enabled
       value: 0

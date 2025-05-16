@@ -1,10 +1,19 @@
 # ninja log v5
-0	925	1747276949030652642	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	2e2ab38a6b5d6d24
-1	959	1747276949066116295	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	d1a30755268116e8
-0	969	1747276949074623079	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	ed076369e757c87a
-0	1026	1747276949134130306	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	c34168a29f5b2de1
-0	1040	1747276949148786215	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	40baa24a7622e231
-1	1060	1747276949168349447	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	2aeee5745dc4ac87
-0	1208	1747276949316298685	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	41ee8281cde79b97
 0	1291	1747276949399214129	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	ea1b3b017f587c37
+0	1026	1747276949134130306	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	c34168a29f5b2de1
+0	1208	1747276949316298685	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	41ee8281cde79b97
+0	969	1747276949074623079	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	ed076369e757c87a
+0	925	1747276949030652642	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	2e2ab38a6b5d6d24
+0	1040	1747276949148786215	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	40baa24a7622e231
 1291	1312	1747276949424627349	/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2o3g6h44/obj/arm64-v8a/libgame.so	dd5ced8477dbb489
+1	959	1747276949066116295	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	d1a30755268116e8
+1	1060	1747276949168349447	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	2aeee5745dc4ac87
+9	1440	1747291100737164305	GameActivity/CMakeFiles/game.dir/UGAEntry.cpp.o	2e2ab38a6b5d6d24
+10	1552	1747291100850679877	GameActivity/CMakeFiles/game.dir/UGAInputKeyEvent.cpp.o	c34168a29f5b2de1
+8	1582	1747291100876916936	GameActivity/CMakeFiles/game.dir/UGAConfiguration.cpp.o	ed076369e757c87a
+8	1622	1747291100919156660	GameActivity/CMakeFiles/game.dir/UGADebug.cpp.o	40baa24a7622e231
+10	1698	1747291100994979199	GameActivity/CMakeFiles/game.dir/UGAInputMotionEvent.cpp.o	d1a30755268116e8
+10	1767	1747291101064161893	GameActivity/CMakeFiles/game.dir/UGASoftKeyboard.cpp.o	2aeee5745dc4ac87
+10	2033	1747291101332101479	GameActivity/CMakeFiles/game.dir/UGAInput.cpp.o	41ee8281cde79b97
+7	2198	1747291101494343186	GameActivity/CMakeFiles/game.dir/UGAApplication.cpp.o	ea1b3b017f587c37
+2198	2230	1747291101530893603	/home/bizkit/GitHub/Cosmicrafts-Battlegrounds/Library/Bee/Android/Prj/IL2CPP/Gradle/unityLibrary/build/intermediates/cxx/RelWithDebInfo/2o3g6h44/obj/arm64-v8a/libgame.so	dd5ced8477dbb489

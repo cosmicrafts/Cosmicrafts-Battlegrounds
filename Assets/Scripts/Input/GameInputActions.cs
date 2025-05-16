@@ -220,6 +220,236 @@ namespace Cosmicrafts
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""UI"",
+            ""id"": ""9df5f0c3-c412-4b3e-b1e0-26aa4f9f4bd8"",
+            ""actions"": [
+                {
+                    ""name"": ""SelectCard1"",
+                    ""type"": ""Button"",
+                    ""id"": ""b2ec1f9e-e3ad-4ee0-8c67-579b04a9b6b1"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard2"",
+                    ""type"": ""Button"",
+                    ""id"": ""2a4b52ce-7f76-4ef0-b6e1-3b83c5d7a0a5"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard3"",
+                    ""type"": ""Button"",
+                    ""id"": ""b9d4b63c-4a68-464c-aad8-fa4a4e499c2d"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard4"",
+                    ""type"": ""Button"",
+                    ""id"": ""d8f51d09-2d01-4bf8-a5f2-3b59d7c9f03e"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard5"",
+                    ""type"": ""Button"",
+                    ""id"": ""40c73cd0-6ea3-4d82-a785-0d7037dbd5c0"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard6"",
+                    ""type"": ""Button"",
+                    ""id"": ""0f6b4a28-eabb-4e2a-9b45-26a401fe21df"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard7"",
+                    ""type"": ""Button"",
+                    ""id"": ""0ebda7a6-78e2-4a4f-9d10-3df4d1bfdb3c"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SelectCard8"",
+                    ""type"": ""Button"",
+                    ""id"": ""3c21ef2e-2a9f-4b5b-a9c1-d08a8b42f4fd"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PrimaryAction"",
+                    ""type"": ""Button"",
+                    ""id"": ""0ca7ad5c-e2a7-42b5-b0c5-dd220e44f354"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""PointerPosition"",
+                    ""type"": ""Value"",
+                    ""id"": ""f9baef21-eb8e-42d6-b82b-caf02cf91c4c"",
+                    ""expectedControlType"": ""Vector2"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": true
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""56bf8c09-3a32-4b92-a9c7-7c3d5918f580"",
+                    ""path"": ""<Keyboard>/1"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""eeaa2c2f-9a0c-4e49-bef3-2ecf53dc2a1d"",
+                    ""path"": ""<Keyboard>/2"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e8e8d1b0-5cb0-4a26-a3c2-e681c1d0f1f4"",
+                    ""path"": ""<Keyboard>/3"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard3"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""8cdacdc9-c1ea-4e5e-8e91-50c8df763d12"",
+                    ""path"": ""<Keyboard>/4"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard4"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""0f29c1e1-58b4-44b8-8e32-b28015a3d2bb"",
+                    ""path"": ""<Keyboard>/5"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard5"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9e4f2c6c-5a1d-4b8c-a0db-65df2bc70a03"",
+                    ""path"": ""<Keyboard>/6"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard6"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a9fc82e6-1d44-4ff0-bf41-5c0942aed848"",
+                    ""path"": ""<Keyboard>/7"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard7"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""c03dc68f-0eaf-4350-9d04-1dc05eda05be"",
+                    ""path"": ""<Keyboard>/8"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""SelectCard8"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""b9e0fa1f-16f7-4c38-b33b-3a8d293c4bd3"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PrimaryAction"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""9e7984e0-8e17-4c1a-85ca-a0b12f9c8a5b"",
+                    ""path"": ""<Touchscreen>/primaryTouch/tap"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PrimaryAction"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""2bc2d342-d82c-4a39-ad8a-cdb4c11a2a9b"",
+                    ""path"": ""<Mouse>/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PointerPosition"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e03d0f1e-25ef-4d5d-a41e-e0f1f0df6ee0"",
+                    ""path"": ""<Touchscreen>/primaryTouch/position"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""PointerPosition"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": []
@@ -230,11 +460,24 @@ namespace Cosmicrafts
             m_Player_Dash = m_Player.FindAction("Dash", throwIfNotFound: true);
             m_Player_MousePosition = m_Player.FindAction("MousePosition", throwIfNotFound: true);
             m_Player_Zoom = m_Player.FindAction("Zoom", throwIfNotFound: true);
+            // UI
+            m_UI = asset.FindActionMap("UI", throwIfNotFound: true);
+            m_UI_SelectCard1 = m_UI.FindAction("SelectCard1", throwIfNotFound: true);
+            m_UI_SelectCard2 = m_UI.FindAction("SelectCard2", throwIfNotFound: true);
+            m_UI_SelectCard3 = m_UI.FindAction("SelectCard3", throwIfNotFound: true);
+            m_UI_SelectCard4 = m_UI.FindAction("SelectCard4", throwIfNotFound: true);
+            m_UI_SelectCard5 = m_UI.FindAction("SelectCard5", throwIfNotFound: true);
+            m_UI_SelectCard6 = m_UI.FindAction("SelectCard6", throwIfNotFound: true);
+            m_UI_SelectCard7 = m_UI.FindAction("SelectCard7", throwIfNotFound: true);
+            m_UI_SelectCard8 = m_UI.FindAction("SelectCard8", throwIfNotFound: true);
+            m_UI_PrimaryAction = m_UI.FindAction("PrimaryAction", throwIfNotFound: true);
+            m_UI_PointerPosition = m_UI.FindAction("PointerPosition", throwIfNotFound: true);
         }
 
         ~@GameInputActions()
         {
             UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, GameInputActions.Player.Disable() has not been called.");
+            UnityEngine.Debug.Assert(!m_UI.enabled, "This will cause a leak and performance issues, GameInputActions.UI.Disable() has not been called.");
         }
 
         /// <summary>
@@ -435,6 +678,201 @@ namespace Cosmicrafts
         /// Provides a new <see cref="PlayerActions" /> instance referencing this action map.
         /// </summary>
         public PlayerActions @Player => new PlayerActions(this);
+
+        // UI
+        private readonly InputActionMap m_UI;
+        private List<IUIActions> m_UIActionsCallbackInterfaces = new List<IUIActions>();
+        private readonly InputAction m_UI_SelectCard1;
+        private readonly InputAction m_UI_SelectCard2;
+        private readonly InputAction m_UI_SelectCard3;
+        private readonly InputAction m_UI_SelectCard4;
+        private readonly InputAction m_UI_SelectCard5;
+        private readonly InputAction m_UI_SelectCard6;
+        private readonly InputAction m_UI_SelectCard7;
+        private readonly InputAction m_UI_SelectCard8;
+        private readonly InputAction m_UI_PrimaryAction;
+        private readonly InputAction m_UI_PointerPosition;
+        /// <summary>
+        /// Provides access to input actions defined in input action map "UI".
+        /// </summary>
+        public struct UIActions
+        {
+            private @GameInputActions m_Wrapper;
+
+            /// <summary>
+            /// Construct a new instance of the input action map wrapper class.
+            /// </summary>
+            public UIActions(@GameInputActions wrapper) { m_Wrapper = wrapper; }
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard1".
+            /// </summary>
+            public InputAction @SelectCard1 => m_Wrapper.m_UI_SelectCard1;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard2".
+            /// </summary>
+            public InputAction @SelectCard2 => m_Wrapper.m_UI_SelectCard2;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard3".
+            /// </summary>
+            public InputAction @SelectCard3 => m_Wrapper.m_UI_SelectCard3;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard4".
+            /// </summary>
+            public InputAction @SelectCard4 => m_Wrapper.m_UI_SelectCard4;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard5".
+            /// </summary>
+            public InputAction @SelectCard5 => m_Wrapper.m_UI_SelectCard5;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard6".
+            /// </summary>
+            public InputAction @SelectCard6 => m_Wrapper.m_UI_SelectCard6;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard7".
+            /// </summary>
+            public InputAction @SelectCard7 => m_Wrapper.m_UI_SelectCard7;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/SelectCard8".
+            /// </summary>
+            public InputAction @SelectCard8 => m_Wrapper.m_UI_SelectCard8;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/PrimaryAction".
+            /// </summary>
+            public InputAction @PrimaryAction => m_Wrapper.m_UI_PrimaryAction;
+            /// <summary>
+            /// Provides access to the underlying input action "UI/PointerPosition".
+            /// </summary>
+            public InputAction @PointerPosition => m_Wrapper.m_UI_PointerPosition;
+            /// <summary>
+            /// Provides access to the underlying input action map instance.
+            /// </summary>
+            public InputActionMap Get() { return m_Wrapper.m_UI; }
+            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+            public void Enable() { Get().Enable(); }
+            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+            public void Disable() { Get().Disable(); }
+            /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+            public bool enabled => Get().enabled;
+            /// <summary>
+            /// Implicitly converts an <see ref="UIActions" /> to an <see ref="InputActionMap" /> instance.
+            /// </summary>
+            public static implicit operator InputActionMap(UIActions set) { return set.Get(); }
+            /// <summary>
+            /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+            /// </summary>
+            /// <param name="instance">Callback instance.</param>
+            /// <remarks>
+            /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+            /// </remarks>
+            /// <seealso cref="UIActions" />
+            public void AddCallbacks(IUIActions instance)
+            {
+                if (instance == null || m_Wrapper.m_UIActionsCallbackInterfaces.Contains(instance)) return;
+                m_Wrapper.m_UIActionsCallbackInterfaces.Add(instance);
+                @SelectCard1.started += instance.OnSelectCard1;
+                @SelectCard1.performed += instance.OnSelectCard1;
+                @SelectCard1.canceled += instance.OnSelectCard1;
+                @SelectCard2.started += instance.OnSelectCard2;
+                @SelectCard2.performed += instance.OnSelectCard2;
+                @SelectCard2.canceled += instance.OnSelectCard2;
+                @SelectCard3.started += instance.OnSelectCard3;
+                @SelectCard3.performed += instance.OnSelectCard3;
+                @SelectCard3.canceled += instance.OnSelectCard3;
+                @SelectCard4.started += instance.OnSelectCard4;
+                @SelectCard4.performed += instance.OnSelectCard4;
+                @SelectCard4.canceled += instance.OnSelectCard4;
+                @SelectCard5.started += instance.OnSelectCard5;
+                @SelectCard5.performed += instance.OnSelectCard5;
+                @SelectCard5.canceled += instance.OnSelectCard5;
+                @SelectCard6.started += instance.OnSelectCard6;
+                @SelectCard6.performed += instance.OnSelectCard6;
+                @SelectCard6.canceled += instance.OnSelectCard6;
+                @SelectCard7.started += instance.OnSelectCard7;
+                @SelectCard7.performed += instance.OnSelectCard7;
+                @SelectCard7.canceled += instance.OnSelectCard7;
+                @SelectCard8.started += instance.OnSelectCard8;
+                @SelectCard8.performed += instance.OnSelectCard8;
+                @SelectCard8.canceled += instance.OnSelectCard8;
+                @PrimaryAction.started += instance.OnPrimaryAction;
+                @PrimaryAction.performed += instance.OnPrimaryAction;
+                @PrimaryAction.canceled += instance.OnPrimaryAction;
+                @PointerPosition.started += instance.OnPointerPosition;
+                @PointerPosition.performed += instance.OnPointerPosition;
+                @PointerPosition.canceled += instance.OnPointerPosition;
+            }
+
+            /// <summary>
+            /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+            /// </summary>
+            /// <remarks>
+            /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+            /// </remarks>
+            /// <seealso cref="UIActions" />
+            private void UnregisterCallbacks(IUIActions instance)
+            {
+                @SelectCard1.started -= instance.OnSelectCard1;
+                @SelectCard1.performed -= instance.OnSelectCard1;
+                @SelectCard1.canceled -= instance.OnSelectCard1;
+                @SelectCard2.started -= instance.OnSelectCard2;
+                @SelectCard2.performed -= instance.OnSelectCard2;
+                @SelectCard2.canceled -= instance.OnSelectCard2;
+                @SelectCard3.started -= instance.OnSelectCard3;
+                @SelectCard3.performed -= instance.OnSelectCard3;
+                @SelectCard3.canceled -= instance.OnSelectCard3;
+                @SelectCard4.started -= instance.OnSelectCard4;
+                @SelectCard4.performed -= instance.OnSelectCard4;
+                @SelectCard4.canceled -= instance.OnSelectCard4;
+                @SelectCard5.started -= instance.OnSelectCard5;
+                @SelectCard5.performed -= instance.OnSelectCard5;
+                @SelectCard5.canceled -= instance.OnSelectCard5;
+                @SelectCard6.started -= instance.OnSelectCard6;
+                @SelectCard6.performed -= instance.OnSelectCard6;
+                @SelectCard6.canceled -= instance.OnSelectCard6;
+                @SelectCard7.started -= instance.OnSelectCard7;
+                @SelectCard7.performed -= instance.OnSelectCard7;
+                @SelectCard7.canceled -= instance.OnSelectCard7;
+                @SelectCard8.started -= instance.OnSelectCard8;
+                @SelectCard8.performed -= instance.OnSelectCard8;
+                @SelectCard8.canceled -= instance.OnSelectCard8;
+                @PrimaryAction.started -= instance.OnPrimaryAction;
+                @PrimaryAction.performed -= instance.OnPrimaryAction;
+                @PrimaryAction.canceled -= instance.OnPrimaryAction;
+                @PointerPosition.started -= instance.OnPointerPosition;
+                @PointerPosition.performed -= instance.OnPointerPosition;
+                @PointerPosition.canceled -= instance.OnPointerPosition;
+            }
+
+            /// <summary>
+            /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="UIActions.UnregisterCallbacks(IUIActions)" />.
+            /// </summary>
+            /// <seealso cref="UIActions.UnregisterCallbacks(IUIActions)" />
+            public void RemoveCallbacks(IUIActions instance)
+            {
+                if (m_Wrapper.m_UIActionsCallbackInterfaces.Remove(instance))
+                    UnregisterCallbacks(instance);
+            }
+
+            /// <summary>
+            /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+            /// </summary>
+            /// <remarks>
+            /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+            /// </remarks>
+            /// <seealso cref="UIActions.AddCallbacks(IUIActions)" />
+            /// <seealso cref="UIActions.RemoveCallbacks(IUIActions)" />
+            /// <seealso cref="UIActions.UnregisterCallbacks(IUIActions)" />
+            public void SetCallbacks(IUIActions instance)
+            {
+                foreach (var item in m_Wrapper.m_UIActionsCallbackInterfaces)
+                    UnregisterCallbacks(item);
+                m_Wrapper.m_UIActionsCallbackInterfaces.Clear();
+                AddCallbacks(instance);
+            }
+        }
+        /// <summary>
+        /// Provides a new <see cref="UIActions" /> instance referencing this action map.
+        /// </summary>
+        public UIActions @UI => new UIActions(this);
         /// <summary>
         /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Player" which allows adding and removing callbacks.
         /// </summary>
@@ -470,6 +908,84 @@ namespace Cosmicrafts
             /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
             /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
             void OnZoom(InputAction.CallbackContext context);
+        }
+        /// <summary>
+        /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "UI" which allows adding and removing callbacks.
+        /// </summary>
+        /// <seealso cref="UIActions.AddCallbacks(IUIActions)" />
+        /// <seealso cref="UIActions.RemoveCallbacks(IUIActions)" />
+        public interface IUIActions
+        {
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard1(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard2(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard3" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard3(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard4" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard4(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard5" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard5(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard6" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard6(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard7" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard7(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "SelectCard8" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnSelectCard8(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "PrimaryAction" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnPrimaryAction(InputAction.CallbackContext context);
+            /// <summary>
+            /// Method invoked when associated input action "PointerPosition" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+            /// </summary>
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+            /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+            void OnPointerPosition(InputAction.CallbackContext context);
         }
     }
 }

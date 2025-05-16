@@ -1,6 +1,7 @@
 using UnityEngine;
 using System.Collections.Generic;
 using System.Collections;
+using UnityEngine.InputSystem;
 
 namespace Cosmicrafts
 {
@@ -122,84 +123,96 @@ namespace Cosmicrafts
             // Check for dash input if not dashing and cooldown is ready
             if (InputManager.GetDashPressed())
             {
-                if (isDashing)
+                TryDash();
+            }
+            // Also support Space key for consistency with previous behavior using the new Input System
+            else if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+            {
+                TryDash();
+            }
+        }
+        
+        private void TryDash()
+        {
+            // Don't allow dash if already dashing
+            if (isDashing)
+            {
+                return;
+            }
+            
+            // Don't allow dash if on cooldown
+            if (dashCooldownTimer > 0)
+            {
+                return;
+            }
+            
+            // Check if player has enough energy
+            if (!bypassEnergyCheck && GameMng.P != null && !HasEnoughEnergy())
+            {
+                return;
+            }
+            
+            // Get current movement input
+            Vector2 input = InputManager.GetMoveInput();
+            Vector3 moveInput = new Vector3(input.x, 0, input.y);
+            
+            // If we have input, use it for dash direction
+            if (moveInput.sqrMagnitude > 0.01f)
+            {
+                // Convert input to camera-relative direction
+                dashDirection = GetCameraRelativeDirection(moveInput);
+            }
+            else
+            {
+                // Fall back to current facing direction
+                dashDirection = transform.forward;
+            }
+            
+            // Calculate start and end positions
+            dashStartPosition = transform.position;
+            dashEndPosition = dashStartPosition + (dashDirection * dashDistance);
+            
+            // Start the dash
+            isDashing = true;
+            dashTimer = 0f;
+            
+            // Temporarily disable collisions during the dash to prevent getting stuck
+            if (playerCollider != null)
+            {
+                wasCollisionEnabled = playerCollider.enabled;
+                playerCollider.enabled = false;
+            }
+            
+            // Consume energy using GameMng.P
+            if (!bypassEnergyCheck && GameMng.P != null)
+            {
+                ConsumeEnergy();
+            }
+            
+            // If it's a blink, just teleport
+            if (useBlink)
+            {
+                // Perform raycast to ensure we don't blink through walls
+                RaycastHit hit;
+                if (Physics.Raycast(dashStartPosition, dashDirection, out hit, dashDistance))
                 {
-                    return;
+                    // If we hit something, blink to just before the hit point
+                    dashEndPosition = hit.point - (dashDirection * 0.5f);
                 }
                 
-                if (dashCooldownTimer > 0)
+                // Teleport to end position
+                transform.position = dashEndPosition;
+                
+                // Create effect if prefab is assigned
+                if (dashEffectPrefab != null)
                 {
-                    return;
+                    Instantiate(dashEffectPrefab, dashStartPosition, Quaternion.identity);
+                    Instantiate(dashEffectPrefab, dashEndPosition, Quaternion.identity);
                 }
                 
-                // Check if player has enough energy - use GameMng.P instead of playerComponent
-                if (!bypassEnergyCheck && GameMng.P != null && !HasEnoughEnergy())
-                {
-                    return;
-                }
-                
-                // Get current movement input
-                Vector2 input = InputManager.GetMoveInput();
-                Vector3 moveInput = new Vector3(input.x, 0, input.y);
-                
-                // If we have input, use it for dash direction
-                if (moveInput.sqrMagnitude > 0.01f)
-                {
-                    // Convert input to camera-relative direction
-                    dashDirection = GetCameraRelativeDirection(moveInput);
-                }
-                else
-                {
-                    // Fall back to current facing direction
-                    dashDirection = transform.forward;
-                }
-                
-                // Calculate start and end positions
-                dashStartPosition = transform.position;
-                dashEndPosition = dashStartPosition + (dashDirection * dashDistance);
-                
-                // Start the dash
-                isDashing = true;
-                dashTimer = 0f;
-                
-                // Temporarily disable collisions during the dash to prevent getting stuck
-                if (playerCollider != null)
-                {
-                    wasCollisionEnabled = playerCollider.enabled;
-                    playerCollider.enabled = false;
-                }
-                
-                // Consume energy using GameMng.P
-                if (!bypassEnergyCheck && GameMng.P != null)
-                {
-                    ConsumeEnergy();
-                }
-                
-                // If it's a blink, just teleport
-                if (useBlink)
-                {
-                    // Perform raycast to ensure we don't blink through walls
-                    RaycastHit hit;
-                    if (Physics.Raycast(dashStartPosition, dashDirection, out hit, dashDistance))
-                    {
-                        // If we hit something, blink to just before the hit point
-                        dashEndPosition = hit.point - (dashDirection * 0.5f);
-                    }
-                    
-                    // Teleport to end position
-                    transform.position = dashEndPosition;
-                    
-                    // Create effect if prefab is assigned
-                    if (dashEffectPrefab != null)
-                    {
-                        Instantiate(dashEffectPrefab, dashStartPosition, Quaternion.identity);
-                        Instantiate(dashEffectPrefab, dashEndPosition, Quaternion.identity);
-                    }
-                    
-                    // End dash immediately
-                    isDashing = false;
-                    dashCooldownTimer = dashCooldown;
-                }
+                // End dash immediately
+                isDashing = false;
+                dashCooldownTimer = dashCooldown;
             }
         }
         

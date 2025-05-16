@@ -3,6 +3,8 @@
     using TMPro;
     using UnityEngine;
     using UnityEngine.UI;
+    using UnityEngine.InputSystem;
+    using System.Collections.Generic;
 
     /*
      * This is the in-game UI controller
@@ -52,6 +54,12 @@
 
         Color EnemyHpBarColor;
         Color EnemyShieldBarColor;
+        
+        // Currently selected card index (0-7) or -1 if none
+        private int selectedCardIndex = -1;
+        
+        // Gameplay state
+        private bool isGameOver = false;
 
         private void Awake()
         {
@@ -68,12 +76,75 @@
         private void Start()
         {
             // The UIPlayerGameInfo component will automatically update when ICPService data is available
-            // No need to manually initialize it here anymore
+            
+            // Register for primary action input
+            InputManager.SubscribeToPrimaryAction(OnPrimaryAction);
+            
+            // Make sure all cards are deselected at start
+            DeselectCards();
+        }
+        
+        private void OnDestroy()
+        {
+            // Unregister input callbacks
+            InputManager.UnsubscribeFromPrimaryAction(OnPrimaryAction);
+        }
+        
+        private void Update()
+        {
+            // Check for number key presses for card selection
+            for (int i = 0; i < UIDeck.Length; i++)
+            {
+                if (InputManager.IsCardSelected(i + 1))
+                {
+                    // If this card is already selected, deselect it
+                    if (selectedCardIndex == i)
+                    {
+                        DeselectCards();
+                    }
+                    else
+                    {
+                        // Otherwise, select it
+                        SelectCard(i);
+                    }
+                    
+                    break; // Only process one card selection per frame
+                }
+            }
+        }
+        
+        private void OnPrimaryAction(InputAction.CallbackContext context)
+        {
+            if (!context.performed || isGameOver || selectedCardIndex < 0)
+                return;
+                
+            // Check if the player clicks/taps on the deploy area when a card is selected
+            if (AreaDeploy.activeSelf)
+            {
+                // Use the UI-specific pointer position method to avoid conflicts with joystick
+                Vector2 pointerPos = InputManager.GetUIPointerPosition();
+                Ray ray = Camera.main.ScreenPointToRay(pointerPos);
+                RaycastHit hit;
+                
+                // Use the AreaDeploy's layer
+                int areaLayer = AreaDeploy.layer;
+                int layerMask = 1 << areaLayer;
+                
+                if (Physics.Raycast(ray, out hit, 100f, layerMask))
+                {
+                    // Deploy the card at the hit position
+                    DeployCard(selectedCardIndex, hit.point);
+                    
+                    // Deselect after deployment
+                    DeselectCards();
+                }
+            }
         }
 
         // Shows the game over screen
         public void SetGameOver(Team winner)
         {
+            isGameOver = true;
             TopMidInfo.SetActive(false);
             DeckPanel.SetActive(false);
 
@@ -111,8 +182,18 @@
         // Shows a card as selected
         public void SelectCard(int idc)
         {
-            UIDeck[idc].SetSelection(true);
-            AreaDeploy.SetActive(true);
+            // Deselect any currently selected card
+            DeselectCards();
+            
+            // Make sure the index is valid
+            if (idc >= 0 && idc < UIDeck.Length)
+            {
+                UIDeck[idc].SetSelection(true);
+                selectedCardIndex = idc;
+                AreaDeploy.SetActive(true);
+                
+                Debug.Log($"Card {idc} selected");
+            }
         }
 
         // Deselects all cards
@@ -120,9 +201,92 @@
         {
             foreach (UIGameCard card in UIDeck)
             {
-                card.SetSelection(false);
+                if (card != null)
+                {
+                    card.SetSelection(false);
+                }
             }
+            selectedCardIndex = -1;
             AreaDeploy.SetActive(false);
+        }
+        
+        // Deploy the selected card at a position
+        public void DeployCard(int cardIndex, Vector3 position)
+        {
+            if (cardIndex < 0 || cardIndex >= UIDeck.Length || isGameOver)
+                return;
+                
+            UIGameCard card = UIDeck[cardIndex];
+            float currentEnergy = 0f;
+            float maxEnergy = 100f; // Default max energy
+            
+            // Get actual energy from Player
+            if (GameMng.P != null)
+            {
+                currentEnergy = GameMng.P.CurrentEnergy;
+                maxEnergy = GameMng.P.MaxEnergy;
+            }
+            else
+            {
+                // Access energy through GameMng.MT if Player not available
+                if (GameMng.MT != null)
+                {
+                    currentEnergy = GameMng.MT.GetEnergyWasted();
+                }
+            }
+            
+            int energyInt = Mathf.FloorToInt(currentEnergy);
+            
+            if (energyInt >= card.EnergyCost)
+            {
+                Debug.Log($"Deploying card {cardIndex}");
+                
+                // Auto-deployment - directly trigger the Player's DeplyUnit method
+                if (position == Vector3.zero && GameMng.P != null && GameMng.P.useAutoDeployment)
+                {
+                    // Get the card from the player's deck if available
+                    List<NFTsCard> playerDeck = GameMng.P.PlayerDeck;
+                    if (playerDeck != null && cardIndex < playerDeck.Count)
+                    {
+                        NFTsCard nftCard = playerDeck[cardIndex];
+                        GameMng.P.DeplyUnit(nftCard);
+                        
+                        // Update energy UI - handled by Player.RestEnergy, but update here to be safe
+                        UpdateEnergy(GameMng.P.CurrentEnergy, GameMng.P.MaxEnergy);
+                        
+                        // Always deselect after deployment
+                        DeselectCards();
+                        return;
+                    }
+                }
+                
+                // Original manual deployment logic for backward compatibility
+                if (GameMng.P != null)
+                {
+                    // Subtract energy through the Player
+                    GameMng.P.RestEnergy(card.EnergyCost);
+                    currentEnergy = GameMng.P.CurrentEnergy;
+                }
+                else
+                {
+                    // Subtract energy directly if Player not available
+                    currentEnergy -= card.EnergyCost;
+                }
+                
+                // Update energy UI
+                UpdateEnergy(currentEnergy, maxEnergy);
+                
+                // Add to metrics
+                GameMng.MT.AddDeploys(1);
+                
+                // Always deselect after deployment
+                DeselectCards();
+            }
+            else
+            {
+                Debug.Log($"Not enough energy to deploy card {cardIndex}. Need {card.EnergyCost}, have {energyInt}");
+                // Maybe play a "not enough energy" feedback here
+            }
         }
 
         // Update the energy bar and text

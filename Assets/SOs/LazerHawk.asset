@@ -10,10 +10,10 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7af75f40ac3f56d44bf2204debd0eef6, type: 3}
-  m_Name: Spellz
+  m_Name: LazerHawk
   m_EditorClassIdentifier: 
   Prefab: {fileID: 169654, guid: 3b7f8b2e446b1b0439c69edb635440a5, type: 3}
-  IconSprite: {fileID: 21300000, guid: 0ebbecae43fff4749a1a677ab9e6228c, type: 3}
+  IconSprite: {fileID: 21300000, guid: 253ade5030af1b643bf9a54cceb26f01, type: 3}
   Name: Spellzuru
   LocalID: 33
   Faction: 0

@@ -4849,8 +4849,8 @@ MonoBehaviour:
   MyTeam: 0
   PlayerId: 1
   Duration: 1
-  explosionRadius: 25
-  explosionDamage: 100
+  explosionRadius: 30
+  explosionDamage: 160
   damageType: 0
   explosionEffect: {fileID: 8665403994356066475}
   explosionSound: {fileID: 0}
@@ -4859,7 +4859,7 @@ MonoBehaviour:
   criticalStrikeChance: 0
   criticalStrikeMultiplier: 2
   showRadiusGizmo: 1
-  gizmoColor: {r: 1, g: 0.5, b: 0, a: 0.3}
+  gizmoColor: {r: 1, g: 0, b: 0.90361214, a: 1}
 --- !u!1 &700551898306259547
 GameObject:
   m_ObjectHideFlags: 0

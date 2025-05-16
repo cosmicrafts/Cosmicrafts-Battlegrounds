@@ -19,8 +19,18 @@ public class Player : MonoBehaviour
     public Dictionary<string, GameObject> DeckUnits;
 
     [SerializeField] private GameObject characterPrefab;
+    
+    // Spawn points for auto-deployment
+    [Header("Auto Deployment")]
+    [Tooltip("Spawn points for automatically deploying units")]
+    public Transform[] spawnPoints;
+    [Tooltip("Whether to automatically deploy cards without drag & drop")]
+    public bool useAutoDeployment = true;
 
-    List<NFTsCard> PlayerDeck;
+    // Make PlayerDeck accessible
+    private List<NFTsCard> playerDeck = new List<NFTsCard>();
+    public List<NFTsCard> PlayerDeck => playerDeck;
+
     Mesh[] UnitsMeshs;
     Material[] UnitMaterials;
     GameObject[] ShipPreviews;
@@ -57,6 +67,9 @@ private void Awake()
     // Get player movement component
     playerMovement = GetComponent<PlayerMovement>();
 
+    // Initialize or create spawn points if needed
+    InitializeSpawnPoints();
+
     GameObject basePrefabToUse = null;
 
     if (characterPrefab != null)
@@ -85,6 +98,64 @@ private void Awake()
     Debug.Log("--PLAYER END AWAKE--");
 }
 
+// Initialize or create spawn points if none exist
+private void InitializeSpawnPoints()
+{
+    // If no spawn points are set up, create some automatically
+    if (spawnPoints == null || spawnPoints.Length == 0)
+    {
+        Debug.Log("No spawn points found for player, creating default spawn points");
+        
+        // Create a parent object for the spawn points if it doesn't exist
+        Transform spawnPointsParent = transform.Find("SpawnPoints");
+        if (spawnPointsParent == null)
+        {
+            GameObject spawnPointsObj = new GameObject("SpawnPoints");
+            spawnPointsObj.transform.SetParent(transform);
+            spawnPointsParent = spawnPointsObj.transform;
+        }
+        
+        // Number of spawn points to create
+        int numSpawnPoints = 5;
+        spawnPoints = new Transform[numSpawnPoints];
+        
+        // Create spawn points in an arc in front of the player
+        float arcAngle = 120f; // 120-degree arc
+        float radius = 20f;    // Distance from player
+        
+        for (int i = 0; i < numSpawnPoints; i++)
+        {
+            // Calculate position in an arc
+            float angle = -arcAngle/2 + (arcAngle * i / (numSpawnPoints - 1));
+            float radians = angle * Mathf.Deg2Rad;
+            
+            // Position in front of player (assuming player faces +Z)
+            Vector3 position = transform.position + new Vector3(
+                Mathf.Sin(radians) * radius,
+                0f,
+                Mathf.Cos(radians) * radius
+            );
+            
+            // Create spawn point GameObject
+            GameObject spawnPoint = new GameObject($"SpawnPoint_{i+1}");
+            spawnPoint.transform.SetParent(spawnPointsParent);
+            spawnPoint.transform.position = position;
+            
+            // Add a visual indicator in the editor
+            #if UNITY_EDITOR
+            GameObject visualizer = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            visualizer.transform.SetParent(spawnPoint.transform);
+            visualizer.transform.localScale = Vector3.one * 0.5f;
+            visualizer.GetComponent<Collider>().enabled = false;
+            #endif
+            
+            spawnPoints[i] = spawnPoint.transform;
+        }
+        
+        Debug.Log($"Created {numSpawnPoints} default spawn points for player");
+    }
+}
+
 private void Start()
 {
     Debug.Log("--PLAYER STARTS--");
@@ -94,7 +165,7 @@ private void Start()
     UnitDrag.setMeshActive(false);
     InControl = CanGenEnergy = true;
 
-    PlayerDeck = new List<NFTsCard>();
+    playerDeck = new List<NFTsCard>();
     
     // Track which card keys we've already processed to handle duplicates
     HashSet<string> processedCardKeys = new HashSet<string>();
@@ -121,7 +192,7 @@ private void Start()
             }
             
             processedCardKeys.Add(cardData.KeyId);
-            PlayerDeck.Add(cardData);
+            playerDeck.Add(cardData);
             // Add the NFT data to GameMng
             GameMng.GM.AddNftCardData(cardData, ID);
         }
@@ -143,7 +214,7 @@ private void Start()
             }
             
             processedCardKeys.Add(cardData.KeyId);
-            PlayerDeck.Add(cardData);
+            playerDeck.Add(cardData);
             // Add the NFT data to GameMng
             GameMng.GM.AddNftCardData(cardData, ID);
         }
@@ -154,11 +225,11 @@ private void Start()
     UnitsMeshs = new Mesh[8];
     UnitMaterials = new Material[8];
 
-    if (PlayerDeck.Count == 8)
+    if (playerDeck.Count == 8)
     {
         for (int i = 0; i < 8; i++)
         {
-            NFTsCard card = PlayerDeck[i];
+            NFTsCard card = playerDeck[i];
             bool isSpell = (NFTClass)card.EntType == NFTClass.Skill;
             
             // Use the prefab from the NFTs data directly instead of loading from Resources
@@ -269,7 +340,7 @@ private void Start()
         }
     }
 
-    GameMng.UI.InitGameCards(PlayerDeck.ToArray());
+    GameMng.UI.InitGameCards(playerDeck.ToArray());
     Debug.Log("--PLAYER END START--");
 }
 
@@ -471,6 +542,21 @@ public void DeplyUnit(NFTsCard nftcard)
 {
     if (nftcard.EnergyCost <= CurrentEnergy)
     {
+        // Get a spawn position
+        Vector3 spawnPosition;
+        
+        if (useAutoDeployment && spawnPoints != null && spawnPoints.Length > 0)
+        {
+            // Use a random spawn point if auto-deployment is enabled and spawn points exist
+            int randomIndex = Random.Range(0, spawnPoints.Length);
+            spawnPosition = spawnPoints[randomIndex].position;
+        }
+        else
+        {
+            // Fall back to mouse position if needed
+            spawnPosition = CMath.GetMouseWorldPos();
+        }
+        
         if ((NFTClass)nftcard.EntType != NFTClass.Skill)
         {
             // First try to use the prefab from the NFTsCard directly
@@ -484,7 +570,7 @@ public void DeplyUnit(NFTsCard nftcard)
             
             if (unitPrefab != null)
             {
-                Unit unit = GameMng.GM.CreateUnit(unitPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId, ID);
+                Unit unit = GameMng.GM.CreateUnit(unitPrefab, spawnPosition, MyTeam, nftcard.KeyId, ID);
                 if (MyCharacter != null)
                 {
                     MyCharacter.DeployUnit(unit);
@@ -499,6 +585,7 @@ public void DeplyUnit(NFTsCard nftcard)
         }
         else // If the card is a spell
         {
+            // For spells, we'll implement auto-targeting similar to Shooter
             // First try to use the prefab from the NFTsCard directly
             GameObject spellPrefab = nftcard.Prefab;
             
@@ -510,11 +597,23 @@ public void DeplyUnit(NFTsCard nftcard)
             
             if (spellPrefab != null)
             {
+                Vector3 targetPosition = spawnPosition;
+                
+                // If auto-deployment is enabled, try to find a suitable target
+                if (useAutoDeployment)
+                {
+                    Unit targetUnit = FindNearestEnemyUnit(spawnPosition);
+                    if (targetUnit != null)
+                    {
+                        targetPosition = targetUnit.transform.position;
+                    }
+                }
+                
                 // Pass ID to create spell to ensure NFT data gets properly set
                 NFTsSpell spellCard = nftcard as NFTsSpell;
                 if (spellCard != null)
                 {
-                    Spell spell = GameMng.GM.CreateSpell(spellPrefab, CMath.GetMouseWorldPos(), MyTeam, nftcard.KeyId);
+                    Spell spell = GameMng.GM.CreateSpell(spellPrefab, targetPosition, MyTeam, nftcard.KeyId);
                     if (spell != null)
                     {
                         spell.PlayerId = ID; // Ensure PlayerId is set to match the player
@@ -540,6 +639,32 @@ public void DeplyUnit(NFTsCard nftcard)
             }
         }
     }
+}
+
+// Method to find the nearest enemy unit for auto-targeting spells
+private Unit FindNearestEnemyUnit(Vector3 fromPosition)
+{
+    Unit nearestEnemy = null;
+    float minDistance = float.MaxValue;
+    
+    // Get all units in the scene
+    Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
+    
+    foreach (Unit unit in allUnits)
+    {
+        // Skip if null, dead, or on the same team
+        if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
+            continue;
+            
+        float distance = Vector3.Distance(fromPosition, unit.transform.position);
+        if (distance < minDistance)
+        {
+            minDistance = distance;
+            nearestEnemy = unit;
+        }
+    }
+    
+    return nearestEnemy;
 }
 
 public int GetVsTeamInt()

@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
 namespace Cosmicrafts
 {
@@ -36,10 +37,13 @@ namespace Cosmicrafts
 
         void HandleMouseInput()
         {
+            var mouse = Mouse.current;
+            if (mouse == null) return;
+
             // Start selection when the mouse button is pressed
-            if (Input.GetMouseButtonDown(0))
+            if (mouse.leftButton.wasPressedThisFrame)
             {
-                startMousePosition = Input.mousePosition;
+                startMousePosition = mouse.position.ReadValue();
                 isDragging = true;
 
                 // Show selection box UI
@@ -52,12 +56,12 @@ namespace Cosmicrafts
             // Update the selection box as the mouse is dragged
             if (isDragging)
             {
-                endMousePosition = Input.mousePosition;
+                endMousePosition = mouse.position.ReadValue();
                 UpdateSelectionBox();
             }
 
             // Finish selection when the mouse button is released
-            if (Input.GetMouseButtonUp(0))
+            if (mouse.leftButton.wasReleasedThisFrame)
             {
                 isDragging = false;
                 SelectUnitsInArea();
@@ -69,9 +73,9 @@ namespace Cosmicrafts
             }
 
             // Right-click to issue a move or attack command
-            if (Input.GetMouseButtonDown(1) && selectedUnits.Count > 0)
+            if (mouse.rightButton.wasPressedThisFrame && selectedUnits.Count > 0)
             {
-                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                Ray ray = Camera.main.ScreenPointToRay(mouse.position.ReadValue());
                 RaycastHit hit;
 
                 if (Physics.Raycast(ray, out hit, Mathf.Infinity, unitLayerMask | groundLayerMask))

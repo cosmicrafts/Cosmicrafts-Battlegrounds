@@ -7,9 +7,5 @@
 *.unitypackage.meta.meta.meta.meta
 *.unitypackage.meta.meta.meta.meta.meta
 **/Library/*
-**/Library/ScriptAssemblies/*
-**/Library/ScriptAssemblies/Editor/*
-**/Library/ScriptAssemblies/Editor/Assembly-CSharp.dll
-**/Library/ScriptAssemblies/Editor/Assembly-CSharp-Editor.dll
-**/Library/ScriptAssemblies/Editor/Assembly-CSharp-Editor.dll.meta
-**/Library/ScriptAssemblies/Editor/Assembly-CSharp-Editor.dll.meta.meta
+*.tmp
+*.utmp

@@ -2450,7 +2450,7 @@ MonoBehaviour:
   BS_Positions:
   - {x: 0, y: 0, z: -100}
   - {x: 0, y: 0, z: 0}
-  numberOfBots: 0
+  numberOfBots: 1
   botSpacing: 100
   botStartPosition: {x: 0, y: 0, z: 0}
   botSpacingDirection: {x: 1, y: 0, z: 0}

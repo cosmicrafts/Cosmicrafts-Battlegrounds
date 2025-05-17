@@ -2053,7 +2053,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   zoomSpeed: 5
   zoomSmoothTime: 0.1
-  minZoom: 25
+  minZoom: 100
   maxZoom: 150
   mouseWheelMultiplier: 3
   targetToFollow: {fileID: 0}

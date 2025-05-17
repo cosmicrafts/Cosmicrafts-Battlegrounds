@@ -2055,7 +2055,7 @@ MonoBehaviour:
   zoomSmoothTime: 0.1
   minZoom: 75
   maxZoom: 150
-  defaultZoom: 100
+  defaultZoom: 75
   mouseWheelMultiplier: 3
   targetToFollow: {fileID: 0}
   offset: {x: 0, y: 0, z: 0}

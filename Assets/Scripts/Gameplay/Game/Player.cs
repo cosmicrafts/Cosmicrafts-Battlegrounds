@@ -540,6 +540,19 @@ public class Player : MonoBehaviour
                     Unit unit = GameMng.GM.CreateUnit(unitPrefab, spawnPosition, MyTeam, nftcard.KeyId, ID);
                     if (unit != null)
                     {
+                        // Set spawn point and player reference for ships
+                        Ship ship = unit as Ship;
+                        if (ship != null)
+                        {
+                            ship.SetSpawnPoint(spawnPosition);
+                            ship.SetPlayerTransform(transform);
+                            
+                            // Set initial follow properties based on unit type if needed
+                            // You can customize this based on unit type or properties
+                            ship.followPlayerWhenIdle = true;
+                            ship.returnToSpawnWhenIdle = true;
+                        }
+                        
                         RestEnergy(nftcard.EnergyCost);
                         GameMng.MT.AddDeploys(1);
                     }

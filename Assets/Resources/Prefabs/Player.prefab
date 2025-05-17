@@ -315,7 +315,7 @@ MonoBehaviour:
   SpeedEnergy: 5.9
   dashEnergyCost: 2
   TestingDeck:
-  - {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
+  - {fileID: 11400000, guid: c95cb325882b3e5d0bcf232709bf503d, type: 2}
   - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
   - {fileID: 11400000, guid: fa56fcf444849cf4ca2b4daaeea4309c, type: 2}
 --- !u!54 &2198226034328220052
@@ -417,10 +417,10 @@ MonoBehaviour:
   - {fileID: 687067266193771118}
   - {fileID: 4543142144899467828}
   targetValidationRate: 1
-  targetLoseTolerance: 1.5
+  targetLoseTolerance: 1
   priorityMode: 0
   targetSwitchThreshold: 2
-  showDebugVisuals: 1
+  showDebugVisuals: 0
 --- !u!135 &2198226034328220042
 SphereCollider:
   m_ObjectHideFlags: 0

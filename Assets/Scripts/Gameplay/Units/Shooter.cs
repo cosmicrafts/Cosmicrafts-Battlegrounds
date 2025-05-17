@@ -480,6 +480,7 @@ namespace Cosmicrafts
         /// </summary>
         public void SetTarget(Unit target)
         {
+            Unit previousTarget = Target;
             Target = target;
             
             // Update ship behavior
@@ -487,6 +488,7 @@ namespace Cosmicrafts
             
             if (Target == null)
             {
+                // If we lost our target, call ResetDestination which now includes player-following logic
                 MyShip.ResetDestination();
             }
             else
@@ -535,6 +537,14 @@ namespace Cosmicrafts
             if (InRange.Remove(enemy) && Target == enemy)
             {
                 Target = null;
+                
+                // Reset the destination to either follow player or return to spawn based on configuration
+                Ship shipComponent = GetComponent<Ship>();
+                if (shipComponent != null)
+                {
+                    shipComponent.ResetDestination();
+                }
+                
                 FindNewTarget();
             }
         }

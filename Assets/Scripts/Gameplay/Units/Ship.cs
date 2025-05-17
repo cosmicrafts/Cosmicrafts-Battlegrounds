@@ -27,6 +27,22 @@
         public float RotationDamping = 0.1f; // Damping factor for smoother rotation
         public bool AlignRotationWithMovement = true; // Flag to toggle rotation alignment
 
+        [Header("Follow Behavior")]
+        [Tooltip("Whether the ship should follow the player when not attacking")]
+        public bool followPlayerWhenIdle = true;
+        [Tooltip("Distance to maintain when following the player")]
+        [Range(1f, 20f)]
+        public float playerFollowDistance = 5f;
+        [Tooltip("Whether to return to spawn point when not following player")]
+        public bool returnToSpawnWhenIdle = true;
+
+        // Added tracking for original spawn position
+        [HideInInspector]
+        public Vector3 originalSpawnPoint;
+        // Reference to the player transform
+        [HideInInspector]
+        public Transform playerTransform;
+        
         [Header("Regeneration Settings")]
         [Tooltip("Amount of shield points regenerated per second")]
         [Range(0, 50)]
@@ -59,6 +75,9 @@
         Vector3 moveDirection; // Store the current movement direction
         Quaternion targetRotation; // Store the target rotation
         
+        private float playerFollowUpdateTimer = 0f;
+        private float playerFollowUpdateInterval = 1.5f; // Update follow position every 1.5 seconds
+        
         protected override void Start()
         {
             base.Start();
@@ -75,6 +94,18 @@
             
             // Set the SteeringRig to allow for proper turning
             MySt.RotateTowardsTarget = false; // We'll handle rotation ourselves
+            
+            // Initialize player reference if not set already
+            if (playerTransform == null && GameMng.P != null)
+            {
+                playerTransform = GameMng.P.transform;
+            }
+            
+            // If spawn point hasn't been set, use current position
+            if (originalSpawnPoint == Vector3.zero)
+            {
+                originalSpawnPoint = transform.position;
+            }
         }
 
         protected override void Update()
@@ -245,6 +276,32 @@
                             TurnSpeed * Time.deltaTime * (1f - RotationDamping)
                         );
                     }
+                    
+                    // Periodically update position if following player
+                    if (followPlayerWhenIdle && playerTransform != null)
+                    {
+                        // Check if we have a shooter with no targets
+                        Shooter shooter = GetComponent<Shooter>();
+                        bool hasNoTarget = shooter == null || shooter.GetCurrentTarget() == null;
+                        
+                        // Update timer
+                        playerFollowUpdateTimer -= Time.deltaTime;
+                        
+                        // If timer expired and we're not attacking, recalculate follow position
+                        if (playerFollowUpdateTimer <= 0f && hasNoTarget)
+                        {
+                            playerFollowUpdateTimer = playerFollowUpdateInterval;
+                            
+                            // Calculate new follow position
+                            float angleOffset = transform.GetInstanceID() % 360;
+                            Vector3 followPos = playerTransform.position + 
+                                  (Quaternion.Euler(0, angleOffset, 0) * Vector3.forward * playerFollowDistance);
+                                  
+                            // Update destination
+                            MySt.Destination = followPos;
+                            MySt.StoppingDistance = playerFollowDistance * 0.2f;
+                        }
+                    }
                 }
                 else
                 {
@@ -279,8 +336,35 @@
             if (!InControl())
                 return;
 
-            if (Target != null)
+            // Get the shooter component to check if we have any targets
+            Shooter shooter = GetComponent<Shooter>();
+            bool hasTarget = shooter != null && shooter.GetCurrentTarget() != null;
+            
+            // If we have a target, don't reset
+            if (hasTarget)
+                return;
+                
+            // Determine where to go when idle
+            if (followPlayerWhenIdle && playerTransform != null)
             {
+                // Calculate a position near the player based on follow distance
+                float angleOffset = transform.GetInstanceID() % 360; // Unique angle based on instance ID
+                Vector3 followPos = playerTransform.position + 
+                                   (Quaternion.Euler(0, angleOffset, 0) * Vector3.forward * playerFollowDistance);
+                
+                // Set destination to follow the player
+                MySt.Destination = followPos;
+                MySt.StoppingDistance = playerFollowDistance * 0.2f; // Smaller stopping distance for smoother following
+            }
+            else if (returnToSpawnWhenIdle && originalSpawnPoint != Vector3.zero)
+            {
+                // Set destination to original spawn point
+                MySt.Destination = originalSpawnPoint;
+                MySt.StoppingDistance = StoppingDistance;
+            }
+            else if (Target != null)
+            {
+                // Default behavior - go to team target
                 MySt.Destination = Target.position;
                 MySt.StoppingDistance = StoppingDistance;
             }
@@ -373,13 +457,36 @@
             DeathRot = Vector3.zero;
             moveDirection = Vector3.zero;
             
+            // Reset player follow timer
+            playerFollowUpdateTimer = 0f;
+            
             // Re-enable SteeringRig and set target
             if (MySt != null)
             {
                 MySt.enabled = true;
-                Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
-                MySt.Destination = Target.position;
-                MySt.StoppingDistance = StoppingDistance;
+                
+                // Reset destination based on follow behavior
+                if (followPlayerWhenIdle && playerTransform != null)
+                {
+                    // Calculate a position near the player
+                    float angleOffset = transform.GetInstanceID() % 360;
+                    Vector3 followPos = playerTransform.position + 
+                           (Quaternion.Euler(0, angleOffset, 0) * Vector3.forward * playerFollowDistance);
+                    
+                    MySt.Destination = followPos;
+                    MySt.StoppingDistance = playerFollowDistance * 0.2f;
+                }
+                else if (returnToSpawnWhenIdle && originalSpawnPoint != Vector3.zero)
+                {
+                    MySt.Destination = originalSpawnPoint;
+                    MySt.StoppingDistance = StoppingDistance;
+                }
+                else
+                {
+                    Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
+                    MySt.Destination = Target.position;
+                    MySt.StoppingDistance = StoppingDistance;
+                }
             }
             
             // Reset thrusters
@@ -391,6 +498,18 @@
             
             // Re-enable movement
             CanMove = true;
+        }
+
+        // Public method to set the spawn point (called when ship is created)
+        public void SetSpawnPoint(Vector3 spawnPoint)
+        {
+            originalSpawnPoint = spawnPoint;
+        }
+        
+        // Public method to set the player transform reference
+        public void SetPlayerTransform(Transform player)
+        {
+            playerTransform = player;
         }
     }
 }

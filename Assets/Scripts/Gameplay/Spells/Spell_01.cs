@@ -122,30 +122,52 @@ public class Spell_01 : Spell
         beamDirection.Normalize();
         
         // Create a box that encompasses the entire beam
-        Vector3 boxSize = new Vector3(detectionWidth, 2f, beamLength);
+        // Make the box taller to ensure we catch units in the isometric view
+        Vector3 boxSize = new Vector3(detectionWidth, 10f, beamLength);
         Quaternion boxRotation = Quaternion.LookRotation(beamDirection);
         
-        // Get all colliders in the beam area
+        // Draw debug box visualization
+        Matrix4x4 boxMatrix = Matrix4x4.TRS(beamCenter, boxRotation, boxSize);
+        Debug.DrawLine(boxMatrix.MultiplyPoint3x4(new Vector3(-0.5f, -0.5f, -0.5f)), boxMatrix.MultiplyPoint3x4(new Vector3(0.5f, -0.5f, -0.5f)), Color.yellow);
+        Debug.DrawLine(boxMatrix.MultiplyPoint3x4(new Vector3(-0.5f, -0.5f, -0.5f)), boxMatrix.MultiplyPoint3x4(new Vector3(-0.5f, 0.5f, -0.5f)), Color.yellow);
+        Debug.DrawLine(boxMatrix.MultiplyPoint3x4(new Vector3(-0.5f, -0.5f, -0.5f)), boxMatrix.MultiplyPoint3x4(new Vector3(-0.5f, -0.5f, 0.5f)), Color.yellow);
+        
+        // Get all colliders in the beam area with a larger size for initial check
         Collider[] hitColliders = Physics.OverlapBox(beamCenter, boxSize * 0.5f, boxRotation);
+        
+        Debug.Log($"Found {hitColliders.Length} colliders in beam box");
         
         foreach (Collider hitCollider in hitColliders)
         {
             Unit unit = hitCollider.GetComponent<Unit>();
             
-            // Skip invalid units, dead units, or units on our team
-            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
+            // Skip null units or dead units
+            if (unit == null || unit.GetIsDeath())
+            {
                 continue;
-                
-            // Skip MainStation units
-            if (unit.GetComponent<MainStation>() != null)
+            }
+            
+            // Debug log for team check
+            Debug.Log($"Checking unit {unit.name} - MyTeam: {unit.MyTeam}, Spell Team: {MyTeam}, IsMyTeam: {unit.IsMyTeam(MyTeam)}");
+            
+            // Skip units on our team
+            if (unit.IsMyTeam(MyTeam))
+            {
+                Debug.Log($"Skipping {unit.name} - on same team");
                 continue;
-                
+            }
+            
             // Use precise beam intersection check
             if (IsUnitInBeam(unit, _laserPositions[0], _laserPositions[1], detectionWidth))
             {
+                Debug.Log($"Unit {unit.name} is in beam!");
+                
                 if (_damageTimer <= 0.05f && !_damagedUnitsThisTick.Contains(unit.getId()))
                 {
                     _damagedUnitsThisTick.Add(unit.getId());
+                    
+                    // Draw debug line to hit unit
+                    Debug.DrawLine(_laserPositions[0], unit.transform.position, Color.red, 0.1f);
                     
                     if (createPenetrationEffects)
                     {
@@ -165,6 +187,8 @@ public class Spell_01 : Spell
             Unit unit = FindUnitById(unitId);
             if (unit != null && !unit.GetIsDeath())
             {
+                Debug.Log($"Applying {damage} damage to unit {unit.name} (ID: {unitId})");
+                
                 // Apply damage and track it in metrics
                 unit.AddDmg(damage, damageType);
                 
@@ -175,6 +199,9 @@ public class Spell_01 : Spell
                 }
             }
         }
+        
+        // Clear damaged units for next tick
+        _damagedUnitsThisTick.Clear();
     }
     
     private Unit FindUnitById(int id)
@@ -208,34 +235,60 @@ public class Spell_01 : Spell
         Collider unitCollider = unit.GetComponent<Collider>();
         if (unitCollider == null) return false;
         
-        // For isometric view, work in XZ plane
-        Vector2 beamStart2D = new Vector2(beamStart.x, beamStart.z);
-        Vector2 beamEnd2D = new Vector2(beamEnd.x, beamEnd.z);
-        Vector2 unitPos2D = new Vector2(unit.transform.position.x, unit.transform.position.z);
-        
-        // Calculate beam direction in 2D
-        Vector2 beamDir2D = (beamEnd2D - beamStart2D).normalized;
-        Vector2 toUnit2D = unitPos2D - beamStart2D;
-        
-        // Project unit position onto beam line
-        float projection = Vector2.Dot(toUnit2D, beamDir2D);
-        
-        // Check if the projection point is within beam length
-        if (projection < 0 || projection > Vector2.Distance(beamStart2D, beamEnd2D))
-            return false;
-            
-        // Find closest point on beam to unit in 2D
-        Vector2 closestPoint2D = beamStart2D + beamDir2D * projection;
-        
-        // Calculate distance from unit to beam in 2D
-        float distance = Vector2.Distance(unitPos2D, closestPoint2D);
-        
         // Get the unit's bounds
         Bounds bounds = unitCollider.bounds;
-        float unitRadius = Mathf.Max(bounds.extents.x, bounds.extents.z);
+        Vector3 center = bounds.center;
+        Vector3 extents = bounds.extents;
         
-        // Check if unit is within beam width plus unit radius
-        return distance <= (beamWidth * 0.5f + unitRadius);
+        // Check multiple points on the unit's collider
+        Vector3[] checkPoints = new Vector3[]
+        {
+            center,
+            center + new Vector3(extents.x, 0, extents.z),
+            center + new Vector3(-extents.x, 0, extents.z),
+            center + new Vector3(extents.x, 0, -extents.z),
+            center + new Vector3(-extents.x, 0, -extents.z),
+            center + new Vector3(0, 0, extents.z),
+            center + new Vector3(0, 0, -extents.z),
+            center + new Vector3(extents.x, 0, 0),
+            center + new Vector3(-extents.x, 0, 0)
+        };
+        
+        // Project beam to 2D (XZ plane)
+        Vector2 beamStart2D = new Vector2(beamStart.x, beamStart.z);
+        Vector2 beamEnd2D = new Vector2(beamEnd.x, beamEnd.z);
+        Vector2 beamDir2D = (beamEnd2D - beamStart2D).normalized;
+        float beamLength2D = Vector2.Distance(beamStart2D, beamEnd2D);
+        
+        // Check each point
+        foreach (Vector3 point in checkPoints)
+        {
+            Vector2 point2D = new Vector2(point.x, point.z);
+            Vector2 toPoint2D = point2D - beamStart2D;
+            
+            // Project point onto beam line
+            float projection = Vector2.Dot(toPoint2D, beamDir2D);
+            
+            // Skip if point is beyond beam start or end
+            if (projection < 0 || projection > beamLength2D)
+                continue;
+                
+            // Find closest point on beam
+            Vector2 closestPoint2D = beamStart2D + beamDir2D * projection;
+            
+            // Check distance to beam
+            float distance = Vector2.Distance(point2D, closestPoint2D);
+            
+            // If any point is within beam width, unit is hit
+            if (distance <= beamWidth * 0.5f)
+            {
+                // Draw debug visualization
+                Debug.DrawLine(point, new Vector3(closestPoint2D.x, point.y, closestPoint2D.y), Color.green, 0.1f);
+                return true;
+            }
+        }
+        
+        return false;
     }
     
     private void SetupLineRenderer()

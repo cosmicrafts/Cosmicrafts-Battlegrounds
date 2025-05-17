@@ -70,7 +70,7 @@
             }
 
             // Check if the target is destroyed or null
-            if (Target == null || (Target != null && Target.GetComponent<Unit>() != null && Target.GetComponent<Unit>().IsDeath))
+            if (Target == null || !Target.activeInHierarchy || (Target.GetComponent<Unit>() != null && Target.GetComponent<Unit>().IsDeath))
             {
                 Target = null; // Target destroyed or null, continue to last known position
             }
@@ -210,22 +210,50 @@
 
         private void OnTriggerEnter(Collider other)
         {
-
-            if (other.gameObject == Target)
+            try
             {
-                HandleImpact(Target.GetComponent<Unit>());
-            }
-            else if (other.CompareTag("Unit"))
-            {
-                Unit target = other.gameObject.GetComponent<Unit>();
-                if (target != null && !target.IsMyTeam(MyTeam))
+                // First check if the other object is valid
+                if (other == null || !other.gameObject || !other.gameObject.activeInHierarchy)
                 {
-                    HandleImpact(target);
+                    return;
+                }
+                
+                // Check if this is our target
+                if (Target != null && other.gameObject == Target)
+                {
+                    Unit targetUnit = Target.GetComponent<Unit>();
+                    // Ensure target unit is still valid
+                    if (targetUnit != null && !targetUnit.IsDeath)
+                    {
+                        HandleImpact(targetUnit);
+                    }
+                    else
+                    {
+                        // Target unit is no longer valid, just hit with no target
+                        HandleImpact(null);
+                    }
+                }
+                else if (other.CompareTag("Unit"))
+                {
+                    Unit hitUnit = other.gameObject.GetComponent<Unit>();
+                    if (hitUnit != null && !hitUnit.IsDeath && !hitUnit.IsMyTeam(MyTeam))
+                    {
+                        HandleImpact(hitUnit);
+                    }
+                }
+                else if (other.CompareTag("Out"))
+                {
+                    HandleImpact(null); // Apply AoE even if it's out of bounds
                 }
             }
-            else if (other.CompareTag("Out"))
+            catch (System.Exception e)
             {
-                HandleImpact(null); // Apply AoE even if it's out of bounds
+                Debug.LogWarning($"Error in OnTriggerEnter: {e.Message}");
+                // If we encounter an exception, just destroy the projectile
+                if (gameObject != null)
+                {
+                    Destroy(gameObject);
+                }
             }
         }
 
@@ -422,7 +450,7 @@
             }
             
             // Store the last position before clearing the target
-            Vector3 lastPosition = unit != null && unit.gameObject != null 
+            Vector3 lastPosition = unit != null && unit.gameObject != null && unit.gameObject.activeInHierarchy
                 ? unit.transform.position 
                 : LastTargetPosition;
                 

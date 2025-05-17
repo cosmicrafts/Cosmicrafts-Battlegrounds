@@ -199,7 +199,10 @@ namespace Cosmicrafts
                     DirectDmg += Mathf.Abs(Shield);
                     Shield = 0;
                 }
-                UI.SetShieldBar((float)Shield / (float)MaxShield);
+                if (UI != null)
+                {
+                    UI.SetShieldBar((float)Shield / (float)MaxShield);
+                }
             }
             else if (typeDmg != TypeDmg.Shield)
             {
@@ -207,7 +210,8 @@ namespace Cosmicrafts
                 DirectDmg += dmg;
             }
 
-            if (!IsMyTeam(GameMng.P.MyTeam))
+            // Only add damage to metrics if this is an enemy unit
+            if (!IsMyTeam(GameMng.P?.MyTeam ?? Team.Blue) && GameMng.MT != null)
             {
                 GameMng.MT.AddDamage(DirectDmg);
             }
@@ -218,7 +222,10 @@ namespace Cosmicrafts
                 Die();
             }
 
-            UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            if (UI != null)
+            {
+                UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            }
         }
 
         public void AddDmg(int dmg)

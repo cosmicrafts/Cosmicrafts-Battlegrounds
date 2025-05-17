@@ -12,16 +12,8 @@
         public static Player P;
         public static GameMetrics MT;
         public static UIGameMng UI;
-        public List<BotEnemy> Bots = new List<BotEnemy>(); // Replace single BOT with multiple Bots
 
-        public CharacterBaseSO BotBaseSO; // ScriptableObject containing bot data
         public Vector3[] BS_Positions; // Base stations positions
-        
-        [Header("Bot Settings")]
-        public int numberOfBots = 3; // Number of bots to spawn
-        public float botSpacing = 100f; // Distance between bots in units
-        public Vector3 botStartPosition = new Vector3(0, 0, 0); // Starting position for the first bot
-        public Vector3 botSpacingDirection = new Vector3(1, 0, 0); // Direction to space the bots
         
         [Header("Player Respawn Settings")]
         public int playerLives = 9; // Number of lives before game over
@@ -63,170 +55,61 @@
         private void Start()
         {
             Debug.Log("--GAME MANAGER START--");
-
-            // Bots are now spawned in InitBaseStations
-            
             Debug.Log("--GAME MANAGER READY--");
         }
-        
+
         public Unit InitBaseStations(GameObject baseStationPrefab)
         {
-            // Clear the bots list before spawning any new units
-            Bots.Clear();
-
             int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
-            int botBaseIndex = P.MyTeam == Team.Red ? 1 : 0;
-
+            
             // Store the player base station prefab for respawning
             playerBaseStationPrefab = baseStationPrefab;
 
-            Unit playerBaseStation = null;
-            playerBaseStation = Instantiate(baseStationPrefab, BS_Positions[playerBaseIndex], Quaternion.identity).GetComponent<Unit>();
+            // Create player base station
+            Unit playerBaseStation = Instantiate(baseStationPrefab, BS_Positions[playerBaseIndex], Quaternion.identity).GetComponent<Unit>();
             Targets[playerBaseIndex] = playerBaseStation;
             
-            // Explicitly set player base station team
+            // Configure player base station
             playerBaseStation.MyTeam = P.MyTeam;
             playerBaseStation.PlayerId = P.ID;
+            playerBaseStation.setId(GenerateUnitId());
             
-            // Debug log player base station
+            // Subscribe to player base station death event
+            playerBaseStation.OnUnitDeath += HandlePlayerBaseStationDeath;
+            
             Debug.Log($"Player base station created with team: {playerBaseStation.MyTeam}, at position: {BS_Positions[playerBaseIndex]}");
-
-            // Create bot base station only if numberOfBots > 0, otherwise create a minimal placeholder
-            if (numberOfBots > 0)
+            
+            // Find BotSpawner in the scene
+            BotSpawner botSpawner = FindFirstObjectByType<BotSpawner>();
+            if (botSpawner != null)
             {
-                GameObject botBaseStation = BotBaseSO.BasePrefab.GetComponent<BotEnemy>().prefabBaseStation;
-                Targets[botBaseIndex] = Instantiate(botBaseStation, BS_Positions[botBaseIndex], Quaternion.identity).GetComponent<Unit>();
-                Targets[botBaseIndex].PlayerId = 2;
-                Targets[botBaseIndex].MyTeam = Team.Red;
+                // Let BotSpawner handle bot creation
+                botSpawner.Initialize(P.MyTeam, BS_Positions[playerBaseIndex]);
+                botSpawner.SpawnBots();
                 
-                // Base station should count as 1 bot
-                int remainingBots = numberOfBots - 1;
-                
-                // Debug log bot base station
-                Debug.Log($"Bot base station created with team: {Targets[botBaseIndex].MyTeam}, at position: {BS_Positions[botBaseIndex]}");
-                
-                // Add base station's BotEnemy to the Bots list (first bot)
-                BotEnemy baseBot = Targets[botBaseIndex].GetComponent<BotEnemy>();
-                if (baseBot != null)
-                {
-                    Bots.Add(baseBot);
-                    baseBot.botName = "Bot_Base";
-                    Debug.Log($"Added base station to Bots list (counts as 1 bot)");
-                }
-                
-                // Set the IDs of the base stations
-                for (int i = 0; i < Targets.Length; i++)
-                {
-                    if (Targets[i] != null)
-                    {
-                        Targets[i].setId(GenerateUnitId());
-                    }
-                }
-                
-                // Subscribe to player base station death event
-                if (playerBaseStation != null)
-                {
-                    playerBaseStation.OnUnitDeath += HandlePlayerBaseStationDeath;
-                }
-                
-                // Now spawn REMAINING bots with the same team as the bot base station
-                if (remainingBots > 0 && Targets[botBaseIndex] != null)
-                {
-                    Team botTeam = Targets[botBaseIndex].MyTeam;
-                    
-                    // Ensure we have a valid character base SO
-                    if (BotBaseSO == null || BotBaseSO.BasePrefab == null)
-                    {
-                        Debug.LogError("Bot Character Base SO or its BasePrefab is missing!");
-                        return playerBaseStation;
-                    }
-                    
-                    // Debug output before spawning
-                    Debug.Log($"Starting additional bot spawning. Target position: {botStartPosition}, remaining bots: {remainingBots}");
-                    
-                    // CRITICAL CHECK: Ensure botStartPosition is far from both base stations
-                    for (int i = 0; i < BS_Positions.Length; i++)
-                    {
-                        if (Vector3.Distance(botStartPosition, BS_Positions[i]) < 10f)
-                        {
-                            Debug.LogWarning($"Bot start position too close to base station {i}! Adjusting...");
-                            botStartPosition = BS_Positions[i] + new Vector3(20f, 0f, 20f);
-                        }
-                    }
-                    
-                    // Spawn REMAINING bots at different positions
-                    for (int i = 0; i < remainingBots; i++)
-                    {
-                        // Calculate position - ensure it's not at player position
-                        Vector3 botPosition = botStartPosition + (botSpacingDirection.normalized * botSpacing * i);
-                        
-                        // Skip if too close to player base station
-                        if (Vector3.Distance(botPosition, BS_Positions[playerBaseIndex]) < 5f)
-                        {
-                            botPosition += botSpacingDirection.normalized * 10f; // Push away from player
-                            Debug.Log($"Adjusted bot position to avoid player base station");
-                        }
-                        
-                        Debug.Log($"Spawning additional bot {i+1} at position {botPosition}");
-                        
-                        // Instantiate from the base prefab in the SO
-                        GameObject botObj = Instantiate(BotBaseSO.BasePrefab, botPosition, Quaternion.identity);
-                        BotEnemy bot = botObj.GetComponent<BotEnemy>();
-                        
-                        if (bot == null)
-                        {
-                            Debug.LogError("Bot prefab doesn't contain BotEnemy component!");
-                            Destroy(botObj);
-                            continue;
-                        }
-                        
-                        // Apply scriptable object overrides to the bot unit
-                        Unit botUnit = bot.GetComponent<Unit>();
-                        if (botUnit != null)
-                        {
-                            // Set team to SAME as bot base station
-                            botUnit.MyTeam = botTeam;
-                            
-                            // Apply character overrides (HP, shield, damage, etc.)
-                            BotBaseSO.ApplyOverridesToUnit(botUnit);
-                            
-                            // Apply 'on deploy' skills
-                            BotBaseSO.ApplySkillsOnDeploy(botUnit);
-                            
-                            // Log team assignment for debugging
-                            Debug.Log($"Additional bot {i+1} spawned with team: {botUnit.MyTeam}, Player team: {P.MyTeam}, Position: {botObj.transform.position}");
-                        }
-                        
-                        // Add to the Bots list
-                        Bots.Add(bot);
-                        
-                        // Set unique bot name with index
-                        bot.botName = $"Bot_{i+1}";
-                        
-                        // Debug output for detection troubleshooting
-                        Shooter shooter = bot.GetComponent<Shooter>();
-                        if (shooter != null)
-                        {
-                            Debug.Log($"Bot {i+1} CanAttack: {shooter.CanAttack}, RangeDetector: {shooter.RangeDetector}");
-                        }
-                    }
-                    
-                    Debug.Log($"Total bots in list: {Bots.Count} (should be {numberOfBots})");
-                }
-                else
-                {
-                    Debug.Log("No additional bots needed (numberOfBots = 1, base station counts as the bot)");
-                }
+                // Store enemy base station in Targets array
+                int botBaseIndex = P.MyTeam == Team.Blue ? 0 : 1;
+                Targets[botBaseIndex] = botSpawner.GetBotBaseStation();
             }
             else
             {
-                // If numberOfBots is 0, don't create the full bot base station
-                Debug.Log("No bots requested (numberOfBots = 0), skipping bot base station spawn");
-                // We still need a placeholder in the Targets array
-                Targets[botBaseIndex] = null;
+                Debug.LogError("No BotSpawner found in the scene! Enemy team won't be created.");
             }
-
+            
             return playerBaseStation;
+        }
+
+        // Public method to reinitialize base stations
+        public void ReInitializeBaseStations()
+        {
+            if (playerBaseStationPrefab != null)
+            {
+                InitBaseStations(playerBaseStationPrefab);
+            }
+            else
+            {
+                Debug.LogError("Cannot reinitialize - playerBaseStationPrefab is null");
+            }
         }
         
         // Handle player base station death
@@ -272,8 +155,6 @@
                     {
                         collider.enabled = true;
                     }
-                    
-                    //Debug.Log($"Instantly reset player base station to position {BS_Positions[playerBaseIndex]}");
                 }
             }
         }
@@ -282,9 +163,6 @@
         private IEnumerator ResetPlayerBaseStation(Unit baseStation, int baseIndex)
         {
             isRespawning = true;
-            
-            // Debug the current position
-            //Debug.Log($"[Reset] Base station current position: {baseStation.transform.position}, target position: {BS_Positions[baseIndex]}");
             
             // Wait for respawn delay
             yield return new WaitForSeconds(respawnDelay);
@@ -311,19 +189,12 @@
             if (targetUnit != null)
             {
                 // Make sure we're resetting the actual base station
-                //Debug.Log($"[Reset] Found base station unit ID {targetUnit.getId()}, resetting...");
                 
                 // Reset unit first (makes it active again)
                 targetUnit.ResetUnit();
                 
-                // Log before repositioning
-                //Debug.Log($"[Reset] Before repositioning: {targetUnit.transform.position}");
-                
                 // Force position using teleport
                 targetUnit.transform.SetPositionAndRotation(BS_Positions[baseIndex], Quaternion.identity);
-                
-                // Log after repositioning
-                //Debug.Log($"[Reset] After repositioning: {targetUnit.transform.position}, Target: {BS_Positions[baseIndex]}");
                 
                 // Update the Targets reference
                 Targets[baseIndex] = targetUnit;
@@ -340,8 +211,6 @@
                 {
                     shooter.enabled = true;
                 }
-                
-                //Debug.Log($"[Reset] Player base station reset complete at {targetUnit.transform.position}");
             }
             else
             {
@@ -361,8 +230,6 @@
                 
                 // Add to units list
                 AddUnit(newBaseStation);
-                
-                //Debug.Log($"[Reset] Player base station recreated at {BS_Positions[baseIndex]}");
             }
             
             isRespawning = false;
@@ -496,7 +363,7 @@
             return playerLivesRemaining;
         }
 
-        private int GenerateUnitId()
+        public int GenerateUnitId()
         {
             idCounter++;
             return idCounter;
@@ -550,38 +417,6 @@
         {
             TimeSpan currentTime = timeOut.Add(startTime - DateTime.Now);
             return Mathf.Max(0, (int)currentTime.TotalSeconds);
-        }
-
-        // Add public method to respawn bots
-        public void RespawnBots(int newBotCount = -1)
-        {
-            // Clean up existing bots
-            foreach (BotEnemy bot in Bots)
-            {
-                if (bot != null && bot.gameObject != null)
-                {
-                    Destroy(bot.gameObject);
-                }
-            }
-            Bots.Clear();
-            
-            // Update bot count if specified
-            if (newBotCount >= 0)
-            {
-                numberOfBots = newBotCount;
-                Debug.Log($"Updated numberOfBots to {numberOfBots}");
-            }
-            
-            // Only spawn if greater than 0
-            if (playerBaseStationPrefab != null)
-            {
-                Debug.Log($"Respawning with {numberOfBots} bots");
-                InitBaseStations(playerBaseStationPrefab);
-            }
-            else
-            {
-                Debug.LogError("Cannot respawn bots: playerBaseStationPrefab is null");
-            }
         }
     }
 }

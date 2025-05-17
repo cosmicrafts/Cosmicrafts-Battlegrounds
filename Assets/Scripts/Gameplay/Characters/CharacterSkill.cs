@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Cosmicrafts
 {
@@ -203,8 +204,14 @@ namespace Cosmicrafts
                         GameMng.P.SpeedEnergy *= Multiplier;
                         break;
                     case SkillName.BotEnergyMultiplier:
-                        if (GameMng.GM.Bots.Count > 0)
-                            GameMng.GM.Bots[0].SpeedEnergy *= Multiplier;
+                        // Find the BotSpawner directly
+                        BotSpawner botSpawner = UnityEngine.Object.FindAnyObjectByType<BotSpawner>();
+                        if (botSpawner != null)
+                        {
+                            var bots = botSpawner.GetBots();
+                            if (bots != null && bots.Count > 0)
+                                bots[0].SpeedEnergy *= Multiplier;
+                        }
                         break;
                     default:
                         Debug.LogWarning($"Skill {skillName} not recognized for gameplay modification.");

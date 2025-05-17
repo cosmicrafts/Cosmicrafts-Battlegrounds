@@ -7,31 +7,32 @@ using UnityEngine;
 /*
  * Spell 01 - Laser Beam
  * 
- * This spell demonstrates how to create a beam weapon that:
- * 1. Finds the player's MainStation using SpellUtils.FindPlayerMainStation
- * 2. Creates a visible beam using SpellUtils rendering utilities
- * 3. Detects and damages enemy units in the beam path
- * 
- * Use this as a template for creating other beam-like spells.
+ * A high-performance laser beam weapon that:
+ * 1. Locks onto a target and tracks it
+ * 2. Uses efficient enemy detection
+ * 3. Applies continuous damage to all enemies in the beam path
  */
 public class Spell_01 : Spell
 {
     [Header("Laser Configuration")]
+    [Tooltip("Damage dealt per second")]
     public int damagePerSecond = 250;
+    [Tooltip("How often damage is applied")]
     public float damageInterval = 0.25f;
+    [Tooltip("Maximum length of the beam")]
     public float beamLength = 100f;
-    public float beamWidth = 8f;  // This controls both visual width and collision detection width
+    [Tooltip("Width of the beam for visuals and hit detection")]
+    public float beamWidth = 8f;
+    [Tooltip("Type of damage dealt by the laser")]
     public TypeDmg damageType = TypeDmg.Shield;
     
-    [Header("Detection Settings")]
-    [Tooltip("Multiplier applied to beam width for hit detection. Increase this if beam misses targets it should hit.")]
-    public float hitDetectionWidthMultiplier = 1.5f;  // Makes hit detection wider than visual beam
-    [Tooltip("Set to true to auto-target enemies instead of firing in a fixed direction")]
+    [Header("Targeting Settings")]
+    [Tooltip("Whether to automatically target enemies")]
     public bool useAutoTargeting = true;
-    [Tooltip("How often to search for new targets (seconds)")]
-    public float targetSearchInterval = 0.5f;
-    [Tooltip("Maximum targeting range")]
+    [Tooltip("Maximum range for targeting enemies")]
     public float maxTargetingRange = 50f;
+    [Tooltip("Width multiplier for hit detection")]
+    public float hitDetectionWidthMultiplier = 1.5f;
     
     [Header("Critical Hit Settings")]
     [Range(0f, 1f)] public float criticalStrikeChance = 0f;
@@ -50,49 +51,191 @@ public class Spell_01 : Spell
     [Tooltip("Whether to create additional VFX where the beam penetrates through targets")]
     public bool createPenetrationEffects = true;
     
-    // Tracking references
+    // Private variables
     private Unit _mainStationUnit;
-    private List<Unit> _targetsInBeam = new List<Unit>();
+    private Unit _currentTarget;
+    private HashSet<int> _damagedUnitsThisTick = new HashSet<int>();
     private float _damageTimer;
     private Vector3[] _laserPositions = new Vector3[2];
     private int _baseDamagePerTick;
-    
-    // Targeting variables
-    private float _targetSearchTimer;
-    private Unit _currentTarget;
-    
-    // Cached layer mask for target detection
-    private int _targetLayerMask;
     
     protected override void Start()
     {
         base.Start();
         
-        // Initialize damage timer
         _damageTimer = damageInterval;
-        _targetSearchTimer = 0f;
-        
-        // Calculate base damage per tick based on DPS
         _baseDamagePerTick = Mathf.RoundToInt(damagePerSecond * damageInterval);
         
-        // Find the MainStation for the appropriate team using the utility
-        var (mainStation, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
+        var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
         _mainStationUnit = mainStationUnit;
         
-        // Setup the layer mask for target detection
-        _targetLayerMask = LayerMask.GetMask("Unit", "Default");
-        
-        // Initialize the line renderer using SpellUtils
         SetupLineRenderer();
         
-        // Initial position update
-        UpdateLaserBeam();
-        
-        // Find initial target if auto-targeting is enabled
         if (useAutoTargeting)
         {
             FindBestTarget();
         }
+    }
+    
+    protected override void Update()
+    {
+        base.Update();
+        
+        // Validate MainStation
+        if (_mainStationUnit == null || _mainStationUnit.GetIsDeath())
+        {
+            var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
+            _mainStationUnit = mainStationUnit;
+        }
+        
+        // Check target validity only if using auto-targeting
+        if (useAutoTargeting && (_currentTarget == null || _currentTarget.GetIsDeath() || !IsEnemyInRange(_currentTarget)))
+        {
+            FindBestTarget();
+        }
+        
+        // Update beam position and check for hits
+        UpdateLaserBeam();
+        FindTargetsInBeam();
+        
+        // Apply damage on interval
+        if (_damageTimer <= 0)
+        {
+            ApplyDamageToTargets();
+            _damageTimer = damageInterval;
+            _damagedUnitsThisTick.Clear(); // Reset damaged units for next tick
+        }
+        else
+        {
+            _damageTimer -= Time.deltaTime;
+        }
+    }
+    
+    private void FindTargetsInBeam()
+    {
+        float detectionWidth = beamWidth * hitDetectionWidthMultiplier;
+        
+        // Use OverlapBox for more accurate hit detection
+        Vector3 beamCenter = (_laserPositions[0] + _laserPositions[1]) * 0.5f;
+        Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]);
+        float beamLength = beamDirection.magnitude;
+        beamDirection.Normalize();
+        
+        // Create a box that encompasses the entire beam
+        Vector3 boxSize = new Vector3(detectionWidth, 2f, beamLength);
+        Quaternion boxRotation = Quaternion.LookRotation(beamDirection);
+        
+        // Get all colliders in the beam area
+        Collider[] hitColliders = Physics.OverlapBox(beamCenter, boxSize * 0.5f, boxRotation);
+        
+        foreach (Collider hitCollider in hitColliders)
+        {
+            Unit unit = hitCollider.GetComponent<Unit>();
+            
+            // Skip invalid units, dead units, or units on our team
+            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
+                continue;
+                
+            // Skip MainStation units
+            if (unit.GetComponent<MainStation>() != null)
+                continue;
+                
+            // Use precise beam intersection check
+            if (IsUnitInBeam(unit, _laserPositions[0], _laserPositions[1], detectionWidth))
+            {
+                if (_damageTimer <= 0.05f && !_damagedUnitsThisTick.Contains(unit.getId()))
+                {
+                    _damagedUnitsThisTick.Add(unit.getId());
+                    
+                    if (createPenetrationEffects)
+                    {
+                        CreateBeamHitEffects(unit);
+                    }
+                }
+            }
+        }
+    }
+    
+    private void ApplyDamageToTargets()
+    {
+        int damage = CalculateDamage();
+        
+        foreach (int unitId in _damagedUnitsThisTick)
+        {
+            Unit unit = FindUnitById(unitId);
+            if (unit != null && !unit.GetIsDeath())
+            {
+                // Apply damage and track it in metrics
+                unit.AddDmg(damage, damageType);
+                
+                // Add to game metrics if it's an enemy unit
+                if (!unit.IsMyTeam(MyTeam))
+                {
+                    GameMng.MT?.AddDamage(damage);
+                }
+            }
+        }
+    }
+    
+    private Unit FindUnitById(int id)
+    {
+        Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
+        foreach (Unit unit in allUnits)
+        {
+            if (unit != null && unit.getId() == id)
+                return unit;
+        }
+        return null;
+    }
+    
+    private void CreateBeamHitEffects(Unit unit)
+    {
+        Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]).normalized;
+        
+        // Entry point effect
+        Vector3 frontPos = FindBeamIntersectionPoint(unit, _laserPositions[0], beamDirection);
+        SpellUtils.CreateHitEffect(frontPos, beamWidth * 0.3f, Color.yellow, 0.3f);
+        
+        // Exit point effect
+        Vector3 backPos = FindBeamIntersectionPoint(unit, frontPos + beamDirection * 0.1f, beamDirection);
+        SpellUtils.CreateHitEffect(backPos, beamWidth * 0.2f, Color.red, 0.3f);
+    }
+    
+    private bool IsUnitInBeam(Unit unit, Vector3 beamStart, Vector3 beamEnd, float beamWidth)
+    {
+        if (unit == null) return false;
+        
+        Collider unitCollider = unit.GetComponent<Collider>();
+        if (unitCollider == null) return false;
+        
+        // For isometric view, work in XZ plane
+        Vector2 beamStart2D = new Vector2(beamStart.x, beamStart.z);
+        Vector2 beamEnd2D = new Vector2(beamEnd.x, beamEnd.z);
+        Vector2 unitPos2D = new Vector2(unit.transform.position.x, unit.transform.position.z);
+        
+        // Calculate beam direction in 2D
+        Vector2 beamDir2D = (beamEnd2D - beamStart2D).normalized;
+        Vector2 toUnit2D = unitPos2D - beamStart2D;
+        
+        // Project unit position onto beam line
+        float projection = Vector2.Dot(toUnit2D, beamDir2D);
+        
+        // Check if the projection point is within beam length
+        if (projection < 0 || projection > Vector2.Distance(beamStart2D, beamEnd2D))
+            return false;
+            
+        // Find closest point on beam to unit in 2D
+        Vector2 closestPoint2D = beamStart2D + beamDir2D * projection;
+        
+        // Calculate distance from unit to beam in 2D
+        float distance = Vector2.Distance(unitPos2D, closestPoint2D);
+        
+        // Get the unit's bounds
+        Bounds bounds = unitCollider.bounds;
+        float unitRadius = Mathf.Max(bounds.extents.x, bounds.extents.z);
+        
+        // Check if unit is within beam width plus unit radius
+        return distance <= (beamWidth * 0.5f + unitRadius);
     }
     
     private void SetupLineRenderer()
@@ -127,72 +270,6 @@ public class Spell_01 : Spell
             );
             laserEndVFX.name = "LaserEndVFX";
         }
-    }
-    
-    protected override void Update()
-    {
-        base.Update();
-        
-        // Check if MainStation is still valid
-        if (_mainStationUnit == null || _mainStationUnit.GetIsDeath())
-        {
-            // If MainStation is destroyed, try to find it again using SpellUtils
-            var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
-            _mainStationUnit = mainStationUnit;
-        }
-        
-        // Update targeting if auto-targeting is enabled
-        if (useAutoTargeting)
-        {
-            _targetSearchTimer -= Time.deltaTime;
-            if (_targetSearchTimer <= 0f)
-            {
-                FindBestTarget();
-                _targetSearchTimer = targetSearchInterval;
-            }
-            
-            // Validate current target is still valid
-            if (_currentTarget != null && (_currentTarget.GetIsDeath() || !IsEnemyInRange(_currentTarget)))
-            {
-                _currentTarget = null;
-                FindBestTarget();
-            }
-        }
-        
-        // Update laser beam position based on MainStation and targeting
-        UpdateLaserBeam();
-        
-        // Find targets in the beam path
-        FindTargetsInBeam();
-        
-        // Apply damage on interval
-        if (_damageTimer <= 0)
-        {
-            ApplyDamageToTargets();
-            _damageTimer = damageInterval;
-        }
-        else
-        {
-            _damageTimer -= Time.deltaTime;
-        }
-    }
-    
-    // Find the best enemy target using the Shooter's targeting algorithm
-    private void FindBestTarget()
-    {
-        if (_mainStationUnit == null) return;
-        
-        // Use the static utility method from Shooter to find the nearest enemy
-        _currentTarget = Shooter.FindNearestEnemyFromPoint(_mainStationUnit.transform.position, MyTeam, maxTargetingRange);
-    }
-    
-    // Check if an enemy is in targeting range
-    private bool IsEnemyInRange(Unit enemy)
-    {
-        if (_mainStationUnit == null || enemy == null) return false;
-        
-        float distance = Vector3.Distance(_mainStationUnit.transform.position, enemy.transform.position);
-        return distance <= maxTargetingRange;
     }
     
     private void UpdateLaserBeam()
@@ -283,114 +360,22 @@ public class Spell_01 : Spell
         }
     }
     
-    private void FindTargetsInBeam()
+    private void FindBestTarget()
     {
-        // Calculate detection width (use multiplier for easier collision detection)
-        float detectionWidth = beamWidth * hitDetectionWidthMultiplier;
+        if (_mainStationUnit == null) return;
         
-        // Direct approach to find units - similar to Shooter.cs
-        // Get all units in the scene - this is more expensive but more reliable for beam weapons
-        Unit[] allUnits = GameObject.FindObjectsByType<Unit>(FindObjectsSortMode.None);
-        
-        // Clear previous targets
-        _targetsInBeam.Clear();
-        
-        foreach (Unit unit in allUnits)
-        {
-            // Skip units on our team, null, or dead units
-            if (unit == null || unit.GetIsDeath() || unit.IsMyTeam(MyTeam))
-                continue;
-                
-            // Skip MainStation units (they're not damage targets)
-            if (unit.GetComponent<MainStation>() != null)
-                continue;
-                
-            // Check if unit is in beam path
-            if (IsUnitInBeam(unit, _laserPositions[0], _laserPositions[1], detectionWidth))
-            {
-                _targetsInBeam.Add(unit);
-                
-                // Only create visual effects if we're close to damage application
-                if (_damageTimer <= 0.05f && createPenetrationEffects)
-                {
-                    // Calculate beam direction
-                    Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]).normalized;
-                    
-                    // Create hit effect at entry point (front of unit relative to beam)
-                    Vector3 frontPos = FindBeamIntersectionPoint(unit, _laserPositions[0], beamDirection);
-                    SpellUtils.CreateHitEffect(frontPos, beamWidth * 0.3f, Color.yellow, 0.3f);
-                }
-            }
-        }
+        // Use the static utility method from Shooter to find the nearest enemy
+        _currentTarget = Shooter.FindNearestEnemyFromPoint(_mainStationUnit.transform.position, MyTeam, maxTargetingRange);
     }
     
-    // More efficient unit detection for beam (similar to Shooter approach)
-    private bool IsUnitInBeam(Unit unit, Vector3 beamStart, Vector3 beamEnd, float beamWidth)
+    private bool IsEnemyInRange(Unit enemy)
     {
-        Collider unitCollider = unit.GetComponent<Collider>();
-        if (unitCollider == null) return false;
+        if (_mainStationUnit == null || enemy == null) return false;
         
-        // Check if collider bounds intersect with beam
-        Vector3 center = unitCollider.bounds.center;
-        Vector3 extents = unitCollider.bounds.extents;
-        
-        // Simple distance check from center to beam line
-        Vector3 beamDir = (beamEnd - beamStart).normalized;
-        Vector3 toCenter = center - beamStart;
-        
-        // Project toCenter onto beam direction
-        float projLength = Vector3.Dot(toCenter, beamDir);
-        
-        // If projection is outside beam length, unit is not in beam
-        if (projLength < 0 || projLength > Vector3.Distance(beamStart, beamEnd))
-            return false;
-            
-        // Find closest point on beam to center
-        Vector3 projectedPoint = beamStart + beamDir * projLength;
-        
-        // Check if distance from center to beam is less than beam width + unit extents
-        float distance = Vector3.Distance(projectedPoint, center);
-        
-        // Use the largest horizontal extent for beam collision
-        float horizontalExtent = Mathf.Max(extents.x, extents.z);
-        
-        // If distance is less than beam width + unit extent, unit is in beam
-        return distance < (beamWidth / 2 + horizontalExtent);
+        float distance = Vector3.Distance(_mainStationUnit.transform.position, enemy.transform.position);
+        return distance <= maxTargetingRange;
     }
     
-    private void ApplyDamageToTargets()
-    {
-        if (_targetsInBeam.Count == 0) return;
-        
-        // Calculate base damage with multipliers, similar to Shooter.cs
-        int damage = CalculateDamage();
-        
-        foreach (Unit unit in _targetsInBeam)
-        {
-            if (unit != null && !unit.GetIsDeath())
-            {
-                // Apply damage directly with type - similar to Shooter.cs projectile implementation
-                unit.AddDmg(damage, damageType);
-                
-                // Create penetration VFX to show beam passing through target
-                if (createPenetrationEffects)
-                {
-                    // Calculate beam direction
-                    Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]).normalized;
-                    
-                    // Create hit effect at entry point (front of unit relative to beam)
-                    Vector3 frontPos = FindBeamIntersectionPoint(unit, _laserPositions[0], beamDirection);
-                    SpellUtils.CreateHitEffect(frontPos, beamWidth * 0.3f, Color.yellow, 0.3f);
-                    
-                    // Create hit effect at exit point (back of unit relative to beam)
-                    Vector3 backPos = FindBeamIntersectionPoint(unit, frontPos + beamDirection * 0.1f, beamDirection);
-                    SpellUtils.CreateHitEffect(backPos, beamWidth * 0.2f, Color.red, 0.3f);
-                }
-            }
-        }
-    }
-    
-    // Calculate damage with shield multiplier and critical hit chance - similar to Shooter.cs
     private int CalculateDamage()
     {
         // Apply shield damage multiplier from character skills
@@ -405,7 +390,6 @@ public class Spell_01 : Spell
         return finalDamage;
     }
     
-    // Calculate a point where the beam intersects with a unit's collider
     private Vector3 FindBeamIntersectionPoint(Unit unit, Vector3 startPos, Vector3 direction)
     {
         // Use the unit's collider if available

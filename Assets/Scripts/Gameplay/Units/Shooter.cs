@@ -133,7 +133,7 @@ namespace Cosmicrafts
                 }
                 
                 // Only try to shoot if we have a target
-                if (Target != null)
+                if (Target != null && Target.gameObject != null && Target.gameObject.activeInHierarchy && !Target.GetIsDeath())
                 {
                     if (debugLogging && Time.time - lastShootAttempt > 1f)
                     {
@@ -146,18 +146,27 @@ namespace Cosmicrafts
                     wasTargetNull = false;
                     lastKnownTargetPosition = Target.transform.position;
                 }
-                else if (!wasTargetNull)
+                else
                 {
-                    // We just lost our target this frame
-                    if (MyShip != null && StopToAttack)
+                    // Target is null or invalid, make sure it's actually null to trigger proper handling
+                    if (Target != null && (Target.gameObject == null || !Target.gameObject.activeInHierarchy || Target.GetIsDeath()))
                     {
-                        MyShip.ResetDestination();
+                        Target = null;
                     }
-                    wasTargetNull = true;
                     
-                    if (debugLogging)
+                    if (!wasTargetNull)
                     {
-                        Debug.Log($"Lost target. Last reason: {lastFailReason}");
+                        // We just lost our target this frame
+                        if (MyShip != null && StopToAttack)
+                        {
+                            MyShip.ResetDestination();
+                        }
+                        wasTargetNull = true;
+                        
+                        if (debugLogging)
+                        {
+                            Debug.Log($"Lost target. Last reason: {lastFailReason}");
+                        }
                     }
                 }
             }
@@ -247,7 +256,13 @@ namespace Cosmicrafts
             
             string reason = "valid";
             
-            if (Target.GetIsDeath())
+            // Check if target is valid
+            if (Target.gameObject == null || !Target.gameObject.activeInHierarchy)
+            {
+                reason = "target gameObject is null or inactive";
+                Target = null;
+            }
+            else if (Target.GetIsDeath())
             {
                 reason = "target is dead";
                 Target = null;
@@ -344,7 +359,12 @@ namespace Cosmicrafts
         /// </summary>
         public void ShootTarget()
         {
-            if (Target == null) return;
+            // Make sure target is still valid
+            if (Target == null || Target.gameObject == null || !Target.gameObject.activeInHierarchy)
+            {
+                Target = null;
+                return;
+            }
 
             // Quick validity check before proceeding
             if (Target.GetIsDeath())
@@ -416,6 +436,14 @@ namespace Cosmicrafts
         /// </summary>
         private void FireProjectiles()
         {
+            // Final validation check before firing
+            if (Target == null || Target.gameObject == null || !Target.gameObject.activeInHierarchy || Target.GetIsDeath())
+            {
+                // Target is no longer valid, don't fire
+                Target = null;
+                return;
+            }
+            
             foreach (Transform cannon in Cannons)
             {
                 GameObject bulletPrefab = Instantiate(Bullet, cannon.position, cannon.rotation);

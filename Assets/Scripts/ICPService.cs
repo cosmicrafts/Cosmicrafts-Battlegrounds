@@ -68,7 +68,7 @@ public class ICPService : MonoBehaviour
         if (useDevelopmentModeInEditor)
         {
             Log("Using development mode in editor");
-            InitializeWithSeedPhrase(devSeedPhrase);
+            _ = InitializeWithSeedPhrase(devSeedPhrase); // Use discard to indicate intentional non-awaiting
         }
         #elif UNITY_WEBGL
         Log("WebGL mode - waiting for identity from web app");
@@ -77,7 +77,7 @@ public class ICPService : MonoBehaviour
         #else
         // For mobile and other platforms
         Log("Mobile/Other platform detected - using development mode for testing");
-        InitializeWithSeedPhrase(devSeedPhrase);
+        _ = InitializeWithSeedPhrase(devSeedPhrase); // Use discard to indicate intentional non-awaiting
         #endif
     }
     

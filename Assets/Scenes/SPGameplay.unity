@@ -1222,6 +1222,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1440240458}
   m_CullTransparentMesh: 1
+--- !u!1 &1458940565
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1458940567}
+  - component: {fileID: 1458940566}
+  m_Layer: 0
+  m_Name: Bot
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1458940566
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1458940565}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33e1c0ff69aa42f389f0524723d4a883, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  botBaseSO: {fileID: 11400000, guid: 4303fe846bf08e1b6ae8ee11062c7768, type: 2}
+  numberOfBots: 3
+  spawnCenter: {x: 50, y: 0, z: 50}
+  spawnRadius: 30
+  minBotSpacing: 10
+  maxPositioningAttempts: 20
+--- !u!4 &1458940567
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1458940565}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -29.22979, y: 0.00002, z: -39.90876}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1463383982
 GameObject:
   m_ObjectHideFlags: 0
@@ -1433,131 +1483,6 @@ MonoBehaviour:
   m_hasFontAssetChanged: 0
   m_baseMaterial: {fileID: 0}
   m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
---- !u!1001 &1750906196
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_RootOrder
-      value: 8
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: -0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174088, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174090, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_Name
-      value: BOT_2_3
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174090, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: MaxEnergy
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: waitSpawn
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: SpeedEnergy
-      value: 0.5
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: CurrentEnergy
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: maxActiveUnits
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: prefabBaseStation
-      value: 
-      objectReference: {fileID: 2198226034328220048, guid: 1c978d2c277ab1240bb3606376fe754f, type: 3}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: DeckUnits.Array.size
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[0]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[1]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[2]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[3]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[4]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[5]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[6]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    - target: {fileID: 614409388736174091, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
-      propertyPath: 'DeckUnits.Array.data[7]'
-      value: 
-      objectReference: {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: c98f1e7a70e1d428a9c9801954b934bd, type: 3}
 --- !u!1 &2007324872
 GameObject:
   m_ObjectHideFlags: 0
@@ -2445,15 +2370,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cc5ffa928cbb1b4f8ae665490092a97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Bots: []
-  BotBaseSO: {fileID: 11400000, guid: 4303fe846bf08e1b6ae8ee11062c7768, type: 2}
   BS_Positions:
   - {x: 0, y: 0, z: -100}
   - {x: 0, y: 0, z: 0}
-  numberOfBots: 1
-  botSpacing: 100
-  botStartPosition: {x: 0, y: 0, z: 0}
-  botSpacingDirection: {x: 1, y: 0, z: 0}
   playerLives: 5
   respawnDelay: 5
   respawnEffectPrefab: {fileID: 3952169841054198065, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}
@@ -4865,4 +4784,4 @@ SceneRoots:
   - {fileID: 697417429954438962}
   - {fileID: 2018689341}
   - {fileID: 697417430648073629}
-  - {fileID: 1750906196}
+  - {fileID: 1458940567}

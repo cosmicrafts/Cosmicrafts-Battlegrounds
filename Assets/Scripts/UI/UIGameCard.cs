@@ -49,7 +49,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
         }
         
         // Get reference to game manager
-        uiGameMng = FindObjectOfType<UIGameMng>();
+        uiGameMng = Object.FindFirstObjectByType<UIGameMng>();
     }
     
     private void Start()

@@ -2053,8 +2053,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   zoomSpeed: 5
   zoomSmoothTime: 0.1
-  minZoom: 100
+  minZoom: 75
   maxZoom: 150
+  defaultZoom: 100
   mouseWheelMultiplier: 3
   targetToFollow: {fileID: 0}
   offset: {x: 0, y: 0, z: 0}
@@ -2370,7 +2371,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cc5ffa928cbb1b4f8ae665490092a97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerPrefab: {fileID: 0}
   characterSO: {fileID: 11400000, guid: 7120f2145aa385e43a18776aebd601cd, type: 2}
   BS_Positions:
   - {x: 0, y: 0, z: -100}

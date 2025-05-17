@@ -10,6 +10,8 @@ public class CameraController : MonoBehaviour
     public float zoomSmoothTime = 0.1f;
     public float minZoom = 25f;
     public float maxZoom = 100f;
+    [Tooltip("Default zoom level when the camera starts")]
+    public float defaultZoom = 60f;
     [Tooltip("Multiplier for mouse wheel sensitivity")]
     public float mouseWheelMultiplier = 3f;
 
@@ -35,7 +37,9 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         cam = GetComponent<Camera>();
-        targetZoom = cam.orthographicSize;
+        // Use the default zoom value from the inspector
+        targetZoom = defaultZoom;
+        cam.orthographicSize = defaultZoom;
 
         // Assign button events (if buttons exist)
         if (zoomInButton != null) zoomInButton.onClick.AddListener(ZoomIn);

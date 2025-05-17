@@ -403,7 +403,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
   CanAttack: 1
-  RangeDetector: 16.5
+  RangeDetector: 28
   CoolDown: 0.2
   BulletSpeed: 99
   BulletDamage: 4

@@ -65,16 +65,13 @@ MonoBehaviour:
   MyTeam: 0
   PlayerId: 1
   Duration: 1
-  damagePerSecond: 260
+  damagePerSecond: 160
   damageInterval: 0.1
   beamLength: 250
-  beamWidth: 5
+  beamWidth: 3.5
   damageType: 0
-  useAutoTargeting: 0
-  maxTargetingRange: 260
-  hitDetectionWidthMultiplier: 5
-  criticalStrikeChance: 0.058
-  criticalStrikeMultiplier: 2
+  criticalStrikeChance: 0.075
+  criticalStrikeMultiplier: 2.5
   ShieldDamageMultiplier: 1
   laserLineRenderer: {fileID: 7450480653438804957}
   laserStartVFX: {fileID: 2952778753973073564}

@@ -138,7 +138,7 @@
                 
                 if (showDebugLogs)
                 {
-                    Debug.Log($"[{myTeam}] Detector: Added enemy {otherUnit.name} to targets list");
+                  //  Debug.Log($"[{myTeam}] Detector: Added enemy {otherUnit.name} to targets list");
                 }
             }
         }
@@ -164,7 +164,7 @@
                 
                 if (showDebugLogs)
                 {
-                    Debug.Log($"[{myTeam}] Detector: Removed enemy {otherUnit.name} from targets list");
+                   // Debug.Log($"[{myTeam}] Detector: Removed enemy {otherUnit.name} from targets list");
                 }
             }
         }

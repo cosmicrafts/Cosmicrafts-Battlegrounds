@@ -36,10 +36,13 @@
         [Tooltip("Whether to return to spawn point when not following player")]
         public bool returnToSpawnWhenIdle = true;
 
-        // Added tracking for original spawn position
+        // Store original spawn point as a position relative to player
         [HideInInspector]
-        public Vector3 originalSpawnPoint;
-        // Reference to the player transform
+        public Vector3 originalSpawnPointLocalPosition;
+        // Reference to the specific spawn point transform if available
+        [HideInInspector]
+        public Transform spawnPointTransform;
+        // The player transform
         [HideInInspector]
         public Transform playerTransform;
         
@@ -99,12 +102,6 @@
             if (playerTransform == null && GameMng.P != null)
             {
                 playerTransform = GameMng.P.transform;
-            }
-            
-            // If spawn point hasn't been set, use current position
-            if (originalSpawnPoint == Vector3.zero)
-            {
-                originalSpawnPoint = transform.position;
             }
         }
 
@@ -228,6 +225,54 @@
             }
         }
 
+        // Get the position where this ship should be relative to the player
+        private Vector3 GetFormationPosition()
+        {
+            if (playerTransform == null)
+                return transform.position;
+                
+            // The ship will maintain its relative position to the player based on its original spawn
+            // This creates a more natural formation that maintains the player's intended deployment
+            
+            // If we have a spawn point reference, use its position
+            if (spawnPointTransform != null && spawnPointTransform.gameObject.activeInHierarchy)
+            {
+                return spawnPointTransform.position;
+            }
+            
+            // Otherwise calculate based on the stored local position
+            return playerTransform.TransformPoint(originalSpawnPointLocalPosition);
+        }
+        
+        // Calculate a position to follow based on player and formation
+        private Vector3 CalculateFollowPosition()
+        {
+            if (playerTransform == null)
+                return transform.position;
+                
+            // Get the formation position (where the ship would be if exactly following its spawn point)
+            Vector3 formationPos = GetFormationPosition();
+            
+            // Get the player forward direction
+            Vector3 playerForward = playerTransform.forward;
+            
+            // Calculate the desired distance between player and ship
+            float desiredDistance = playerFollowDistance;
+            
+            // Current distance between ship's formation position and player
+            float currentDistance = Vector3.Distance(formationPos, playerTransform.position);
+            
+            // If we're already in a good formation position, use it
+            if (Mathf.Abs(currentDistance - desiredDistance) < 2f)
+            {
+                return formationPos;
+            }
+            
+            // Otherwise create a blended position that maintains relative angle but adjusts distance
+            Vector3 directionFromPlayer = (formationPos - playerTransform.position).normalized;
+            return playerTransform.position + directionFromPlayer * desiredDistance;
+        }
+        
         void Move()
         {
             if (IsDeath)
@@ -278,28 +323,36 @@
                     }
                     
                     // Periodically update position if following player
-                    if (followPlayerWhenIdle && playerTransform != null)
+                    if (playerTransform != null)
                     {
-                        // Check if we have a shooter with no targets
-                        Shooter shooter = GetComponent<Shooter>();
-                        bool hasNoTarget = shooter == null || shooter.GetCurrentTarget() == null;
-                        
                         // Update timer
                         playerFollowUpdateTimer -= Time.deltaTime;
                         
-                        // If timer expired and we're not attacking, recalculate follow position
-                        if (playerFollowUpdateTimer <= 0f && hasNoTarget)
+                        // If timer expired and we're not attacking, recalculate positions
+                        if (playerFollowUpdateTimer <= 0f)
                         {
                             playerFollowUpdateTimer = playerFollowUpdateInterval;
                             
-                            // Calculate new follow position
-                            float angleOffset = transform.GetInstanceID() % 360;
-                            Vector3 followPos = playerTransform.position + 
-                                  (Quaternion.Euler(0, angleOffset, 0) * Vector3.forward * playerFollowDistance);
-                                  
-                            // Update destination
-                            MySt.Destination = followPos;
-                            MySt.StoppingDistance = playerFollowDistance * 0.2f;
+                            // Update spawn point reference if needed
+                            if (spawnPointTransform != null && spawnPointTransform.gameObject.activeInHierarchy)
+                            {
+                                // Update the local position in case the spawn point has moved
+                                originalSpawnPointLocalPosition = playerTransform.InverseTransformPoint(spawnPointTransform.position);
+                            }
+                            
+                            // Check if we have a shooter with no targets
+                            Shooter shooter = GetComponent<Shooter>();
+                            bool hasNoTarget = shooter == null || shooter.GetCurrentTarget() == null;
+                            
+                            if (hasNoTarget && followPlayerWhenIdle)
+                            {
+                                // Calculate new formation position using the more advanced method
+                                Vector3 followPos = CalculateFollowPosition();
+                                
+                                // Update destination
+                                MySt.Destination = followPos;
+                                MySt.StoppingDistance = playerFollowDistance * 0.2f;
+                            }
                         }
                     }
                 }
@@ -347,19 +400,20 @@
             // Determine where to go when idle
             if (followPlayerWhenIdle && playerTransform != null)
             {
-                // Calculate a position near the player based on follow distance
-                float angleOffset = transform.GetInstanceID() % 360; // Unique angle based on instance ID
-                Vector3 followPos = playerTransform.position + 
-                                   (Quaternion.Euler(0, angleOffset, 0) * Vector3.forward * playerFollowDistance);
+                // Use the new method to calculate an intelligent follow position
+                Vector3 followPos = CalculateFollowPosition();
                 
                 // Set destination to follow the player
                 MySt.Destination = followPos;
                 MySt.StoppingDistance = playerFollowDistance * 0.2f; // Smaller stopping distance for smoother following
             }
-            else if (returnToSpawnWhenIdle && originalSpawnPoint != Vector3.zero)
+            else if (returnToSpawnWhenIdle && playerTransform != null)
             {
-                // Set destination to original spawn point
-                MySt.Destination = originalSpawnPoint;
+                // Calculate the current world position of the spawn point using GetFormationPosition
+                Vector3 currentSpawnPos = GetFormationPosition();
+                
+                // Set destination to the updated spawn point position
+                MySt.Destination = currentSpawnPos;
                 MySt.StoppingDistance = StoppingDistance;
             }
             else if (Target != null)
@@ -468,17 +522,18 @@
                 // Reset destination based on follow behavior
                 if (followPlayerWhenIdle && playerTransform != null)
                 {
-                    // Calculate a position near the player
-                    float angleOffset = transform.GetInstanceID() % 360;
-                    Vector3 followPos = playerTransform.position + 
-                           (Quaternion.Euler(0, angleOffset, 0) * Vector3.forward * playerFollowDistance);
+                    // Use the new method to calculate follow position
+                    Vector3 followPos = CalculateFollowPosition();
                     
                     MySt.Destination = followPos;
                     MySt.StoppingDistance = playerFollowDistance * 0.2f;
                 }
-                else if (returnToSpawnWhenIdle && originalSpawnPoint != Vector3.zero)
+                else if (returnToSpawnWhenIdle && playerTransform != null)
                 {
-                    MySt.Destination = originalSpawnPoint;
+                    // Use the GetFormationPosition method to get current spawn position
+                    Vector3 currentSpawnPos = GetFormationPosition();
+                    
+                    MySt.Destination = currentSpawnPos;
                     MySt.StoppingDistance = StoppingDistance;
                 }
                 else
@@ -500,10 +555,27 @@
             CanMove = true;
         }
 
-        // Public method to set the spawn point (called when ship is created)
-        public void SetSpawnPoint(Vector3 spawnPoint)
+        // Replace the SetSpawnPoint method to store position relative to player
+        public void SetSpawnPoint(Vector3 worldSpawnPoint, Transform spawnPointTransform = null)
         {
-            originalSpawnPoint = spawnPoint;
+            if (playerTransform != null)
+            {
+                // Store the spawn point as a position relative to the player
+                originalSpawnPointLocalPosition = playerTransform.InverseTransformPoint(worldSpawnPoint);
+                
+                // Store reference to the spawn point transform if provided
+                this.spawnPointTransform = spawnPointTransform;
+            }
+        }
+        
+        // Method to update spawn point positions during formation changes
+        public void UpdateSpawnPointPosition()
+        {
+            if (spawnPointTransform != null && spawnPointTransform.gameObject.activeInHierarchy)
+            {
+                // Update the local position relative to player based on current spawn point transform
+                originalSpawnPointLocalPosition = playerTransform.InverseTransformPoint(spawnPointTransform.position);
+            }
         }
         
         // Public method to set the player transform reference

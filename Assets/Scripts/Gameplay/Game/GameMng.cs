@@ -377,7 +377,14 @@
 
         public Color GetColorUnit(Team team, int playerId)
         {
-            // Return appropriate color based on team and player ID
+            // Check if this is a player-controlled unit first (player's team and ID match)
+            if (P != null && team == P.MyTeam && playerId == P.ID)
+            {
+                // Return a distinct color for the player's own units (green)
+                return Color.green;
+            }
+            
+            // Otherwise use team colors for enemies and allies not controlled by player
             return team == Team.Blue ? Color.blue : Color.red;
         }
 

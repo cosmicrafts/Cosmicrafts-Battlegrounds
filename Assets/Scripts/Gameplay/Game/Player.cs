@@ -108,19 +108,27 @@ public class Player : MonoBehaviour
         }
     }
 
-    // Get a spawn position in world space
-    private Vector3 GetSpawnPosition()
+    // Get a spawn position in world space and its transform
+    private (Vector3 position, Transform spawnTransform) GetSpawnPositionAndTransform()
     {
         if (spawnPoints == null || spawnPoints.Count == 0)
-            return transform.position;
+            return (transform.position, null);
 
         // Get a random spawn point
-        Transform spawnPoint = spawnPoints[Random.Range(0, spawnPoints.Count)];
+        int index = Random.Range(0, spawnPoints.Count);
+        Transform spawnPoint = spawnPoints[index];
         if (spawnPoint == null)
-            return transform.position;
+            return (transform.position, null);
 
-        // Use the spawn point's position directly
-        return spawnPoint.position;
+        // Return both the position and transform
+        return (spawnPoint.position, spawnPoint);
+    }
+    
+    // Maintain the original method for backward compatibility
+    private Vector3 GetSpawnPosition()
+    {
+        var (position, _) = GetSpawnPositionAndTransform();
+        return position;
     }
 
     private void Start()
@@ -517,6 +525,7 @@ public class Player : MonoBehaviour
         if (nftcard.EnergyCost <= CurrentEnergy)
         {
             Vector3 spawnPosition;
+            Transform usedSpawnPoint = null;
             
             if (targetPosition != Vector3.zero)
             {
@@ -524,7 +533,24 @@ public class Player : MonoBehaviour
             }
             else if (useAutoDeployment && spawnPoints != null && spawnPoints.Count > 0)
             {
-                spawnPosition = GetSpawnPosition();
+                // Get a spawn point using a deterministic method to maintain units' assignment to spawn points
+                int spawnPointIndex = 0;
+                
+                // If using hashed ID from card to pick spawn point
+                if (nftcard != null && !string.IsNullOrEmpty(nftcard.KeyId))
+                {
+                    // Use card ID hash to pick a consistent spawn point for this card
+                    spawnPointIndex = Mathf.Abs(nftcard.KeyId.GetHashCode()) % spawnPoints.Count;
+                }
+                else
+                {
+                    // Fallback to random spawn point
+                    spawnPointIndex = UnityEngine.Random.Range(0, spawnPoints.Count);
+                }
+                
+                // Store the actual Transform reference
+                usedSpawnPoint = spawnPoints[spawnPointIndex];
+                spawnPosition = usedSpawnPoint.position;
             }
             else
             {
@@ -544,7 +570,8 @@ public class Player : MonoBehaviour
                         Ship ship = unit as Ship;
                         if (ship != null)
                         {
-                            ship.SetSpawnPoint(spawnPosition);
+                            // Pass both the world position and the actual spawn point Transform
+                            ship.SetSpawnPoint(spawnPosition, usedSpawnPoint);
                             ship.SetPlayerTransform(transform);
                             
                             // Set initial follow properties based on unit type if needed

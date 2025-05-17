@@ -96,13 +96,28 @@ namespace Cosmicrafts
             MaxHp = HitPoints;
             Level = Mathf.Clamp(Level, 1, 999);
             MyRb = GetComponent<Rigidbody>();
+            
+            // Setup outlinable properly
             MyOutline = Mesh.GetComponent<Outlinable>();
+            if (MyOutline == null)
+            {
+                // If no outlinable on mesh, try to add one
+                MyOutline = Mesh.AddComponent<Outlinable>();
+            }
+            
+            // Ensure all child renderers are added to the outline targets
+            MyOutline.AddAllChildRenderersToRenderingList(EPOOutline.RenderersAddingMode.MeshRenderer | 
+                                                         EPOOutline.RenderersAddingMode.SkinnedMeshRenderer);
+            
             TrigerBase = GetComponent<SphereCollider>();
             SolidBase = Mesh.GetComponent<SphereCollider>();
 
             UI.Init(MaxHp - 1, MaxShield - 1);
             UI.SetColorBars(!IsMyTeam(GameMng.P.MyTeam));
-            MyOutline.OutlineParameters.Color = GameMng.GM.GetColorUnit(MyTeam, PlayerId);
+            
+            // Use the new method to set outline color
+            UpdateOutlineColor();
+            
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
             MyAnim = Mesh.GetComponent<Animator>();
@@ -432,6 +447,9 @@ namespace Cosmicrafts
             Level = nFTsUnit.Level;
 
             GetComponent<Shooter>()?.InitStatsFromNFT(nFTsUnit);
+            
+            // Update outline color when NFT data is set
+            UpdateOutlineColor();
         }
 
         public bool InControl()
@@ -538,6 +556,34 @@ namespace Cosmicrafts
             }
             
             //Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
+        }
+
+        // Method to update the outline color based on current team and player ID
+        public void UpdateOutlineColor()
+        {
+            if (MyOutline != null && GameMng.GM != null)
+            {
+                // Make sure outline is enabled
+                if (MyOutline.OutlineParameters != null)
+                {
+                    MyOutline.OutlineParameters.Enabled = true;
+                    
+                    // Set color based on team
+                    Color outlineColor = GameMng.GM.GetColorUnit(MyTeam, PlayerId);
+                    MyOutline.OutlineParameters.Color = outlineColor;
+                    
+                    // Ensure outline has proper visibility
+                    if (MyOutline.OutlineTargets.Count == 0)
+                    {
+                        MyOutline.AddAllChildRenderersToRenderingList(EPOOutline.RenderersAddingMode.MeshRenderer | 
+                                                                     EPOOutline.RenderersAddingMode.SkinnedMeshRenderer);
+                    }
+                    
+                    // Set adequate outline width
+                    MyOutline.OutlineParameters.DilateShift = 0.5f;
+                    MyOutline.OutlineParameters.BlurShift = 1.0f;
+                }
+            }
         }
     }
 }

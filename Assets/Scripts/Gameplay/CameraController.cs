@@ -116,7 +116,7 @@ public class CameraController : MonoBehaviour
             // Apply zoom change
             targetZoom -= scrollInput * zoomSpeed;
             targetZoom = Mathf.Clamp(targetZoom, minZoom, maxZoom);
-            Debug.Log($"Mouse wheel zoom: {scrollInput}, target zoom: {targetZoom}");
+           // Debug.Log($"Mouse wheel zoom: {scrollInput}, target zoom: {targetZoom}");
         }
     }
     

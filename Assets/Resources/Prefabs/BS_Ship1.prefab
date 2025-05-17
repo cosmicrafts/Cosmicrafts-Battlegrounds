@@ -118,6 +118,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MyUnit: {fileID: 1221812395794976959}
   MyShooter: {fileID: 2198226034328220054}
+  showDebugLogs: 1
 --- !u!1 &2198226034328220048
 GameObject:
   m_ObjectHideFlags: 0
@@ -127,6 +128,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2198226034328220055}
+  - component: {fileID: 6296465183327678887}
   - component: {fileID: 2198226034328220052}
   - component: {fileID: 1107383137566633056}
   - component: {fileID: 1221812395794976959}
@@ -164,6 +166,29 @@ Transform:
   - {fileID: 4758417846266104850}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6296465183327678887
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2198226034328220048}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 02e479c5bf7fefc469048b81a423d6e4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  botName: Alpha-9
+  botLv: 420
+  botAvatar: 1
+  prefabBaseStation: {fileID: 2198226034328220048}
+  DeckUnits:
+  - {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
+  CurrentEnergy: 1
+  MaxEnergy: 10
+  SpeedEnergy: 0.5
+  waitSpawn: 2
+  maxActiveUnits: 4
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -217,9 +242,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   IsDeath: 0
   PlayerId: 1
-  MyTeam: 0
-  HitPoints: 999999
-  Shield: 999999
+  MyTeam: 1
+  HitPoints: 1000
+  Shield: 1000
   ShieldDelay: 1
   Size: 4
   SpawnAreaSize: 12
@@ -249,7 +274,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   EnemyDetector: {fileID: 2198226032576818155}
   CanAttack: 1
-  RangeDetector: 52
+  RangeDetector: 69.3
   CoolDown: 0.2
   BulletSpeed: 99
   BulletDamage: 4

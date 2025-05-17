@@ -40,6 +40,11 @@ namespace Cosmicrafts
         private float lastTargetCheckTime = 0f;
         private bool wasTargetNull = true;
         private Vector3 lastKnownTargetPosition = Vector3.zero;
+        
+        // Debug variables
+        private bool debugLogging = false;
+        private float lastShootAttempt = 0f;
+        private string lastFailReason = "none";
 
         // For target selection timing
         private float targetSelectionCooldown = 0f;
@@ -62,7 +67,19 @@ namespace Cosmicrafts
             InRange = new HashSet<Unit>();
             EnemyDetector.radius = RangeDetector;
             MyShip = GetComponent<Ship>();
-            MyUnit = GetComponent<Unit>();
+
+            // Ensure MyUnit is assigned
+            if (MyUnit == null)
+            {
+                MyUnit = GetComponent<Unit>();
+                if (MyUnit == null)
+                {
+                    Debug.LogError($"Shooter on {gameObject.name} is missing MyUnit reference and couldn't find one on the GameObject. Disabling Shooter.");
+                    enabled = false; // Disable the shooter if no Unit component is found
+                    return;
+                }
+            }
+
             MuzzleFlash = new ParticleSystem[Cannons.Length];
 
             for (int i = 0; i < Cannons.Length; i++)
@@ -79,18 +96,36 @@ namespace Cosmicrafts
 
         void Update()
         {
+            // Gracefully handle if MyUnit is destroyed or becomes null
+            if (MyUnit == null)
+            {
+                return; // Exit Update if MyUnit is not valid
+            }
+
             if (!MyUnit.GetIsDeath() && CanAttack && MyUnit.InControl())
             {
                 // Decrement timers
                 if (targetSelectionCooldown > 0)
                     targetSelectionCooldown -= Time.deltaTime;
                 
-                // Validate target more frequently
+                // Check for targets more frequently
                 if (Time.time - lastTargetCheckTime > targetValidationRate)
                 {
                     ValidateTarget();
                     PerformDistanceCheck();
                     lastTargetCheckTime = Time.time;
+                    
+                    // If we don't have a target, try to find one
+                    if (Target == null && InRange.Count > 0)
+                    {
+                        FindNewTarget();
+                    }
+                    
+                    // Always ensure detector radius matches range
+                    if (EnemyDetector != null && !Mathf.Approximately(EnemyDetector.radius, RangeDetector))
+                    {
+                        EnemyDetector.radius = RangeDetector;
+                    }
                     
                     // Update debug visuals
                     if (showDebugVisuals)
@@ -100,6 +135,12 @@ namespace Cosmicrafts
                 // Only try to shoot if we have a target
                 if (Target != null)
                 {
+                    if (debugLogging && Time.time - lastShootAttempt > 1f)
+                    {
+                        Debug.Log($"Attempting to shoot at target: {Target.name}");
+                        lastShootAttempt = Time.time;
+                    }
+                    
                     ShootTarget();
                     // Track that we had a target last frame and update last known position
                     wasTargetNull = false;
@@ -113,6 +154,11 @@ namespace Cosmicrafts
                         MyShip.ResetDestination();
                     }
                     wasTargetNull = true;
+                    
+                    if (debugLogging)
+                    {
+                        Debug.Log($"Lost target. Last reason: {lastFailReason}");
+                    }
                 }
             }
         }
@@ -192,6 +238,47 @@ namespace Cosmicrafts
         }
 
         /// <summary>
+        /// Validate if the current target is still valid
+        /// </summary>
+        private void ValidateTarget()
+        {
+            // Skip if already null
+            if (Target == null) return;
+            
+            string reason = "valid";
+            
+            if (Target.GetIsDeath())
+            {
+                reason = "target is dead";
+                Target = null;
+            }
+            else if (!InRange.Contains(Target))
+            {
+                // Check if it's truly out of range or just a collection issue
+                float distance = Vector3.Distance(transform.position, Target.transform.position);
+                if (distance <= RangeDetector * targetLoseTolerance)
+                {
+                    // Target is actually in range, fix collection issue
+                    if (!InRange.Contains(Target))
+                    {
+                        InRange.Add(Target);
+                    }
+                }
+                else
+                {
+                    reason = $"target out of range ({distance} > {RangeDetector})";
+                    Target = null;
+                }
+            }
+            
+            if (Target == null)
+            {
+                lastFailReason = reason;
+                FindNewTarget();
+            }
+        }
+
+        /// <summary>
         /// Check if the target is too far away - they might have moved but not triggered the exit event
         /// </summary>
         private void PerformDistanceCheck()
@@ -199,14 +286,16 @@ namespace Cosmicrafts
             // Cleanup null references from InRange
             CleanupInRangeList();
             
-            if (Target != null)
+            // Skip the distance check if Target is null
+            if (Target == null) return;
+            
+            float distanceToTarget = Vector3.Distance(transform.position, Target.transform.position);
+            // Use tolerance to avoid flickering at the edge of range
+            if (distanceToTarget > RangeDetector * targetLoseTolerance)
             {
-                float distanceToTarget = Vector3.Distance(transform.position, Target.transform.position);
-                // Use tolerance to avoid flickering at the edge of range
-                if (distanceToTarget > RangeDetector * targetLoseTolerance)
-                {
-                    RemoveEnemy(Target);
-                }
+                RemoveEnemy(Target);
+                // Target is now null, so return early
+                return;
             }
             
             // Check if a better target has appeared within cooldown threshold
@@ -251,23 +340,19 @@ namespace Cosmicrafts
         }
 
         /// <summary>
-        /// Validate if the current target is still valid
-        /// </summary>
-        private void ValidateTarget()
-        {
-            if (Target == null || Target.GetIsDeath() || !InRange.Contains(Target))
-            {
-                Target = null;
-                FindNewTarget();
-            }
-        }
-
-        /// <summary>
         /// Handle shooting at the target
         /// </summary>
         public void ShootTarget()
         {
             if (Target == null) return;
+
+            // Quick validity check before proceeding
+            if (Target.GetIsDeath())
+            {
+                Target = null;
+                lastFailReason = "target died before shooting";
+                return;
+            }
 
             // Rotate towards target with improved accuracy
             if (RotateToEnemy)
@@ -295,12 +380,19 @@ namespace Cosmicrafts
                 
                 // Check if we're facing the target enough to shoot
                 float dot = Vector3.Dot(transform.forward, direction);
-                if (dot < 0.8f) // About 37 degrees off
+                if (dot < 0.7f) // Reduced from 0.8 to 0.7 (about 45 degrees) - more lenient
                 {
                     // Not facing target enough, don't shoot yet
                     if (DelayShoot <= 0f)
                     {
                         DelayShoot = CoolDown * 0.25f; // Shorter delay when turning
+                    }
+                    
+                    if (debugLogging && Time.time - lastShootAttempt > 1f)
+                    {
+                        Debug.Log($"Not shooting: Not facing target enough (dot={dot:F2})");
+                        lastShootAttempt = Time.time;
+                        lastFailReason = "angle";
                     }
                     return;
                 }

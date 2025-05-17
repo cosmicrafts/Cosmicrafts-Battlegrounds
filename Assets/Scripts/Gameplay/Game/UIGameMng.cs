@@ -224,7 +224,7 @@
             
             if (energyInt >= card.EnergyCost)
             {
-                Debug.Log($"Deploying card {cardIndex}");
+               // Debug.Log($"Deploying card {cardIndex}");
                 
                 // When position is Vector3.zero, it means we want to auto-deploy
                 // But we don't need to do extra logic here - Player.DeplyUnit handles it correctly

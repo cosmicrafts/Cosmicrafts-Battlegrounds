@@ -573,7 +573,7 @@ public void DeplyUnit(NFTsCard nftcard, Vector3 targetPosition)
             // Use a random spawn position if auto-deployment is enabled and spawn positions exist
             int randomIndex = Random.Range(0, spawnPositions.Length);
             spawnPosition = GetWorldSpawnPosition(randomIndex);
-            Debug.Log($"Auto-deploying at spawn position {randomIndex}: {spawnPosition}");
+           // Debug.Log($"Auto-deploying at spawn position {randomIndex}: {spawnPosition}");
         }
         else
         {

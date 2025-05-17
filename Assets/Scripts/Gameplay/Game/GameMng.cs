@@ -13,6 +13,10 @@
         public static GameMetrics MT;
         public static UIGameMng UI;
 
+        [Header("Player Setup")]
+        [Tooltip("The character SO that defines player properties and base prefab")]
+        public CharacterBaseSO characterSO;
+        
         public Vector3[] BS_Positions; // Base stations positions
         
         [Header("Player Respawn Settings")]
@@ -50,12 +54,46 @@
             
             // Initialize player lives
             playerLivesRemaining = playerLives;
+
+            // Initialize player from CharacterBaseSO
+            if (characterSO != null && characterSO.BasePrefab != null)
+            {
+                InitializePlayer();
+            }
+            else
+            {
+                Debug.LogError("CharacterBaseSO or its BasePrefab not assigned in GameMng!");
+            }
         }
 
-        private void Start()
+        private void InitializePlayer()
         {
-            Debug.Log("--GAME MANAGER START--");
-            Debug.Log("--GAME MANAGER READY--");
+            // Store base station prefab reference
+            playerBaseStationPrefab = characterSO.BasePrefab;
+            
+            // Instantiate the player from the SO's base prefab
+            GameObject playerObj = Instantiate(characterSO.BasePrefab);
+            P = playerObj.GetComponent<Player>();
+            
+            if (P == null)
+            {
+                Debug.LogError("Player component not found on CharacterBaseSO's BasePrefab!");
+                return;
+            }
+
+            // Apply character overrides and skills
+            if (characterSO != null)
+            {
+                // Apply base station overrides
+                Unit baseStation = InitBaseStations(characterSO.BasePrefab);
+                if (baseStation != null)
+                {
+                    characterSO.ApplyOverridesToUnit(baseStation);
+                }
+                
+                // Apply gameplay modifiers
+                characterSO.ApplyGameplayModifiers();
+            }
         }
 
         public Unit InitBaseStations(GameObject baseStationPrefab)
@@ -235,6 +273,7 @@
             isRespawning = false;
         }
 
+        // Modified to handle skill application directly
         public Unit CreateUnit(GameObject obj, Vector3 position, Team team, string nftKey = "none", int playerId = -1)
         {
             Unit unit = Instantiate(obj, position, Quaternion.identity).GetComponent<Unit>();
@@ -246,13 +285,19 @@
             if (nftData != null) {
                 unit.SetNfts(nftData);
             }
+
+            // Apply character skills to the unit
+            if (characterSO != null)
+            {
+                characterSO.ApplySkillsOnDeploy(unit);
+            }
             
             return unit;
         }
 
+        // Modified to handle skill application directly
         public Spell CreateSpell(GameObject obj, Vector3 position, Team team, string nftKey = "none")
         {
-            // Check if the prefab has a Spell component
             if (obj.GetComponent<Spell>() == null)
             {
                 Debug.LogError($"Spell prefab is missing Spell component! NFT Key: {nftKey}");
@@ -263,10 +308,15 @@
             spell.MyTeam = team;
             spell.setId(GenerateUnitId());
             
-            // Set NFT data similar to CreateUnit method
             NFTsSpell nftData = GetNftSpellData(nftKey, spell.PlayerId) as NFTsSpell;
             if (nftData != null) {
                 spell.SetNfts(nftData);
+            }
+
+            // Apply character skills to the spell
+            if (characterSO != null)
+            {
+                characterSO.ApplySkillsOnDeploy(spell);
             }
             
             AddSpell(spell);

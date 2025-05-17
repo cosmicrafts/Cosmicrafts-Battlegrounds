@@ -2370,6 +2370,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cc5ffa928cbb1b4f8ae665490092a97, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  playerPrefab: {fileID: 0}
+  characterSO: {fileID: 11400000, guid: 7120f2145aa385e43a18776aebd601cd, type: 2}
   BS_Positions:
   - {x: 0, y: 0, z: -100}
   - {x: 0, y: 0, z: 0}
@@ -2531,7 +2533,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DragDeckUnit
           m_Mode: 3
@@ -2547,7 +2549,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DropDeckUnit
           m_Mode: 1
@@ -2563,7 +2565,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: SelectCard
           m_Mode: 3
@@ -2913,7 +2915,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DragDeckUnit
           m_Mode: 3
@@ -2929,7 +2931,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DropDeckUnit
           m_Mode: 1
@@ -2945,7 +2947,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: SelectCard
           m_Mode: 3
@@ -3275,7 +3277,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 697417430648073629}
-  - component: {fileID: 697417430648073628}
   - component: {fileID: 697417430648073630}
   m_Layer: 0
   m_Name: Player
@@ -3284,42 +3285,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &697417430648073628
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 697417430648073619}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d27458ea717156d458c20abbce405922, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  ID: 1
-  MyTeam: 0
-  characterPrefab: {fileID: 1220039149}
-  spawnPositions:
-  - {x: -2.5, y: 0, z: -10}
-  - {x: -5, y: 0, z: -5}
-  - {x: -10, y: 0, z: -2.5}
-  - {x: 10, y: 0, z: 2.5}
-  - {x: 5, y: 0, z: 5}
-  - {x: 10, y: 0, z: 10}
-  - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 0}
-  - {x: 0, y: 0, z: 0}
-  useAutoDeployment: 1
-  spawnPositionReference: {fileID: 0}
-  CurrentEnergy: 30
-  MaxEnergy: 30
-  SpeedEnergy: 5.9
-  dashEnergyCost: 2
-  TestingDeck:
-  - {fileID: 11400000, guid: dc35c8d24daf4b44b88028d9e51f1251, type: 2}
-  - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
-  - {fileID: 11400000, guid: fa56fcf444849cf4ca2b4daaeea4309c, type: 2}
 --- !u!4 &697417430648073629
 Transform:
   m_ObjectHideFlags: 0
@@ -3981,7 +3946,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DragDeckUnit
           m_Mode: 3
@@ -3997,7 +3962,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DropDeckUnit
           m_Mode: 1
@@ -4013,7 +3978,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: SelectCard
           m_Mode: 3
@@ -4603,7 +4568,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DragDeckUnit
           m_Mode: 3
@@ -4619,7 +4584,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: DropDeckUnit
           m_Mode: 1
@@ -4635,7 +4600,7 @@ MonoBehaviour:
     callback:
       m_PersistentCalls:
         m_Calls:
-        - m_Target: {fileID: 697417430648073628}
+        - m_Target: {fileID: 0}
           m_TargetAssemblyTypeName: 
           m_MethodName: SelectCard
           m_Mode: 3

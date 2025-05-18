@@ -432,8 +432,8 @@ namespace Cosmicrafts
                 return;
             }
             
-            // Activate shield visual if available
-            if (ShieldGameObject != null)
+            // Only activate shield visual if we have shield remaining
+            if (Shield > 0 && ShieldGameObject != null)
             {
                 ShieldGameObject.SetActive(true);
                 // Set timer instead of using coroutine

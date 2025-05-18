@@ -272,7 +272,6 @@ namespace Siccity.GLTFUtility {
 					}
 					// Blend shapes
 
-					string blendShapeName;
 					float blendShapeWeight;
 					Match regexMatch;
 					for (int i = 0; i < keep.Count; i++) {

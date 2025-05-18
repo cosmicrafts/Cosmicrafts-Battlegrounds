@@ -451,7 +451,7 @@ MonoBehaviour:
   targetLoseTolerance: 1
   priorityMode: 0
   targetSwitchThreshold: 2
-  showDebugVisuals: 0
+  showDebugVisuals: 1
 --- !u!135 &2198226034328220042
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1993,7 +1993,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6971450709809201329, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 2.45
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6971450709809201329, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

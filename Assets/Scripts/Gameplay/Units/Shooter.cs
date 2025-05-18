@@ -28,8 +28,6 @@ namespace Cosmicrafts
         public TargetPriorityMode priorityMode = TargetPriorityMode.Closest;
         [Tooltip("Buffer to avoid rapidly switching targets")]
         public float targetSwitchThreshold = 2.0f;
-        [Tooltip("Whether to enable debug visualization")]
-        public bool showDebugVisuals = false;
 
         private ParticleSystem[] MuzzleFlash;
         private float DelayShoot = 0f;
@@ -40,19 +38,10 @@ namespace Cosmicrafts
         private float lastTargetCheckTime = 0f;
         private bool wasTargetNull = true;
         private Vector3 lastKnownTargetPosition = Vector3.zero;
-        
-        // Debug variables
-        private bool debugLogging = false;
-        private float lastShootAttempt = 0f;
-        private string lastFailReason = "none";
 
         // For target selection timing
         private float targetSelectionCooldown = 0f;
         private float targetSelectionDelay = 0.2f; // Delay between target changes, prevents jitter
-
-        // Debug visualizations
-        private LineRenderer debugTargetLine;
-        private GameObject debugRangeVisualizer;
 
         public enum TargetPriorityMode
         {
@@ -75,7 +64,7 @@ namespace Cosmicrafts
                 if (MyUnit == null)
                 {
                     Debug.LogError($"Shooter on {gameObject.name} is missing MyUnit reference and couldn't find one on the GameObject. Disabling Shooter.");
-                    enabled = false; // Disable the shooter if no Unit component is found
+                    enabled = false;
                     return;
                 }
             }
@@ -90,8 +79,6 @@ namespace Cosmicrafts
                 }
             }
             if (CoolDown <= 0f) CoolDown = 0.1f;
-            
-            InitializeDebugVisuals();
         }
 
         void Update()
@@ -99,7 +86,7 @@ namespace Cosmicrafts
             // Gracefully handle if MyUnit is destroyed or becomes null
             if (MyUnit == null)
             {
-                return; // Exit Update if MyUnit is not valid
+                return;
             }
 
             if (!MyUnit.GetIsDeath() && CanAttack && MyUnit.InControl())
@@ -126,29 +113,17 @@ namespace Cosmicrafts
                     {
                         EnemyDetector.radius = RangeDetector;
                     }
-                    
-                    // Update debug visuals
-                    if (showDebugVisuals)
-                        UpdateDebugVisuals();
                 }
                 
                 // Only try to shoot if we have a target
                 if (Target != null && Target.gameObject != null && Target.gameObject.activeInHierarchy && !Target.GetIsDeath())
                 {
-                    if (debugLogging && Time.time - lastShootAttempt > 1f)
-                    {
-                        Debug.Log($"Attempting to shoot at target: {Target.name}");
-                        lastShootAttempt = Time.time;
-                    }
-                    
                     ShootTarget();
-                    // Track that we had a target last frame and update last known position
                     wasTargetNull = false;
                     lastKnownTargetPosition = Target.transform.position;
                 }
                 else
                 {
-                    // Target is null or invalid, make sure it's actually null to trigger proper handling
                     if (Target != null && (Target.gameObject == null || !Target.gameObject.activeInHierarchy || Target.GetIsDeath()))
                     {
                         Target = null;
@@ -156,92 +131,12 @@ namespace Cosmicrafts
                     
                     if (!wasTargetNull)
                     {
-                        // We just lost our target this frame
                         if (MyShip != null && StopToAttack)
                         {
                             MyShip.ResetDestination();
                         }
                         wasTargetNull = true;
-                        
-                        if (debugLogging)
-                        {
-                            Debug.Log($"Lost target. Last reason: {lastFailReason}");
-                        }
                     }
-                }
-            }
-        }
-
-        private void OnDestroy()
-        {
-            // Clean up debug visualization
-            if (debugTargetLine != null)
-                Destroy(debugTargetLine.gameObject);
-            if (debugRangeVisualizer != null)
-                Destroy(debugRangeVisualizer);
-        }
-
-        /// <summary>
-        /// Initialize debug visualization objects
-        /// </summary>
-        private void InitializeDebugVisuals()
-        {
-            if (showDebugVisuals)
-            {
-                // Create line renderer for target visualization
-                GameObject lineObj = new GameObject("TargetLine");
-                lineObj.transform.SetParent(transform);
-                debugTargetLine = lineObj.AddComponent<LineRenderer>();
-                debugTargetLine.startWidth = 0.1f;
-                debugTargetLine.endWidth = 0.1f;
-                debugTargetLine.material = new Material(Shader.Find("Sprites/Default"));
-                debugTargetLine.startColor = Color.yellow;
-                debugTargetLine.endColor = Color.red;
-                debugTargetLine.positionCount = 2;
-                
-                // Create range visualizer
-                debugRangeVisualizer = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-                debugRangeVisualizer.transform.SetParent(transform);
-                debugRangeVisualizer.transform.localPosition = Vector3.zero;
-                debugRangeVisualizer.transform.localScale = new Vector3(RangeDetector * 2, RangeDetector * 2, RangeDetector * 2);
-                Renderer renderer = debugRangeVisualizer.GetComponent<Renderer>();
-                renderer.material = new Material(Shader.Find("Sprites/Default"));
-                renderer.material.color = new Color(1, 1, 0, 0.1f);
-                Collider collider = debugRangeVisualizer.GetComponent<Collider>();
-                Destroy(collider);
-            }
-        }
-        
-        /// <summary>
-        /// Update debug visualization objects
-        /// </summary>
-        private void UpdateDebugVisuals()
-        {
-            if (!showDebugVisuals) return;
-            
-            // Update target line
-            if (debugTargetLine != null)
-            {
-                if (Target != null)
-                {
-                    debugTargetLine.enabled = true;
-                    debugTargetLine.SetPosition(0, transform.position + Vector3.up * 0.5f);
-                    debugTargetLine.SetPosition(1, Target.transform.position + Vector3.up * 0.5f);
-                }
-                else
-                {
-                    debugTargetLine.enabled = false;
-                }
-            }
-            
-            // Update range visualizer
-            if (debugRangeVisualizer != null)
-            {
-                // Update size if range changed
-                float diameter = RangeDetector * 2;
-                if (debugRangeVisualizer.transform.localScale.x != diameter)
-                {
-                    debugRangeVisualizer.transform.localScale = new Vector3(diameter, diameter, diameter);
                 }
             }
         }
@@ -288,7 +183,6 @@ namespace Cosmicrafts
             
             if (Target == null)
             {
-                lastFailReason = reason;
                 FindNewTarget();
             }
         }
@@ -370,7 +264,6 @@ namespace Cosmicrafts
             if (Target.GetIsDeath())
             {
                 Target = null;
-                lastFailReason = "target died before shooting";
                 return;
             }
 
@@ -406,13 +299,6 @@ namespace Cosmicrafts
                     if (DelayShoot <= 0f)
                     {
                         DelayShoot = CoolDown * 0.25f; // Shorter delay when turning
-                    }
-                    
-                    if (debugLogging && Time.time - lastShootAttempt > 1f)
-                    {
-                        Debug.Log($"Not shooting: Not facing target enough (dot={dot:F2})");
-                        lastShootAttempt = Time.time;
-                        lastFailReason = "angle";
                     }
                     return;
                 }
@@ -680,10 +566,6 @@ namespace Cosmicrafts
             
             // Reset detection range in case it was modified
             EnemyDetector.radius = RangeDetector;
-            
-            // Update debug visuals
-            if (showDebugVisuals)
-                UpdateDebugVisuals();
         }
         
         /// <summary>

@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 using System.Linq;
-using EPOOutline;
 using System;
 
 namespace Cosmicrafts
@@ -38,8 +37,6 @@ namespace Cosmicrafts
         public float ShieldDelay = 3f;
         [Range(0.1f, 10)]
         public float Size = 1f;
-        [Range(0, 30)]
-        public float SpawnAreaSize = 0f;
         [Range(0, 1)]
         public float DodgeChance = 0f;
         [Range(1, 999)]
@@ -67,12 +64,10 @@ namespace Cosmicrafts
         protected SphereCollider SolidBase;
 
         public GameObject Mesh;
-        public GameObject SA;
         public GameObject Explosion;
         public GameObject Portal;
         public GameObject ShieldGameObject;
         public UIUnit UI;
-        protected Outlinable MyOutline;
         [SerializeField]
         protected Animator MyAnim;
         protected AnimationClip[] MyClips;
@@ -97,33 +92,17 @@ namespace Cosmicrafts
             Level = Mathf.Clamp(Level, 1, 999);
             MyRb = GetComponent<Rigidbody>();
             
-            // Setup outlinable properly
-            MyOutline = Mesh.GetComponent<Outlinable>();
-            if (MyOutline == null)
-            {
-                // If no outlinable on mesh, try to add one
-                MyOutline = Mesh.AddComponent<Outlinable>();
-            }
-            
-            // Ensure all child renderers are added to the outline targets
-            MyOutline.AddAllChildRenderersToRenderingList(EPOOutline.RenderersAddingMode.MeshRenderer | 
-                                                         EPOOutline.RenderersAddingMode.SkinnedMeshRenderer);
-            
             TrigerBase = GetComponent<SphereCollider>();
             SolidBase = Mesh.GetComponent<SphereCollider>();
 
             UI.Init(MaxHp - 1, MaxShield - 1);
             UI.SetColorBars(!IsMyTeam(GameMng.P.MyTeam));
             
-            // Use the new method to set outline color
-            UpdateOutlineColor();
-            
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);
             MyAnim = Mesh.GetComponent<Animator>();
             Portal.transform.parent = null;
             transform.LookAt(CMath.LookToY(transform.position, GameMng.GM.GetDefaultTargetPosition(MyTeam)));
-            SA.SetActive(IsMyTeam(GameMng.P.MyTeam) && SpawnAreaSize > 0f);
             Destroy(Portal, 3f);
             GameMng.GM.AddUnit(this);
         }
@@ -188,11 +167,6 @@ namespace Cosmicrafts
         {
             MyAnim.SetBool("Idle", true);
             MyAnim.speed = 1;
-            if (SpawnAreaSize > 0f && MyTeam == GameMng.P.MyTeam)
-            {
-                SA.SetActive(true);
-                SA.transform.localScale = new Vector3(SpawnAreaSize, SpawnAreaSize);
-            }
         }
 
         public void AddDmg(int dmg, TypeDmg typeDmg)
@@ -270,7 +244,6 @@ namespace Cosmicrafts
             {
                 // Regular death handling for other units
                 UI.HideUI();
-                SA.SetActive(false);
                 MyAnim.SetTrigger("Die");
                 SolidBase.enabled = false;
             }
@@ -545,10 +518,6 @@ namespace Cosmicrafts
             if (shooter != null)
                 shooter.ResetShooter();
             
-            // Reactivate spawn area if applicable
-            if (SA != null && SpawnAreaSize > 0f && IsMyTeam(GameMng.P.MyTeam))
-                SA.SetActive(true);
-            
             // Create portal effect for respawn if Portal prefab exists
             if (Portal != null) {
                 GameObject portal = Instantiate(Portal, transform.position, Quaternion.identity);
@@ -561,29 +530,41 @@ namespace Cosmicrafts
         // Method to update the outline color based on current team and player ID
         public void UpdateOutlineColor()
         {
-            if (MyOutline != null && GameMng.GM != null)
-            {
-                // Make sure outline is enabled
-                if (MyOutline.OutlineParameters != null)
-                {
-                    MyOutline.OutlineParameters.Enabled = true;
-                    
-                    // Set color based on team
-                    Color outlineColor = GameMng.GM.GetColorUnit(MyTeam, PlayerId);
-                    MyOutline.OutlineParameters.Color = outlineColor;
-                    
-                    // Ensure outline has proper visibility
-                    if (MyOutline.OutlineTargets.Count == 0)
-                    {
-                        MyOutline.AddAllChildRenderersToRenderingList(EPOOutline.RenderersAddingMode.MeshRenderer | 
-                                                                     EPOOutline.RenderersAddingMode.SkinnedMeshRenderer);
-                    }
-                    
-                    // Set adequate outline width
-                    MyOutline.OutlineParameters.DilateShift = 0.5f;
-                    MyOutline.OutlineParameters.BlurShift = 1.0f;
-                }
-            }
+            // Empty stub - outline functionality removed
+        }
+
+        private Color GetTeamColor()
+        {
+            if (GameMng.P != null && MyTeam == GameMng.P.MyTeam && PlayerId == GameMng.P.ID)
+                return Color.green; // Player's own units
+            else if (GameMng.P != null && MyTeam == GameMng.P.MyTeam)
+                return Color.blue; // Ally units
+            else
+                return Color.red; // Enemy units
+        }
+
+        // Enable or disable the outline
+        public void EnableOutline(bool enable)
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Set outline width (dilate shift in EPO)
+        public void SetOutlineWidth(float width)
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Set outline drawing mode
+        public void SetOutlineDrawingMode()
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Set outline render style
+        public void SetOutlineRenderStyle()
+        {
+            // Empty stub - outline functionality removed
         }
     }
 }

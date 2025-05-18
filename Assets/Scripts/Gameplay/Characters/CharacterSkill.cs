@@ -32,7 +32,6 @@ namespace Cosmicrafts
         CoolDown,
         ShieldMultiplier,
         DodgeChance,
-        SpawnAreaSize,
         RangeDetector,
         HitPointsMultiplier,
         MaxSpeedMultiplier,
@@ -100,9 +99,6 @@ namespace Cosmicrafts
                     break;
                 case SkillName.DodgeChance:
                     unit.DodgeChance += Multiplier;
-                    break;
-                case SkillName.SpawnAreaSize:
-                    unit.GetComponent<Ship>().SpawnAreaSize += Multiplier;
                     break;
                 case SkillName.RangeDetector:
                     unit.GetComponent<Shooter>().RangeDetector += Multiplier;

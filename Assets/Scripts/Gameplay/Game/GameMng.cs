@@ -25,7 +25,7 @@
         public GameObject respawnEffectPrefab; // Optional visual effect for respawn
         
         private int playerLivesRemaining;
-        private GameObject playerBaseStationPrefab; // Store reference to player's base station prefab
+        private GameObject playerBaseStationPrefab; // Store reference to player's base station prefab for respawn
         private bool isRespawning = false;
 
         private List<Unit> units = new List<Unit>();
@@ -54,7 +54,7 @@
             
             // Initialize player lives
             playerLivesRemaining = playerLives;
-
+            
             // Initialize player from CharacterBaseSO
             if (characterSO != null && characterSO.BasePrefab != null)
             {
@@ -68,92 +68,176 @@
 
         private void InitializePlayer()
         {
-            // Store base station prefab reference
-            playerBaseStationPrefab = characterSO.BasePrefab;
-            
-            // Instantiate the player from the SO's base prefab
-            GameObject playerObj = Instantiate(characterSO.BasePrefab);
-            P = playerObj.GetComponent<Player>();
-            
-            if (P == null)
+            if (characterSO == null || characterSO.BasePrefab == null)
             {
-                Debug.LogError("Player component not found on CharacterBaseSO's BasePrefab!");
+                Debug.LogError("InitializePlayer: CharacterBaseSO or its BasePrefab is null!");
                 return;
             }
 
-            // Apply character overrides and skills
-            if (characterSO != null)
+            // Store base station prefab reference for potential respawn logic later
+            playerBaseStationPrefab = characterSO.BasePrefab;
+
+            // 1. Instantiate the player's base station (which includes the Player component)
+            GameObject playerGameObject = Instantiate(characterSO.BasePrefab);
+            P = playerGameObject.GetComponent<Player>();
+
+            if (P == null)
             {
-                // Apply base station overrides
-                Unit baseStation = InitBaseStations(characterSO.BasePrefab);
-                if (baseStation != null)
-                {
-                    characterSO.ApplyOverridesToUnit(baseStation);
-                }
-                
-                // Apply gameplay modifiers
-                characterSO.ApplyGameplayModifiers();
+                Debug.LogError("Player component not found on CharacterBaseSO's BasePrefab! Destroying instantiated object.");
+                Destroy(playerGameObject);
+                return;
             }
+
+            // Determine the player's base position index based on their team (P.MyTeam should be set by Player.Awake or Start or on prefab)
+            int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
+            if (BS_Positions == null || BS_Positions.Length <= playerBaseIndex)
+            {
+                Debug.LogError($"BS_Positions array is not set up correctly to accommodate index {playerBaseIndex}. Player Team: {P.MyTeam}");
+                Destroy(playerGameObject);
+                return;
+            }
+            playerGameObject.transform.position = BS_Positions[playerBaseIndex];
+            playerGameObject.transform.rotation = Quaternion.identity;
+
+            Unit playerBaseUnit = playerGameObject.GetComponent<Unit>();
+            if (playerBaseUnit == null)
+            {
+                Debug.LogError("Unit component not found on CharacterBaseSO's BasePrefab (Player's base)! Player object will exist, but base functionality might be impaired.");
+                // Not returning here as P is valid, but logging the error.
+            }
+            else
+            {
+                // 2. Apply character overrides from CharacterBaseSO to the player's base unit
+                characterSO.ApplyOverridesToUnit(playerBaseUnit);
+            }
+            
+            // 3. Setup this base unit in the game, and initialize enemy base/bots
+            // P and playerBaseUnit are now initialized from the single instantiation.
+            SetupTeamBasesAndBots(playerBaseUnit);
+
+            // 4. Apply gameplay modifiers from CharacterBaseSO (e.g., global buffs)
+            characterSO.ApplyGameplayModifiers();
+
+            Debug.Log($"Player initialized. Player Component: {P.name}, Base Unit: {(playerBaseUnit != null ? playerBaseUnit.name : "MISSING_UNIT_COMPONENT")} at {playerGameObject.transform.position}");
         }
 
-        public Unit InitBaseStations(GameObject baseStationPrefab)
+        // Renamed and refactored from InitBaseStations
+        private void SetupTeamBasesAndBots(Unit playerBaseStationInstance)
         {
-            int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
-            
-            // Store the player base station prefab for respawning
-            playerBaseStationPrefab = baseStationPrefab;
+            if (P == null)
+            {
+                Debug.LogError("SetupTeamBasesAndBots: Player (P) is null. Cannot proceed.");
+                return;
+            }
 
-            // Create player base station
-            Unit playerBaseStation = Instantiate(baseStationPrefab, BS_Positions[playerBaseIndex], Quaternion.identity).GetComponent<Unit>();
-            Targets[playerBaseIndex] = playerBaseStation;
+            int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
+            Team playerTeam = P.MyTeam;
+            Team enemyTeam = (playerTeam == Team.Blue) ? Team.Red : Team.Blue;
+
+            if (playerBaseStationInstance != null)
+            {
+                Targets[playerBaseIndex] = playerBaseStationInstance;
+
+                // Ensure team and ID are correctly set on the Unit component of the player's base
+                playerBaseStationInstance.MyTeam = playerTeam;
+                playerBaseStationInstance.PlayerId = P.ID;
+                playerBaseStationInstance.setId(GenerateUnitId()); // Assign a game-specific ID
+
+                // Force update outline color to ensure proper team colors
+                playerBaseStationInstance.UpdateOutlineColor();
+
+                playerBaseStationInstance.OnUnitDeath -= HandlePlayerBaseStationDeath; // Ensure no double subscription
+                playerBaseStationInstance.OnUnitDeath += HandlePlayerBaseStationDeath;
+
+                Debug.Log($"Player base station ({playerBaseStationInstance.name}) registered. Team: {playerBaseStationInstance.MyTeam}, PlayerId: {playerBaseStationInstance.PlayerId}, Pos: {playerBaseStationInstance.transform.position}");
+            }
+            else
+            {
+                 Debug.LogWarning($"SetupTeamBasesAndBots: playerBaseStationInstance is null. Player base might not be correctly registered in Targets array or configured.");
+            }
             
-            // Configure player base station
-            playerBaseStation.MyTeam = P.MyTeam;
-            playerBaseStation.PlayerId = P.ID;
-            playerBaseStation.setId(GenerateUnitId());
-            
-            // Subscribe to player base station death event
-            playerBaseStation.OnUnitDeath += HandlePlayerBaseStationDeath;
-            
-            Debug.Log($"Player base station created with team: {playerBaseStation.MyTeam}, at position: {BS_Positions[playerBaseIndex]}");
-            
-            // Find BotSpawner in the scene
+            // Initialize Bot Spawner for the enemy team
             BotSpawner botSpawner = FindFirstObjectByType<BotSpawner>();
             if (botSpawner != null)
             {
-                // Let BotSpawner handle bot creation
-                botSpawner.Initialize(P.MyTeam, BS_Positions[playerBaseIndex]);
-                botSpawner.SpawnBots();
-                
-                // Store enemy base station in Targets array
-                int botBaseIndex = P.MyTeam == Team.Blue ? 0 : 1;
-                Targets[botBaseIndex] = botSpawner.GetBotBaseStation();
+                // BotSpawner needs the player's team and the *player's* designated base position slot.
+                // It will then deduce the enemy team and the enemy's base position slot.
+                if (BS_Positions == null || BS_Positions.Length <= playerBaseIndex)
+                {
+                     Debug.LogError("BS_Positions array not valid for bot spawner initialization.");
+                     return;
+                }
+                botSpawner.Initialize(playerTeam, BS_Positions[playerBaseIndex]); 
+                botSpawner.SpawnBots(); // This should create the enemy base and units
+
+                Unit enemyBaseStation = botSpawner.GetBotBaseStation();
+                int enemyBaseIndex = playerTeam == Team.Blue ? 0 : 1; 
+                if (enemyBaseStation != null)
+                {
+                    if (Targets.Length <= enemyBaseIndex)
+                    {
+                        Debug.LogError("Targets array not large enough for enemy base index.");
+                        return;
+                    }
+                    
+                    // Double-check enemy team is set correctly
+                    enemyBaseStation.MyTeam = enemyTeam;
+                    // Ensure enemy base uses a different player ID than player
+                    enemyBaseStation.PlayerId = (P.ID == 1) ? 2 : 1;
+                    
+                    // Force update outline color to ensure proper enemy coloring
+                    enemyBaseStation.UpdateOutlineColor();
+                    
+                    Targets[enemyBaseIndex] = enemyBaseStation;
+                    Debug.Log($"Enemy base station ({enemyBaseStation.name}) registered. Team: {enemyBaseStation.MyTeam}, PlayerId: {enemyBaseStation.PlayerId}");
+                }
+                else
+                {
+                    Debug.LogError("BotSpawner did not provide an enemy base station!");
+                }
             }
             else
             {
                 Debug.LogError("No BotSpawner found in the scene! Enemy team won't be created.");
             }
-            
-            return playerBaseStation;
         }
 
-        // Public method to reinitialize base stations
         public void ReInitializeBaseStations()
         {
-            if (playerBaseStationPrefab != null)
+            Debug.LogWarning("ReInitializeBaseStations called. This will perform a full player and enemy base re-initialization.");
+            
+            // Clean up existing player GameObject if P is assigned
+            if (P != null && P.gameObject != null)
             {
-                InitBaseStations(playerBaseStationPrefab);
+                Destroy(P.gameObject); // This should also destroy the associated Unit component if it's on the same GameObject
+                P = null;
             }
-            else
+
+            // Clean up target references. The GameObjects they point to might have been destroyed with P.gameObject or need separate destruction.
+            for (int i = 0; i < Targets.Length; i++)
             {
-                Debug.LogError("Cannot reinitialize - playerBaseStationPrefab is null");
+                if (Targets[i] != null && Targets[i].gameObject != null)
+                {
+                    // Check if it's not the player's base we might have just destroyed
+                    if (P == null || Targets[i].gameObject != P?.gameObject) 
+                    {
+                        //Destroy(Targets[i].gameObject); // Risky if BotSpawner manages enemy base destruction elsewhere
+                    }
+                }
+                Targets[i] = null; // Clear the reference
             }
+            // Reset units and spells lists (or handle more gracefully depending on desired reset behavior)
+            // For now, just clearing for simplicity, actual units might need to be destroyed.
+            units.Clear(); 
+            spells.Clear();
+            // Consider resetting idCounter, allPlayersNfts, GameOver flag etc. for a true full reset.
+
+            InitializePlayer(); // Re-run the full player and enemy setup initialization logic
         }
         
         // Handle player base station death
         private void HandlePlayerBaseStationDeath(Unit baseStation)
         {
-            // Check if this is the player's base station
             int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
             
             if (baseStation == Targets[playerBaseIndex] && !isRespawning)
@@ -163,20 +247,15 @@
                 
                 if (playerLivesRemaining <= 0)
                 {
-                    // No more lives, end the game
                     EndGame(P.MyTeam == Team.Blue ? Team.Red : Team.Blue);
                 }
                 else
                 {
-                    // Update UI to show lives remaining - use Debug.Log instead of non-existent UI method
                     Debug.Log($"Player lives remaining: {playerLivesRemaining}");
-                    
-                    // Immediately reset position and health - no waiting
                     baseStation.transform.position = BS_Positions[playerBaseIndex];
                     baseStation.HitPoints = baseStation.GetMaxHitPoints();
                     baseStation.Shield = baseStation.GetMaxShield();
                     
-                    // Make UI visible again
                     if (baseStation.UI != null && baseStation.UI.Canvas != null)
                     {
                         baseStation.UI.Canvas.SetActive(true);
@@ -184,10 +263,8 @@
                         baseStation.UI.SetShieldBar(1f);
                     }
                     
-                    // Reset death flag
                     baseStation.IsDeath = false;
                     
-                    // Re-enable the collider
                     Collider collider = baseStation.Mesh.GetComponent<Collider>();
                     if (collider != null)
                     {

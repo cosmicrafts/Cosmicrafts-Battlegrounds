@@ -405,8 +405,8 @@ MonoBehaviour:
   IsDeath: 0
   PlayerId: 1
   MyTeam: 0
-  HitPoints: 2500
-  Shield: 2500
+  HitPoints: 999999
+  Shield: 999999
   ShieldDelay: 1
   Size: 4
   DodgeChance: 0

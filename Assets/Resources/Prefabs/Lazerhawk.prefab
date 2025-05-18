@@ -74,12 +74,12 @@ MonoBehaviour:
   criticalStrikeChance: 0.075
   criticalStrikeMultiplier: 2.5
   ShieldDamageMultiplier: 1
-  laserLineRenderer: {fileID: 7450480653438804957}
+  laserLineRenderer: {fileID: 9210518524408143839}
   laserStartVFX: {fileID: 9113903363103650925}
   laserEndVFX: {fileID: 9114404745749087105}
-  laserMaterial: {fileID: 2100000, guid: 1a50fa8cbb17aa543aabffcb70b38dec, type: 2}
+  laserMaterial: {fileID: 2100000, guid: 702a250bb24700c4fb4a74b638bf5f2f, type: 2}
   hitEffectPrefab: {fileID: 9114404745749087105}
-  laserColor: {r: 0.28142387, g: 0.78627115, b: 1, a: 1}
+  laserColor: {r: 0.024353027, g: 0.72063136, b: 1, a: 0.63529414}
 --- !u!65 &6134375252558460818
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -179,7 +179,7 @@ LineRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_Positions:
-  - {x: 0, y: 0, z: 0}
+  - {x: 0, y: 0, z: 1}
   - {x: 0, y: 0, z: 1}
   m_Parameters:
     serializedVersion: 3
@@ -189,30 +189,21 @@ LineRenderer:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 0.79254687
-        inSlope: 1.6037685
-        outSlope: 1.6037685
+        value: 1
+        inSlope: -0.39137784
+        outSlope: -0.39137784
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
-        outWeight: 0.033801097
-      - serializedVersion: 3
-        time: 0.058812633
-        value: 0.8915332
-        inSlope: -2.5571587
-        outSlope: -2.5571587
-        tangentMode: 0
-        weightedMode: 0
-        inWeight: 0.85106045
-        outWeight: 0.11242969
+        outWeight: 0.1267869
       - serializedVersion: 3
         time: 1
-        value: 0.21240516
-        inSlope: -0.625776
-        outSlope: -0.625776
+        value: 0.99730873
+        inSlope: -0.8439348
+        outSlope: -0.8439348
         tangentMode: 0
         weightedMode: 0
-        inWeight: 0.13842073
+        inWeight: 0.10608822
         outWeight: 0.33333334
       m_PreInfinity: 2
       m_PostInfinity: 2
@@ -24634,5 +24625,10 @@ GameObject:
 --- !u!1 &9114404745749087105 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1132006484797202, guid: b478a3c4c8ae3bb42a5785ab95bcf6d3, type: 3}
+  m_PrefabInstance: {fileID: 9113275045809661075}
+  m_PrefabAsset: {fileID: 0}
+--- !u!120 &9210518524408143839 stripped
+LineRenderer:
+  m_CorrespondingSourceObject: {fileID: 120065101442726732, guid: b478a3c4c8ae3bb42a5785ab95bcf6d3, type: 3}
   m_PrefabInstance: {fileID: 9113275045809661075}
   m_PrefabAsset: {fileID: 0}

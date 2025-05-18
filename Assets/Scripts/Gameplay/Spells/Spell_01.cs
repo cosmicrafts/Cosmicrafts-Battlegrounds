@@ -216,7 +216,26 @@
                 Unit unit = FindUnitById(unitId);
                 if (unit != null && !unit.GetIsDeath())
                 {
-                    unit.AddDmg(damage, damageType);
+                    // Check if unit has active shield
+                    if (unit.Shield > 0 && !unit.flagShield)
+                    {
+                        try
+                        {
+                            // Trigger shield impact effect
+                            unit.OnImpactShield(damage);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogWarning($"Failed to call OnImpactShield: {ex.Message}");
+                            // Fallback - just apply damage directly
+                            unit.AddDmg(damage, damageType);
+                        }
+                    }
+                    else
+                    {
+                        // Normal damage application
+                        unit.AddDmg(damage, damageType);
+                    }
                     
                     if (!unit.IsMyTeam(MyTeam))
                     {

@@ -368,6 +368,9 @@ namespace Siccity.GLTFUtility {
 						case "KHR_materials_pbrSpecularGlossiness":
 							break;
 						case "KHR_draco_mesh_compression":
+#if UNITY_WEBGL && !UNITY_EDITOR
+							Debug.LogWarning("GLTFUtility: Draco mesh compression is not supported in WebGL builds. The model may not load correctly.");
+#endif
 							break;
 						default:
 							Debug.LogWarning($"GLTFUtility: Required extension '{gLTFObject.extensionsRequired[i]}' not supported. Import process will proceed but results may vary.");

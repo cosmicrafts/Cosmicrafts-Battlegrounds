@@ -20,6 +20,7 @@ using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
 using UnityEngine.Rendering;
 
+#if !UNITY_WEBGL || UNITY_EDITOR
 public unsafe class GLTFUtilityDracoLoader
 {
 	// These values must be exactly the same as the values in draco_types.h.
@@ -116,7 +117,7 @@ public unsafe class GLTFUtilityDracoLoader
 	}
 
 #if !UNITY_EDITOR && (UNITY_WEBGL || UNITY_IOS)
-        const string DRACODEC_UNITY_LIB = "__Internal";
+	const string DRACODEC_UNITY_LIB = "__Internal";
 #elif UNITY_ANDROID || UNITY_STANDALONE || UNITY_WSA || UNITY_EDITOR || PLATFORM_LUMIN
 	const string DRACODEC_UNITY_LIB = "dracodec_unity";
 #endif
@@ -453,3 +454,32 @@ public unsafe class GLTFUtilityDracoLoader
 		}
 	}
 }
+#else
+public class GLTFUtilityDracoLoader {
+	public struct MeshAttributes {
+		public int pos, norms, uv, joints, weights, col;
+		public MeshAttributes(int pos, int norms, int uv, int joints, int weights, int col) {
+			this.pos = pos;
+			this.norms = norms;
+			this.uv = uv;
+			this.joints = joints;
+			this.weights = weights;
+			this.col = col;
+		}
+	}
+
+	public class AsyncMesh {
+		public int[] tris;
+		public Vector3[] verts;
+		public Vector2[] uv;
+		public Vector3[] norms;
+		public BoneWeight[] boneWeights;
+		public Color[] colors;
+	}
+
+	public AsyncMesh LoadMesh(byte[] encodedData, MeshAttributes attributes) {
+		Debug.LogWarning("Draco mesh compression is not supported in WebGL builds.");
+		return null;
+	}
+}
+#endif

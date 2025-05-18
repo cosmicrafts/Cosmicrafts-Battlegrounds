@@ -1,14 +1,5 @@
 {
   "dependencies": {
-    "com.atteneder.draco": {
-      "version": "4.1.0",
-      "depth": 0,
-      "source": "registry",
-      "dependencies": {
-        "com.unity.burst": "1.4.11"
-      },
-      "url": "https://package.openupm.com"
-    },
     "com.unity.ai.navigation": {
       "version": "2.0.7",
       "depth": 0,
@@ -20,7 +11,7 @@
     },
     "com.unity.burst": {
       "version": "1.8.21",
-      "depth": 1,
+      "depth": 2,
       "source": "registry",
       "dependencies": {
         "com.unity.mathematics": "1.2.1",

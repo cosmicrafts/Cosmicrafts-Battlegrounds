@@ -71,6 +71,7 @@ namespace Siccity.GLTFUtility {
 						for (int i = 0; i < gltfMesh.primitives.Count; i++) {
 							GLTFPrimitive primitive = gltfMesh.primitives[i];
 							// Load draco mesh
+#if !UNITY_WEBGL || UNITY_EDITOR
 							if (primitive.extensions != null && primitive.extensions.KHR_draco_mesh_compression != null) {
 								GLTFPrimitive.DracoMeshCompression draco = primitive.extensions.KHR_draco_mesh_compression;
 								GLTFBufferView.ImportResult bufferView = bufferViews[draco.bufferView];
@@ -88,8 +89,6 @@ namespace Siccity.GLTFUtility {
 									primitive.extensions.KHR_draco_mesh_compression.attributes.WEIGHTS_0 ?? -1,
 									primitive.extensions.KHR_draco_mesh_compression.attributes.COLOR_0 ?? -1
 								);
-
-								//Mesh mesh = loader.LoadMesh(buffer, attribs);
 
 								GLTFUtilityDracoLoader.AsyncMesh asyncMesh = loader.LoadMesh(buffer, attribs);
 								if (asyncMesh == null) Debug.LogWarning("Draco mesh couldn't be loaded");
@@ -132,8 +131,13 @@ namespace Siccity.GLTFUtility {
 									uv1.AddRange(asyncMesh.uv.Select(x => new Vector2(x.x, -x.y)));
 								}
 							}
+#else
+							if (primitive.extensions != null && primitive.extensions.KHR_draco_mesh_compression != null) {
+								Debug.LogWarning("Draco mesh compression is not supported in WebGL builds. Skipping compressed mesh.");
+							}
+#endif
 							// Load normal mesh
-							else {
+							if (primitive.extensions == null || primitive.extensions.KHR_draco_mesh_compression == null) {
 								int vertStartIndex = verts.Count;
 								submeshVertexStart.Add(vertStartIndex);
 

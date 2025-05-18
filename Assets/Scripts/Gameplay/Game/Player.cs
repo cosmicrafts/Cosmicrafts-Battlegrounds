@@ -118,16 +118,132 @@ public class Player : MonoBehaviour
             
             Debug.Log($"Created {numSpawnPoints} default spawn points");
         }
+        else
+        {
+            // Check if existing spawn points should be reparented to the player
+            bool anyPointsReparented = false;
+            
+            for (int i = 0; i < spawnPoints.Count; i++)
+            {
+                Transform spawnPoint = spawnPoints[i];
+                
+                // Skip invalid spawn points
+                if (spawnPoint == null)
+                    continue;
+                
+                // If spawn point isn't already a child of the player or its children
+                bool isChildOfPlayer = false;
+                Transform parent = spawnPoint.parent;
+                while (parent != null)
+                {
+                    if (parent == transform)
+                    {
+                        isChildOfPlayer = true;
+                        break;
+                    }
+                    parent = parent.parent;
+                }
+                
+                if (!isChildOfPlayer)
+                {
+                    // Create a container if needed
+                    Transform container = transform.Find("SpawnPoints");
+                    if (container == null)
+                    {
+                        GameObject containerObj = new GameObject("SpawnPoints");
+                        containerObj.transform.SetParent(transform);
+                        containerObj.transform.localPosition = Vector3.zero;
+                        container = containerObj.transform;
+                    }
+                    
+                    // Remember world position
+                    Vector3 worldPos = spawnPoint.position;
+                    
+                    // Reparent to player
+                    spawnPoint.SetParent(container);
+                    
+                    // Restore world position
+                    spawnPoint.position = worldPos;
+                    
+                    anyPointsReparented = true;
+                    Debug.Log($"Reparented spawn point {spawnPoint.name} to player");
+                }
+            }
+            
+            if (anyPointsReparented)
+            {
+                Debug.Log("Spawn points reparented to the player to ensure they move with the player");
+            }
+        }
+        
+        // Initialize the last player position
+        lastPlayerPosition = transform.position;
+        lastPlayerRotation = transform.rotation;
     }
 
     // Get a spawn position in world space and its transform
-    private (Vector3 position, Transform spawnTransform) GetSpawnPositionAndTransform()
+    private (Vector3 position, Transform spawnTransform) GetSpawnPositionAndTransform(string unitKeyId)
     {
         if (spawnPoints == null || spawnPoints.Count == 0)
             return (transform.position, null);
 
-        // Get a random spawn point
-        int index = Random.Range(0, spawnPoints.Count);
+        // Create a deterministic but unique mapping between units and spawn points
+        int index = 0;
+        
+        if (!string.IsNullOrEmpty(unitKeyId))
+        {
+            // Hash the key ID for consistent spawn point assignment
+            index = Mathf.Abs(unitKeyId.GetHashCode()) % spawnPoints.Count;
+            
+            // Check if this spawn point is already in use
+            bool spawnPointInUse = false;
+            foreach (Unit activeUnit in activeUnits)
+            {
+                Ship ship = activeUnit as Ship;
+                if (ship != null && ship.spawnPointTransform == spawnPoints[index])
+                {
+                    spawnPointInUse = true;
+                    break;
+                }
+            }
+            
+            // If spawn point is in use, find the next available one
+            if (spawnPointInUse)
+            {
+                int originalIndex = index;
+                int attempts = 0;
+                
+                // Try to find an unused spawn point
+                while (spawnPointInUse && attempts < spawnPoints.Count)
+                {
+                    index = (index + 1) % spawnPoints.Count;
+                    attempts++;
+                    
+                    // Check if this new point is in use
+                    spawnPointInUse = false;
+                    foreach (Unit activeUnit in activeUnits)
+                    {
+                        Ship ship = activeUnit as Ship;
+                        if (ship != null && ship.spawnPointTransform == spawnPoints[index])
+                        {
+                            spawnPointInUse = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (originalIndex != index)
+                {
+                    Debug.Log($"Switched spawn point for {unitKeyId} from {originalIndex} to {index} to avoid conflict");
+                }
+            }
+        }
+        else
+        {
+            // Fallback to random spawn point
+            index = UnityEngine.Random.Range(0, spawnPoints.Count);
+        }
+
         Transform spawnPoint = spawnPoints[index];
         if (spawnPoint == null)
             return (transform.position, null);
@@ -139,7 +255,7 @@ public class Player : MonoBehaviour
     // Maintain the original method for backward compatibility
     private Vector3 GetSpawnPosition()
     {
-        var (position, _) = GetSpawnPositionAndTransform();
+        var (position, _) = GetSpawnPositionAndTransform("");
         return position;
     }
     
@@ -540,8 +656,50 @@ public class Player : MonoBehaviour
             // For example, if you have any direct input checks, replace them with InputManager calls
         }
         
+        // Update spawn point positions relative to player movement
+        UpdateSpawnPointPositions();
+        
         // Clean up destroyed units from active units list
         CleanupActiveUnitsList();
+    }
+
+    // Move spawn points with the player and update ships
+    private Vector3 lastPlayerPosition = Vector3.zero;
+    private Quaternion lastPlayerRotation = Quaternion.identity;
+    private float playerMovementThreshold = 0.5f; // Distance player must move before updating positions
+    
+    private void UpdateSpawnPointPositions()
+    {
+        // Skip if no player movement
+        if (Vector3.Distance(transform.position, lastPlayerPosition) < playerMovementThreshold &&
+            Quaternion.Angle(transform.rotation, lastPlayerRotation) < 5f)
+        {
+            return;
+        }
+        
+        // Player has moved enough to update positions
+        Vector3 movement = transform.position - lastPlayerPosition;
+        
+        // Update spawn points if they're child objects
+        if (spawnPoints != null && spawnPoints.Count > 0)
+        {
+            // If spawn points are already children of the player, they'll move automatically
+            // No need to update their positions manually
+        }
+        
+        // Notify all ships of the player's movement
+        foreach (Unit unit in activeUnits)
+        {
+            Ship ship = unit as Ship;
+            if (ship != null)
+            {
+                ship.UpdateSpawnPointPosition();
+            }
+        }
+        
+        // Remember current position for next update
+        lastPlayerPosition = transform.position;
+        lastPlayerRotation = transform.rotation;
     }
 
     public void SelectCard(int idu)
@@ -743,28 +901,17 @@ public class Player : MonoBehaviour
             }
             else if (useAutoDeployment && spawnPoints != null && spawnPoints.Count > 0)
             {
-                // Get a spawn point using a deterministic method to maintain units' assignment to spawn points
-                int spawnPointIndex = 0;
+                // Get a unique spawn point for this unit
+                var (position, spawnPoint) = GetSpawnPositionAndTransform(nftcard.KeyId);
+                spawnPosition = position;
+                usedSpawnPoint = spawnPoint;
                 
-                // If using hashed ID from card to pick spawn point
-                if (nftcard != null && !string.IsNullOrEmpty(nftcard.KeyId))
-                {
-                    // Use card ID hash to pick a consistent spawn point for this card
-                    spawnPointIndex = Mathf.Abs(nftcard.KeyId.GetHashCode()) % spawnPoints.Count;
-                }
-                else
-                {
-                    // Fallback to random spawn point
-                    spawnPointIndex = UnityEngine.Random.Range(0, spawnPoints.Count);
-                }
-                
-                // Store the actual Transform reference
-                usedSpawnPoint = spawnPoints[spawnPointIndex];
-                spawnPosition = usedSpawnPoint.position;
+                Debug.Log($"Auto-deploying unit {nftcard.KeyId} at spawn point {usedSpawnPoint.name} (index {spawnPoints.IndexOf(usedSpawnPoint)})");
             }
             else
             {
                 spawnPosition = CMath.GetMouseWorldPos();
+                Debug.Log($"Deploying unit {nftcard.KeyId} at mouse position {spawnPosition}");
             }
             
             if ((NFTClass)nftcard.EntType != NFTClass.Skill)
@@ -781,13 +928,20 @@ public class Player : MonoBehaviour
                     Ship ship = unit as Ship;
                     if (ship != null)
                     {
-                        // Pass both the world position and the actual spawn point Transform
-                        ship.SetSpawnPoint(spawnPosition, usedSpawnPoint);
+                        // First set the player reference, THEN set the spawn point
+                        // This order is important because SetSpawnPoint uses the player reference
                         ship.SetPlayerTransform(transform);
                         
-                        // Set initial follow properties based on unit type if needed
+                        // Now pass both the world position and the actual spawn point Transform
+                        ship.SetSpawnPoint(spawnPosition, usedSpawnPoint);
+                        
+                        // Set follow behavior explicitly
                         ship.followPlayerWhenIdle = true;
                         ship.returnToSpawnWhenIdle = true;
+                        ship.moveSpawnPointsWithPlayer = true;
+                        
+                        // Force an immediate update of the spawn point position
+                        ship.UpdateSpawnPointPosition();
                     }
                     
                     RestEnergy(nftcard.EnergyCost);

@@ -913,23 +913,26 @@ MonoBehaviour:
   UI: {fileID: 8725141663424671622}
   MyAnim: {fileID: 6364282005187429036}
   MySt: {fileID: 2198226033917351815}
-  Aceleration: 99
+  Aceleration: 20
   MaxSpeed: 99
-  DragSpeed: 0
+  DragSpeed: 99
   TurnSpeed: 99
   StopSpeed: 99
-  StoppingDistance: 10
-  AvoidanceRange: 3
+  StoppingDistance: 1
+  AvoidanceRange: 1.5
   RotationDamping: 0.1
   AlignRotationWithMovement: 1
   followPlayerWhenIdle: 1
-  playerFollowDistance: 3.5
+  playerFollowDistance: 8
   returnToSpawnWhenIdle: 1
+  spawnPointStoppingDistance: 1
+  returnToSpawnPriority: 0.7
   originalSpawnPointLocalPosition: {x: 0, y: 0, z: 0}
+  originalSpawnPointWorldPosition: {x: 0, y: 0, z: 0}
   spawnPointTransform: {fileID: 0}
   playerTransform: {fileID: 0}
   ShieldRegenRate: 1
-  RegenShieldWhileDamaged: 0
+  RegenShieldWhileDamaged: 1
   HPRegenRate: 0
   HPRegenDelay: 5
   AvoidanceSensors:
@@ -945,6 +948,8 @@ MonoBehaviour:
   Thrusters:
   - {fileID: 5200662773400736600}
   CanMove: 1
+  moveSpawnPointsWithPlayer: 1
+  spawnPointUpdateInterval: 0.5
 --- !u!114 &2198226034328220054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -995,8 +1000,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2.05
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Radius: 4.14
+  m_Center: {x: 0, y: -1.7, z: 0}
 --- !u!114 &2198226034328220043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1169,8 +1174,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1.71
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Radius: 2.35
+  m_Center: {x: 0, y: -0.46, z: 0}
 --- !u!114 &6800171134341490053
 MonoBehaviour:
   m_ObjectHideFlags: 0

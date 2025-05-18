@@ -151,7 +151,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7875266557511944910
 Transform:
   m_ObjectHideFlags: 0
@@ -414,12 +414,12 @@ MonoBehaviour:
   IsBaseStation: 0
   IsInmortal: 0
   flagShield: 0
-  Mesh: {fileID: 8559401254075705355}
+  Mesh: {fileID: 5464188325446851200}
   Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
   Portal: {fileID: 567947164588322215}
   ShieldGameObject: {fileID: 2614791013219909015}
   UI: {fileID: 4604192858225185969}
-  MyAnim: {fileID: 1424944804173672124}
+  MyAnim: {fileID: 2662090204261289658}
 --- !u!114 &2198226034328220054
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -865,7 +865,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &254723569657955750
 Transform:
   m_ObjectHideFlags: 0

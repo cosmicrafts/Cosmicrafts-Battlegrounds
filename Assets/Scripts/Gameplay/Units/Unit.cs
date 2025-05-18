@@ -560,5 +560,20 @@ namespace Cosmicrafts
         {
             // Empty stub - outline functionality removed
         }
+
+        // Method to trigger the OnUnitDeath event
+        public virtual void OnUnitDeathHandler()
+        {
+            // Trigger the event for object pooling
+            if (OnUnitDeath != null)
+            {
+                OnUnitDeath(this);
+            }
+            else
+            {
+                // Fall back to destroy if no listeners
+                DestroyUnit();
+            }
+        }
     }
 }

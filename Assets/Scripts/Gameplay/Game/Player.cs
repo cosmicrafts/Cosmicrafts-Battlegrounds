@@ -26,6 +26,14 @@ public class Player : MonoBehaviour
     public List<Transform> spawnPoints = new List<Transform>();
     [Tooltip("Whether to automatically deploy cards without drag & drop")]
     public bool useAutoDeployment = true;
+    
+    // Object Pooling Settings
+    [Header("Object Pooling")]
+    public int maxActiveUnits = 8; // Maximum active units for this player
+    private List<Unit> activeUnits = new List<Unit>(); // Currently active units
+    private Dictionary<string, List<Unit>> unitPool = new Dictionary<string, List<Unit>>(); // Pooled units by KeyId
+    // Track the mapping between cards and their original ScriptableObjects for pooling
+    private Dictionary<string, ScriptableObject> cardSOMapping = new Dictionary<string, ScriptableObject>();
 
     // Make PlayerDeck accessible
     private List<NFTsCard> playerDeck = new List<NFTsCard>();
@@ -63,6 +71,10 @@ public class Player : MonoBehaviour
         SelectedCard = -1;
         
         playerMovement = GetComponent<PlayerMovement>();
+        
+        // Initialize unit pools
+        activeUnits = new List<Unit>();
+        unitPool = new Dictionary<string, List<Unit>>();
 
         // Initialize spawn points if none exist
         InitializeSpawnPoints();
@@ -130,6 +142,183 @@ public class Player : MonoBehaviour
         var (position, _) = GetSpawnPositionAndTransform();
         return position;
     }
+    
+    // Helper method to clean up the active units list
+    private void CleanupActiveUnitsList()
+    {
+        for (int i = activeUnits.Count - 1; i >= 0; i--)
+        {
+            Unit unit = activeUnits[i];
+            
+            // Remove if null or destroyed
+            if (unit == null || unit.gameObject == null || !unit.gameObject.activeInHierarchy || unit.GetIsDeath())
+            {
+                activeUnits.RemoveAt(i);
+            }
+        }
+    }
+    
+    // Get a unit from the pool or create a new one if none available
+    private Unit GetUnitFromPool(string keyId, Vector3 position)
+    {
+        GameObject prefab = null;
+
+        // First try to get the prefab from DeckUnits
+        if (!string.IsNullOrEmpty(keyId) && DeckUnits.ContainsKey(keyId))
+        {
+            prefab = DeckUnits[keyId];
+        }
+        // If that fails, try to get it from the ScriptableObject mapping
+        else if (!string.IsNullOrEmpty(keyId) && cardSOMapping.ContainsKey(keyId))
+        {
+            // Get prefab from ScriptableObject
+            if (cardSOMapping[keyId] is ShipsDataBase shipCard)
+            {
+                prefab = shipCard.prefab;
+                // Add to DeckUnits for future reference
+                if (prefab != null && !DeckUnits.ContainsKey(keyId))
+                {
+                    DeckUnits[keyId] = prefab;
+                }
+            }
+        }
+
+        // If we still don't have a valid prefab, log error and exit
+        if (prefab == null)
+        {
+            Debug.LogWarning($"Cannot get unit from pool: No prefab found for key {keyId}");
+            return null;
+        }
+        
+        // Initialize pool for this unit type if it doesn't exist
+        if (!unitPool.ContainsKey(keyId))
+        {
+            unitPool[keyId] = new List<Unit>();
+        }
+        
+        List<Unit> pool = unitPool[keyId];
+        
+        // First, clean up any null references in the pool
+        for (int i = pool.Count - 1; i >= 0; i--)
+        {
+            if (pool[i] == null)
+            {
+                pool.RemoveAt(i);
+            }
+        }
+        
+        // Check if there's an available unit in the pool
+        if (pool.Count > 0)
+        {
+            Unit unit = pool[0];
+            pool.RemoveAt(0);
+            
+            // Double-check the unit is valid
+            if (unit == null)
+            {
+                // If somehow our unit is null, create a new one
+                return CreateNewUnit(keyId, position);
+            }
+            
+            // Reactivate the unit
+            unit.gameObject.SetActive(true);
+            unit.transform.position = position;
+            
+            try
+            {
+                unit.ResetUnit(); // Reset the unit's state
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogError($"Error resetting unit: {e.Message}");
+                // If there's an error resetting, create a new unit instead
+                GameMng.GM.DeleteUnit(unit);
+                return CreateNewUnit(keyId, position);
+            }
+            
+            return unit;
+        }
+        
+        // If no unit in pool, create a new one
+        return CreateNewUnit(keyId, position);
+    }
+    
+    // Helper method to create a new unit
+    private Unit CreateNewUnit(string keyId, Vector3 position)
+    {
+        GameObject prefab = null;
+        
+        // Try to get prefab from DeckUnits first
+        if (DeckUnits.ContainsKey(keyId))
+        {
+            prefab = DeckUnits[keyId];
+        }
+        // If not in DeckUnits, try to get from ScriptableObject
+        else if (cardSOMapping.ContainsKey(keyId) && cardSOMapping[keyId] is ShipsDataBase shipCard)
+        {
+            prefab = shipCard.prefab;
+            // Add to DeckUnits for future reference
+            if (prefab != null && !DeckUnits.ContainsKey(keyId))
+            {
+                DeckUnits[keyId] = prefab;
+            }
+        }
+        
+        if (prefab == null)
+        {
+            Debug.LogError($"Cannot create unit: prefab is null for key {keyId}");
+            return null;
+        }
+        
+        Unit newUnit = GameMng.GM.CreateUnit(prefab, position, MyTeam, keyId, ID);
+        
+        if (newUnit != null)
+        {
+            // Subscribe to unit's death event to return it to pool
+            newUnit.OnUnitDeath += ReturnUnitToPool;
+        }
+        
+        return newUnit;
+    }
+    
+    // Return a unit to the pool when it dies
+    private void ReturnUnitToPool(Unit unit)
+    {
+        if (unit == null)
+        {
+            Debug.LogWarning("Cannot return null unit to pool");
+            return;
+        }
+        
+        string keyId = unit.getKey();
+        if (string.IsNullOrEmpty(keyId) || !unitPool.ContainsKey(keyId))
+        {
+            // If we can't determine the unit type or it's not in our pool, just destroy it
+            GameMng.GM.DeleteUnit(unit);
+            return;
+        }
+        
+        try 
+        {
+            // Deactivate the unit instead of destroying it
+            unit.gameObject.SetActive(false);
+            
+            // Add back to the pool
+            unitPool[keyId].Add(unit);
+            
+            // Remove from active units list
+            if (activeUnits.Contains(unit))
+            {
+                activeUnits.Remove(unit);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"Error returning unit to pool: {e.Message}");
+            // If we can't return it to the pool safely, just destroy it
+            GameMng.GM.DeleteUnit(unit);
+        }
+    }
 
     private void Start()
     {
@@ -170,6 +359,9 @@ public class Player : MonoBehaviour
                 playerDeck.Add(cardData);
                 // Add the NFT data to GameMng
                 GameMng.GM.AddNftCardData(cardData, ID);
+                // Store the mapping between the card KeyId and the original ScriptableObject
+                cardSOMapping[cardData.KeyId] = card;
+                Debug.Log($"Added card to SO mapping: {cardData.KeyId} -> {card.name}");
             }
             else if (card is SpellsDataBase spellCard)
             {
@@ -192,6 +384,9 @@ public class Player : MonoBehaviour
                 playerDeck.Add(cardData);
                 // Add the NFT data to GameMng
                 GameMng.GM.AddNftCardData(cardData, ID);
+                // Store the mapping between the card KeyId and the original ScriptableObject
+                cardSOMapping[cardData.KeyId] = card;
+                Debug.Log($"Added card to SO mapping: {cardData.KeyId} -> {card.name}");
             }
         }
 
@@ -307,6 +502,9 @@ public class Player : MonoBehaviour
                 if (!DeckUnits.ContainsKey(card.KeyId))
                 {
                     DeckUnits.Add(card.KeyId, prefab);
+                    
+                    // Initialize pool for each card
+                    unitPool[card.KeyId] = new List<Unit>();
                 }
                 else
                 {
@@ -341,6 +539,9 @@ public class Player : MonoBehaviour
             // Any input-related code here should use InputManager
             // For example, if you have any direct input checks, replace them with InputManager calls
         }
+        
+        // Clean up destroyed units from active units list
+        CleanupActiveUnitsList();
     }
 
     public void SelectCard(int idu)
@@ -519,11 +720,20 @@ public class Player : MonoBehaviour
         DeplyUnit(nftcard, Vector3.zero);
     }
 
-    // New overloaded method that accepts a position parameter
+    // Modified method to use object pooling
     public void DeplyUnit(NFTsCard nftcard, Vector3 targetPosition)
     {
         if (nftcard.EnergyCost <= CurrentEnergy)
         {
+            // Check if we've reached maximum active units for non-spell cards
+            if ((NFTClass)nftcard.EntType != NFTClass.Skill && activeUnits.Count >= maxActiveUnits)
+            {
+                Debug.LogWarning($"Maximum active units ({maxActiveUnits}) reached, cannot deploy more units");
+                return;
+            }
+            
+            Debug.Log($"Attempting to deploy unit: {nftcard.KeyId}, SO mapping exists: {cardSOMapping.ContainsKey(nftcard.KeyId)}, DeckUnits exists: {DeckUnits.ContainsKey(nftcard.KeyId)}");
+            
             Vector3 spawnPosition;
             Transform usedSpawnPoint = null;
             
@@ -559,38 +769,38 @@ public class Player : MonoBehaviour
             
             if ((NFTClass)nftcard.EntType != NFTClass.Skill)
             {
-                GameObject unitPrefab = nftcard.Prefab ?? (DeckUnits.ContainsKey(nftcard.KeyId) ? DeckUnits[nftcard.KeyId] : null);
+                // Use pooling for unit cards
+                Unit unit = GetUnitFromPool(nftcard.KeyId, spawnPosition);
                 
-                if (unitPrefab != null)
+                if (unit != null)
                 {
-                    Unit unit = GameMng.GM.CreateUnit(unitPrefab, spawnPosition, MyTeam, nftcard.KeyId, ID);
-                    if (unit != null)
+                    // Add to active units list
+                    activeUnits.Add(unit);
+                    
+                    // Set spawn point and player reference for ships
+                    Ship ship = unit as Ship;
+                    if (ship != null)
                     {
-                        // Set spawn point and player reference for ships
-                        Ship ship = unit as Ship;
-                        if (ship != null)
-                        {
-                            // Pass both the world position and the actual spawn point Transform
-                            ship.SetSpawnPoint(spawnPosition, usedSpawnPoint);
-                            ship.SetPlayerTransform(transform);
-                            
-                            // Set initial follow properties based on unit type if needed
-                            // You can customize this based on unit type or properties
-                            ship.followPlayerWhenIdle = true;
-                            ship.returnToSpawnWhenIdle = true;
-                        }
+                        // Pass both the world position and the actual spawn point Transform
+                        ship.SetSpawnPoint(spawnPosition, usedSpawnPoint);
+                        ship.SetPlayerTransform(transform);
                         
-                        RestEnergy(nftcard.EnergyCost);
-                        GameMng.MT.AddDeploys(1);
+                        // Set initial follow properties based on unit type if needed
+                        ship.followPlayerWhenIdle = true;
+                        ship.returnToSpawnWhenIdle = true;
                     }
+                    
+                    RestEnergy(nftcard.EnergyCost);
+                    GameMng.MT.AddDeploys(1);
                 }
                 else
                 {
-                    Debug.LogWarning($"Attempted to deploy missing unit prefab for {nftcard.KeyId}");
+                    Debug.LogWarning($"Failed to get or create unit for {nftcard.KeyId}");
                 }
             }
             else
             {
+                // For spells, continue using the existing non-pooled approach
                 GameObject spellPrefab = nftcard.Prefab ?? (DeckUnits.ContainsKey(nftcard.KeyId) ? DeckUnits[nftcard.KeyId] : null);
                 
                 if (spellPrefab != null)

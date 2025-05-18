@@ -901,14 +901,12 @@ MonoBehaviour:
   Shield: 80
   ShieldDelay: 1.41
   Size: 3
-  SpawnAreaSize: 0
   DodgeChance: 0
   Level: 1
   IsBaseStation: 0
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 6245011729380265433}
-  SA: {fileID: 3966040614498046297}
   Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
   Portal: {fileID: 3721508634898023609}
   ShieldGameObject: {fileID: 8358885684385215374}
@@ -920,8 +918,8 @@ MonoBehaviour:
   DragSpeed: 0
   TurnSpeed: 99
   StopSpeed: 99
-  StoppingDistance: 2.5
-  AvoidanceRange: 1
+  StoppingDistance: 10
+  AvoidanceRange: 3
   RotationDamping: 0.1
   AlignRotationWithMovement: 1
   followPlayerWhenIdle: 1
@@ -1374,11 +1372,6 @@ PrefabInstance:
 --- !u!4 &3966040614497791523 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
-  m_PrefabInstance: {fileID: 784030904721311167}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &3966040614498046297 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4461760019699471590, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
   m_PrefabInstance: {fileID: 784030904721311167}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1465409562270482249

@@ -940,10 +940,10 @@ MonoBehaviour:
   Aceleration: 99
   MaxSpeed: 99
   DragSpeed: 0.25
-  TurnSpeed: 60
+  TurnSpeed: 99
   StopSpeed: 99
   StoppingDistance: 2.5
-  AvoidanceRange: 0.25
+  AvoidanceRange: 1
   RotationDamping: 0.1
   AlignRotationWithMovement: 1
   followPlayerWhenIdle: 1

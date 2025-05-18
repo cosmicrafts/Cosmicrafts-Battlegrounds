@@ -68,7 +68,8 @@ public class UnitAnimLis : MonoBehaviour
     {
         if (MyUnit != null)
         {
-            MyUnit.DestroyUnit();
+            // Instead of destroying the unit, trigger the death event for pooling
+            MyUnit.OnUnitDeathHandler();
         }
     }
 

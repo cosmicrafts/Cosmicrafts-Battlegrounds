@@ -342,6 +342,7 @@ MonoBehaviour:
   - {fileID: 5936408929320934792}
   - {fileID: 897222552463288225}
   useAutoDeployment: 1
+  maxActiveUnits: 4
   CurrentEnergy: 30
   MaxEnergy: 30
   SpeedEnergy: 5.9

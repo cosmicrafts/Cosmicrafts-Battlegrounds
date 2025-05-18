@@ -153,6 +153,12 @@ public class BotEnemy : MonoBehaviour
                 activeUnits.RemoveAt(i);
             }
         }
+        
+        // Log warning if somehow we exceed max units
+        if (activeUnits.Count > maxActiveUnits)
+        {
+            Debug.LogWarning($"Bot has {activeUnits.Count} active units, exceeding maximum of {maxActiveUnits}");
+        }
     }
 
     //Set if the bot can generate energy

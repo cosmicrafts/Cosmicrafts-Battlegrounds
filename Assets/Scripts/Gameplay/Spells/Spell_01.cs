@@ -8,7 +8,7 @@
      * Spell 01 - Laser Beam
      * 
      * A high-performance laser beam weapon that:
-     * 1. Locks onto a target and tracks it
+     * 1. Uses Shooter's targeting system
      * 2. Uses efficient enemy detection
      * 3. Applies continuous damage to all enemies in the beam path
      */
@@ -58,39 +58,6 @@
         // Store original range for restoration
         private float originalShooterRange;
         private bool hasModifiedRange = false;
-        
-        // Method to update the beam width during gameplay
-        public void SetBeamWidth(float width)
-        {
-            beamWidth = Mathf.Clamp(width, 1f, 20f);
-            
-            // Update LineRenderer if it exists
-            if (laserLineRenderer != null)
-            {
-                laserLineRenderer.startWidth = beamWidth * 1.5f;
-                laserLineRenderer.endWidth = beamWidth * 0.5f;
-            }
-            
-            // Update VFX scales
-            if (laserStartVFX != null)
-            {
-                laserStartVFX.transform.localScale = Vector3.one * beamWidth * 1.2f;
-            }
-            
-            if (laserEndVFX != null)
-            {
-                laserEndVFX.transform.localScale = Vector3.one * beamWidth * 0.8f;
-            }
-            
-            // Update hit effect scales
-            foreach (var hitEffect in _activeHitEffects.Values)
-            {
-                if (hitEffect != null)
-                {
-                    hitEffect.transform.localScale = Vector3.one * beamWidth * 0.3f;
-                }
-            }
-        }
         
         protected override void Start()
         {
@@ -413,41 +380,19 @@
         private void UpdateLaserBeam()
         {
             if (_mainStationUnit == null) return;
-            
+
             Vector3 stationPosition = _mainStationUnit.transform.position;
-            Vector3 direction;
             
-            // Check if we have a valid shooter with a target
-            if (_shooter != null && _shooter.GetCurrentTarget() != null)
-            {
-                Unit target = _shooter.GetCurrentTarget();
-                direction = (target.transform.position - stationPosition).normalized;
-            }
-            else
-            {
-                // No target - use unit's forward direction
-                direction = _mainStationUnit.transform.forward;
-            }
-            
-            // Update transform to match unit
-            transform.position = stationPosition;
-            transform.rotation = Quaternion.LookRotation(direction);
-            
-            // Calculate beam positions
+            // Calculate beam positions - use mainstation's rotation directly
             _laserPositions[0] = stationPosition + Vector3.up * 2.0f;
-            _laserPositions[1] = _laserPositions[0] + (direction * beamLength);
-            
+            _laserPositions[1] = _laserPositions[0] + (_mainStationUnit.transform.forward * beamLength);
+
             // Update line renderer
             if (laserLineRenderer != null)
             {
-                laserLineRenderer.useWorldSpace = true;
                 laserLineRenderer.SetPositions(_laserPositions);
                 laserLineRenderer.startWidth = beamWidth * 1.5f;
                 laserLineRenderer.endWidth = beamWidth * 0.5f;
-            }
-            else
-            {
-                SetupLineRenderer();
             }
             
             // Update VFX positions
@@ -464,21 +409,6 @@
                 laserEndVFX.transform.localScale = Vector3.one * beamWidth * 0.8f;
                 laserEndVFX.SetActive(true);
             }
-        }
-        
-        private Vector3 FindBeamIntersectionPoint(Unit unit, Vector3 startPos, Vector3 direction)
-        {
-            Collider collider = unit.GetComponent<Collider>();
-            if (collider != null)
-            {
-                RaycastHit hit;
-                if (collider.Raycast(new Ray(startPos, direction), out hit, beamLength))
-                {
-                    return hit.point;
-                }
-            }
-            
-            return unit.transform.position;
         }
         
         private int CalculateDamage()

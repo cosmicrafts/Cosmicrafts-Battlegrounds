@@ -70,7 +70,6 @@ namespace Cosmicrafts
         public UIUnit UI;
         [SerializeField]
         protected Animator MyAnim;
-        protected AnimationClip[] MyClips;
         protected Vector3 LastImpact;
 
         protected Rigidbody MyRb;
@@ -79,7 +78,7 @@ namespace Cosmicrafts
 
         private void Awake()
         {
-            //MyClips = MyAnim.runtimeAnimatorController.animationClips;
+            // Empty Awake method - we don't need to cache animation clips anymore
         }
 
         protected virtual void Start()
@@ -378,11 +377,6 @@ namespace Cosmicrafts
         public Animator GetAnimator()
         {
             return MyAnim;
-        }
-
-        public AnimationClip GetAnimationClip(string name)
-        {
-            return MyClips == null ? null : MyClips.FirstOrDefault(f => f.name == name);
         }
 
         public int GetMaxShield()

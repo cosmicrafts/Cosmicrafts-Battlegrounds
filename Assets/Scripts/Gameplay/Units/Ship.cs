@@ -88,7 +88,7 @@
         Quaternion targetRotation; // Store the target rotation
         
         private float playerFollowUpdateTimer = 0f;
-        private float playerFollowUpdateInterval = .25f; // Update follow position every 1.5 seconds
+        private float playerFollowUpdateInterval = 0.25f; // Update follow position every 0.25 seconds
         
         [Header("Formation Settings")]
         [Tooltip("Whether spawn points should move with the player")]

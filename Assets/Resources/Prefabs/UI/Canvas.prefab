@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 3706850547542909153}
   - component: {fileID: 5085628449469905371}
   - component: {fileID: 7641634818612591828}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Bar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -86,7 +86,7 @@ GameObject:
   - component: {fileID: 8982893092276859953}
   - component: {fileID: 2813349449803516764}
   - component: {fileID: 693850282004822366}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -162,7 +162,7 @@ GameObject:
   - component: {fileID: 7016084245312964624}
   - component: {fileID: 7547413423634510789}
   - component: {fileID: 5254027391335323542}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Image
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -235,7 +235,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4616312727269767969}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: HP
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -276,7 +276,7 @@ GameObject:
   - component: {fileID: 4427874924185693970}
   - component: {fileID: 4524349546920361656}
   - component: {fileID: 3854290956547228342}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: GhostBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -349,7 +349,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 39843893554630084}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: UI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -390,7 +390,7 @@ GameObject:
   - component: {fileID: 8974632659988464372}
   - component: {fileID: 9091646930430854965}
   - component: {fileID: 3597923653835074731}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Border
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -466,7 +466,7 @@ GameObject:
   - component: {fileID: 4762258300378028131}
   - component: {fileID: 6138631231601040797}
   - component: {fileID: 3445519857216770410}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Line
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -543,7 +543,7 @@ GameObject:
   - component: {fileID: 3437837080083151150}
   - component: {fileID: 6464043107035257864}
   - component: {fileID: 8916147907556810385}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Canvas
   m_TagString: Untagged
   m_Icon: {fileID: -964228994112308473, guid: 0000000000000000d000000000000000, type: 0}
@@ -559,7 +559,7 @@ RectTransform:
   m_GameObject: {fileID: 2912554722822094346}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.01, y: 0.01, z: 0.49999997}
+  m_LocalScale: {x: 0.024999999, y: 0.024999999, z: 1.2499999}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 39843893554630084}
@@ -590,7 +590,7 @@ Canvas:
   m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 1554655663
+  m_SortingLayerID: 0
   m_SortingOrder: 7
   m_TargetDisplay: 0
 --- !u!114 &3437837080083151150
@@ -672,7 +672,7 @@ GameObject:
   - component: {fileID: 8781225575235961908}
   - component: {fileID: 1596954793503254389}
   - component: {fileID: 8189275055606119391}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: BackGround
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -746,7 +746,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3280890384152482479}
   - component: {fileID: 7900885345214155012}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Reference
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -810,7 +810,7 @@ GameObject:
   - component: {fileID: 5027255960115052650}
   - component: {fileID: 627047249222816537}
   - component: {fileID: 5898806747278722567}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Line
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -885,7 +885,7 @@ GameObject:
   - component: {fileID: 7671236134793265372}
   - component: {fileID: 706816378072754971}
   - component: {fileID: 532259077435833951}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: GhostBar
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -960,7 +960,7 @@ GameObject:
   - component: {fileID: 7981527594224291648}
   - component: {fileID: 591368781109690765}
   - component: {fileID: 4606794044662995956}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Level
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1016,8 +1016,8 @@ MonoBehaviour:
       m_Calls: []
   m_text: 1
   m_isRightToLeft: 0
-  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
-  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontAsset: {fileID: 11400000, guid: 362516ecea938d34cb3e9b420f550150, type: 2}
+  m_sharedMaterial: {fileID: -3072705397136751832, guid: 362516ecea938d34cb3e9b420f550150, type: 2}
   m_fontSharedMaterials: []
   m_fontMaterial: {fileID: 0}
   m_fontMaterials: []
@@ -1047,7 +1047,7 @@ MonoBehaviour:
   m_enableAutoSizing: 1
   m_fontSizeMin: 18
   m_fontSizeMax: 72
-  m_fontStyle: 0
+  m_fontStyle: 1
   m_HorizontalAlignment: 2
   m_VerticalAlignment: 512
   m_textAlignment: 65535
@@ -1094,7 +1094,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 8984767666600691069}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Shield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1134,7 +1134,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3995194111193017928}
   - component: {fileID: 7774436501051903560}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Reference
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1198,7 +1198,7 @@ GameObject:
   - component: {fileID: 2974552262661068290}
   - component: {fileID: 8754621713894531399}
   - component: {fileID: 1698180517364840549}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: BackGround
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1273,7 +1273,7 @@ GameObject:
   - component: {fileID: 6543131361807456159}
   - component: {fileID: 1039956638691734359}
   - component: {fileID: 3386961844211152119}
-  m_Layer: 1
+  m_Layer: 7
   m_Name: Bar
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -22,6 +22,7 @@
         [Tooltip("Maximum length of the beam")]
         public float beamLength = 100f;
         [Tooltip("Width of the beam for visuals and hit detection")]
+        [Range(1f, 20f)]
         public float beamWidth = 8f;
         [Tooltip("Type of damage dealt by the laser")]
         public TypeDmg damageType = TypeDmg.Shield;
@@ -37,19 +38,59 @@
         public LineRenderer laserLineRenderer;
         public GameObject laserStartVFX;
         public GameObject laserEndVFX;
+        [Tooltip("Shader Graph material for the laser effect")]
         public Material laserMaterial;
-        public Color laserColor = Color.red;
-        public float laserIntensity = 5.0f;
-        [Tooltip("Whether to create additional VFX where the beam penetrates through targets")]
-        public bool createPenetrationEffects = true;
+        [Tooltip("Hit effect prefab")]
+        public GameObject hitEffectPrefab;
+        [Tooltip("Color of the laser beam")]
+        public Color laserColor = Color.blue;
         
         // Private variables
         private Unit _mainStationUnit;
         private Shooter _shooter;
         private HashSet<int> _damagedUnitsThisTick = new HashSet<int>();
+        private HashSet<int> _hitUnitsLastFrame = new HashSet<int>();
+        private Dictionary<int, GameObject> _activeHitEffects = new Dictionary<int, GameObject>();
         private float _damageTimer;
         private Vector3[] _laserPositions = new Vector3[2];
         private int _baseDamagePerTick;
+        
+        // Store original range for restoration
+        private float originalShooterRange;
+        private bool hasModifiedRange = false;
+        
+        // Method to update the beam width during gameplay
+        public void SetBeamWidth(float width)
+        {
+            beamWidth = Mathf.Clamp(width, 1f, 20f);
+            
+            // Update LineRenderer if it exists
+            if (laserLineRenderer != null)
+            {
+                laserLineRenderer.startWidth = beamWidth * 1.5f;
+                laserLineRenderer.endWidth = beamWidth * 0.5f;
+            }
+            
+            // Update VFX scales
+            if (laserStartVFX != null)
+            {
+                laserStartVFX.transform.localScale = Vector3.one * beamWidth * 1.2f;
+            }
+            
+            if (laserEndVFX != null)
+            {
+                laserEndVFX.transform.localScale = Vector3.one * beamWidth * 0.8f;
+            }
+            
+            // Update hit effect scales
+            foreach (var hitEffect in _activeHitEffects.Values)
+            {
+                if (hitEffect != null)
+                {
+                    hitEffect.transform.localScale = Vector3.one * beamWidth * 0.3f;
+                }
+            }
+        }
         
         protected override void Start()
         {
@@ -61,10 +102,17 @@
             var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
             _mainStationUnit = mainStationUnit;
             
-            // Get the shooter component
+            // Get the shooter component and modify its range
             if (_mainStationUnit != null)
             {
                 _shooter = _mainStationUnit.GetComponent<Shooter>();
+                if (_shooter != null)
+                {
+                    // Store original range and double it
+                    originalShooterRange = _shooter.RangeDetector;
+                    _shooter.RangeDetector *= 2f;
+                    hasModifiedRange = true;
+                }
             }
             
             SetupLineRenderer();
@@ -87,7 +135,15 @@
             
             // Update beam position and check for hits
             UpdateLaserBeam();
+            
+            // Clear last frame's hit units
+            _hitUnitsLastFrame.Clear();
+            
+            // Find new hits
             FindTargetsInBeam();
+            
+            // Clean up hit effects for units no longer being hit
+            CleanupHitEffects();
             
             // Apply damage on interval
             if (_damageTimer <= 0)
@@ -108,10 +164,10 @@
             
             Vector3 beamCenter = (_laserPositions[0] + _laserPositions[1]) * 0.5f;
             Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]);
-            float beamLength = beamDirection.magnitude;
+            float beamLen = beamDirection.magnitude;
             beamDirection.Normalize();
             
-            Vector3 boxSize = new Vector3(detectionWidth, 10f, beamLength);
+            Vector3 boxSize = new Vector3(detectionWidth, 10f, beamLen);
             Quaternion boxRotation = Quaternion.LookRotation(beamDirection);
             
             Collider[] hitColliders = Physics.OverlapBox(beamCenter, boxSize * 0.5f, boxRotation);
@@ -125,16 +181,27 @@
                     continue;
                 }
                 
-                if (IsUnitInBeam(unit, _laserPositions[0], _laserPositions[1], detectionWidth))
+                // Get the closest point on the collider to the beam
+                Vector3 hitPoint = hitCollider.ClosestPoint(_laserPositions[0]);
+                float distanceToBeam = DistancePointToLine(hitPoint, _laserPositions[0], _laserPositions[1]);
+                
+                if (distanceToBeam <= detectionWidth * 0.5f)
                 {
-                    if (_damageTimer <= 0.05f && !_damagedUnitsThisTick.Contains(unit.getId()))
+                    int unitId = unit.getId();
+                    
+                    // Mark this unit as hit this frame
+                    _hitUnitsLastFrame.Add(unitId);
+                    
+                    // Queue for damage on next tick
+                    if (_damageTimer <= 0.05f && !_damagedUnitsThisTick.Contains(unitId))
                     {
-                        _damagedUnitsThisTick.Add(unit.getId());
-                        
-                        if (createPenetrationEffects)
-                        {
-                            CreateBeamHitEffects(unit);
-                        }
+                        _damagedUnitsThisTick.Add(unitId);
+                    }
+                    
+                    // Update or create hit effect at the actual hit point
+                    if (hitEffectPrefab != null)
+                    {
+                        UpdateHitEffect(unit, hitPoint);
                     }
                 }
             }
@@ -157,8 +224,6 @@
                     }
                 }
             }
-            
-            _damagedUnitsThisTick.Clear();
         }
         
         private Unit FindUnitById(int id)
@@ -172,15 +237,55 @@
             return null;
         }
         
-        private void CreateBeamHitEffects(Unit unit)
+        private void UpdateHitEffect(Unit unit, Vector3 hitPoint)
         {
+            int unitId = unit.getId();
             Vector3 beamDirection = (_laserPositions[1] - _laserPositions[0]).normalized;
             
-            Vector3 frontPos = FindBeamIntersectionPoint(unit, _laserPositions[0], beamDirection);
-            SpellUtils.CreateHitEffect(frontPos, beamWidth * 0.3f, Color.yellow, 0.3f);
+            // If we already have an effect for this unit, update its position
+            if (_activeHitEffects.TryGetValue(unitId, out GameObject existingEffect) && existingEffect != null)
+            {
+                existingEffect.transform.position = hitPoint;
+                existingEffect.transform.rotation = Quaternion.LookRotation(beamDirection);
+                existingEffect.SetActive(true);
+            }
+            // Otherwise create a new effect
+            else
+            {
+                GameObject hitEffect = Instantiate(hitEffectPrefab, hitPoint, Quaternion.LookRotation(beamDirection));
+                hitEffect.transform.localScale = Vector3.one * beamWidth * 0.3f;
+                
+                // Store the effect
+                _activeHitEffects[unitId] = hitEffect;
+            }
+        }
+        
+        private void CleanupHitEffects()
+        {
+            // Find units that were hit before but aren't being hit now
+            List<int> unitsToRemove = new List<int>();
             
-            Vector3 backPos = FindBeamIntersectionPoint(unit, frontPos + beamDirection * 0.1f, beamDirection);
-            SpellUtils.CreateHitEffect(backPos, beamWidth * 0.2f, Color.red, 0.3f);
+            foreach (var unitIdEffectPair in _activeHitEffects)
+            {
+                int unitId = unitIdEffectPair.Key;
+                GameObject effect = unitIdEffectPair.Value;
+                
+                // If this unit is no longer being hit, destroy its effect
+                if (!_hitUnitsLastFrame.Contains(unitId))
+                {
+                    if (effect != null)
+                    {
+                        Destroy(effect);
+                    }
+                    unitsToRemove.Add(unitId);
+                }
+            }
+            
+            // Remove entries for units no longer being hit
+            foreach (int unitId in unitsToRemove)
+            {
+                _activeHitEffects.Remove(unitId);
+            }
         }
         
         private bool IsUnitInBeam(Unit unit, Vector3 beamStart, Vector3 beamEnd, float beamWidth)
@@ -238,31 +343,51 @@
         {
             if (laserLineRenderer == null)
             {
-                laserLineRenderer = SpellUtils.CreateBeamLineRenderer(gameObject, beamWidth * 0.5f, laserColor, laserIntensity);
+                laserLineRenderer = gameObject.AddComponent<LineRenderer>();
+                laserLineRenderer.positionCount = 2;
+                laserLineRenderer.useWorldSpace = true;
+                laserLineRenderer.startWidth = beamWidth * 1.5f;
+                laserLineRenderer.endWidth = beamWidth * 0.5f;
             }
+            
+            // Apply the material and color
+            if (laserMaterial != null)
+            {
+                laserLineRenderer.material = laserMaterial;
+            }
+            
+            // Set the color gradient
+            Gradient gradient = new Gradient();
+            gradient.SetKeys(
+                new GradientColorKey[] { 
+                    new GradientColorKey(laserColor, 0.0f),
+                    new GradientColorKey(laserColor, 1.0f) 
+                },
+                new GradientAlphaKey[] {
+                    new GradientAlphaKey(1.0f, 0.0f),
+                    new GradientAlphaKey(0.5f, 1.0f)
+                }
+            );
+            laserLineRenderer.colorGradient = gradient;
             
             if (laserStartVFX == null)
             {
-                laserStartVFX = SpellUtils.CreateBeamEffect(
-                    transform.position,
-                    beamWidth,
-                    laserColor,
-                    laserIntensity,
-                    transform
-                );
-                laserStartVFX.name = "LaserStartVFX";
+                // Create a simple placeholder if no VFX provided
+                GameObject startVfx = new GameObject("LaserStartVFX");
+                startVfx.transform.parent = transform;
+                startVfx.transform.localPosition = Vector3.zero;
+                
+                laserStartVFX = startVfx;
             }
             
             if (laserEndVFX == null)
             {
-                laserEndVFX = SpellUtils.CreateBeamEffect(
-                    transform.position + Vector3.forward * 10f,
-                    beamWidth * 0.8f,
-                    laserColor,
-                    laserIntensity,
-                    transform
-                );
-                laserEndVFX.name = "LaserEndVFX";
+                // Create a simple placeholder if no VFX provided
+                GameObject endVfx = new GameObject("LaserEndVFX");
+                endVfx.transform.parent = transform;
+                endVfx.transform.localPosition = Vector3.forward * 10f;
+                
+                laserEndVFX = endVfx;
             }
         }
         
@@ -300,9 +425,6 @@
                 laserLineRenderer.SetPositions(_laserPositions);
                 laserLineRenderer.startWidth = beamWidth * 1.5f;
                 laserLineRenderer.endWidth = beamWidth * 0.5f;
-                
-                if (laserLineRenderer.material.HasProperty("_Glow"))
-                    laserLineRenderer.material.SetFloat("_Glow", 1.5f);
             }
             else
             {
@@ -371,6 +493,62 @@
                     }
                 }
             }
+        }
+        
+        private void OnDisable()
+        {
+            // Restore original range when spell is disabled
+            if (hasModifiedRange && _shooter != null)
+            {
+                _shooter.RangeDetector = originalShooterRange;
+            }
+
+            // Clean up all active hit effects
+            foreach (var effect in _activeHitEffects.Values)
+            {
+                if (effect != null)
+                {
+                    Destroy(effect);
+                }
+            }
+            _activeHitEffects.Clear();
+        }
+        
+        // Add a method to update the laser color at runtime
+        public void SetLaserColor(Color newColor)
+        {
+            laserColor = newColor;
+            if (laserLineRenderer != null)
+            {
+                Gradient gradient = new Gradient();
+                gradient.SetKeys(
+                    new GradientColorKey[] { 
+                        new GradientColorKey(newColor, 0.0f),
+                        new GradientColorKey(newColor, 1.0f) 
+                    },
+                    new GradientAlphaKey[] {
+                        new GradientAlphaKey(1.0f, 0.0f),
+                        new GradientAlphaKey(0.5f, 1.0f)
+                    }
+                );
+                laserLineRenderer.colorGradient = gradient;
+            }
+        }
+        
+        // Helper method to calculate point-to-line distance
+        private float DistancePointToLine(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
+        {
+            Vector3 line = lineEnd - lineStart;
+            float len = line.magnitude;
+            line.Normalize();
+            
+            Vector3 v = point - lineStart;
+            float d = Vector3.Dot(v, line);
+            d = Mathf.Clamp(d, 0f, len);
+            
+            Vector3 nearestPoint = lineStart + line * d;
+            
+            return Vector3.Distance(point, nearestPoint);
         }
     }
 }

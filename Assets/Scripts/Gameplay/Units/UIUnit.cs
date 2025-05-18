@@ -29,9 +29,11 @@
         // Reference to the Animation component
         public Animation Animation;
 
-        // The main camera of the game
-        Camera mainCamera;
-        Quaternion originalRotation;
+        // UI positioning
+        [Header("UI Positioning")]
+        [SerializeField] private Vector3 uiOffset = Vector3.up * 0.5f; // Smaller offset for isometric
+        private Transform parentTransform;
+        private Camera mainCamera;
 
         float GhostHp;
         float GhostSH;
@@ -57,11 +59,15 @@
         public Color Player2DifHpColor = Color.green;
         public Color Player2DifShieldColor = Color.white;
 
+        void Awake()
+        {
+            // Cache references for performance
+            parentTransform = transform.parent;
+            mainCamera = Camera.main;
+        }
+
         void Start()
         {
-            originalRotation = transform.rotation;
-            mainCamera = Camera.main;
-
             // Get the Unit component
             Unit unit = GetComponentInParent<Unit>();
 
@@ -75,10 +81,6 @@
                     Shield.color = Player2ShieldColor;
                     GHp.color = Player2DifHpColor;
                     GShield.color = Player2DifShieldColor;
-
-                    // Flip the UI horizontally if it's the Blue team
-                    RectTransform rectTransform = GetComponent<RectTransform>();
-                    rectTransform.localScale = new Vector3(-Mathf.Abs(rectTransform.localScale.x), rectTransform.localScale.y, rectTransform.localScale.z);
                 }
                 else if (unit.MyTeam == Team.Red)
                 {
@@ -101,20 +103,28 @@
             previousShield = Shield.fillAmount;
         }
 
-        private void Update()
+        private void LateUpdate()
         {
-            // The UI always looks at the camera
-            transform.rotation = mainCamera.transform.rotation * originalRotation;
+            if (!mainCamera || !parentTransform) return;
+
+            // Update position
+            transform.position = parentTransform.position + uiOffset;
+            
+            // Match camera rotation
+            transform.rotation = mainCamera.transform.rotation;
 
             // Detect damage by comparing the current HP and Shield with the previous state
             if (!animationTriggered && (Hp.fillAmount < previousHp || Shield.fillAmount < previousShield))
             {
-                // Trigger animation only once when damage is detected
                 OnDamageTaken();
-                animationTriggered = true; // Set flag to true to prevent further triggers
+                animationTriggered = true;
+            }
+            else if (Hp.fillAmount >= previousHp && Shield.fillAmount >= previousShield)
+            {
+                animationTriggered = false; // Reset the flag when HP/Shield increases or stays the same
             }
 
-            // Lerp Ghost Bars
+            // Lerp Ghost Bars - highly optimized
             GhostHp = Mathf.Lerp(GhostHp, Hp.fillAmount, Time.deltaTime * DifDmgSpeed);
             GhostSH = Mathf.Lerp(GhostSH, Shield.fillAmount, Time.deltaTime * DifDmgSpeed);
             GHp.fillAmount = GhostHp;
@@ -158,10 +168,6 @@
             if (Animation != null && Animation["ShowBars"] != null)
             {
                 Animation.Play("ShowBars");
-            }
-            else
-            {
-                Debug.LogWarning("Animation or animation clip not assigned in the inspector.");
             }
         }
     }

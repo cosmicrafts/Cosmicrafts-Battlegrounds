@@ -163,10 +163,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d7dbdf504ba312a4c93eca0650e2570e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  useDevelopmentModeInEditor: 1
-  devSeedPhrase: elephant teach old consider vivid leader minute canoe original suspect
-    skirt pause
   canisterId: opcce-byaaa-aaaak-qcgda-cai
+  seedPhrase: coconut teach old consider vivid leader minute canoe original suspect
+    skirt pause
 --- !u!1 &153005016
 GameObject:
   m_ObjectHideFlags: 0
@@ -1102,50 +1101,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1103796202}
   m_CullTransparentMesh: 1
---- !u!1 &1220039149
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1220039151}
-  - component: {fileID: 1220039150}
-  m_Layer: 0
-  m_Name: Character
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1220039150
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1220039149}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 861266ba92b060f40810da795cdf2223, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
---- !u!4 &1220039151
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1220039149}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 93.90515, y: 119.944885, z: -22.592785}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 697417430648073629}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1440240458
 GameObject:
   m_ObjectHideFlags: 0
@@ -1251,7 +1206,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   botBaseSO: {fileID: 11400000, guid: 4303fe846bf08e1b6ae8ee11062c7768, type: 2}
-  numberOfBots: 1
+  numberOfBots: 4
   spawnCenter: {x: 50, y: 0, z: 50}
   spawnRadius: 30
   minBotSpacing: 10
@@ -3297,7 +3252,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 697417429583354146}
-  - {fileID: 1220039151}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &697417430648073630
@@ -4319,18 +4273,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 697417429583354146}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &697417431451985865
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 697417431451985871}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fe91dc294731a9428c0941ea7579110, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!23 &697417431451985866
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -4395,7 +4337,6 @@ GameObject:
   - component: {fileID: 697417431451985864}
   - component: {fileID: 697417431451985867}
   - component: {fileID: 697417431451985866}
-  - component: {fileID: 697417431451985865}
   m_Layer: 0
   m_Name: Mesh
   m_TagString: Untagged

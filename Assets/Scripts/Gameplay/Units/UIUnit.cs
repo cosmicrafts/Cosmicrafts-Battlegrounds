@@ -42,8 +42,10 @@
         private float previousHp;
         private float previousShield;
 
-        // Boolean to track if the animation has already been triggered
-        private bool animationTriggered = false;
+        // Variables to track damage state
+        private bool isCurrentlyTakingDamage = false;
+        private float damageStartTime = 0f;
+        private const float damageResetTime = 1f; // Time before considering it a new damage sequence
 
         // Player 1 Colors
         [Header("Player 1 Colors")]
@@ -59,11 +61,22 @@
         public Color Player2DifHpColor = Color.green;
         public Color Player2DifShieldColor = Color.white;
 
+        [Header("UI Scaling")]
+        [SerializeField] private float baseOrthographicSize = 60f; // Match this with CameraController's defaultZoom
+        [SerializeField] private float minScaleMultiplier = 0.5f;
+        [SerializeField] private float maxScaleMultiplier = 2f;
+        [SerializeField] private bool maintainConstantScale = true;
+        
+        private Vector3 originalScale;
+
         void Awake()
         {
             // Cache references for performance
             parentTransform = transform.parent;
             mainCamera = Camera.main;
+            
+            // Store the original scale from the prefab
+            originalScale = transform.localScale;
         }
 
         void Start()
@@ -113,18 +126,45 @@
             // Match camera rotation
             transform.rotation = mainCamera.transform.rotation;
 
-            // Detect damage by comparing the current HP and Shield with the previous state
-            if (!animationTriggered && (Hp.fillAmount < previousHp || Shield.fillAmount < previousShield))
+            // Scale UI based on camera zoom
+            if (maintainConstantScale && mainCamera.orthographic)
             {
-                OnDamageTaken();
-                animationTriggered = true;
-            }
-            else if (Hp.fillAmount >= previousHp && Shield.fillAmount >= previousShield)
-            {
-                animationTriggered = false; // Reset the flag when HP/Shield increases or stays the same
+                float currentOrthographicSize = mainCamera.orthographicSize;
+                float scaleFactor = currentOrthographicSize / baseOrthographicSize;
+                
+                // Clamp the scale multiplier
+                scaleFactor = Mathf.Clamp(scaleFactor, minScaleMultiplier, maxScaleMultiplier);
+                
+                // Apply the new scale while preserving the original proportions
+                transform.localScale = Vector3.Scale(originalScale, Vector3.one * scaleFactor);
             }
 
-            // Lerp Ghost Bars - highly optimized
+            // Check for damage or healing
+            bool isDamaged = (Hp.fillAmount < previousHp || Shield.fillAmount < previousShield);
+            bool isHealing = (Hp.fillAmount > previousHp || Shield.fillAmount > previousShield);
+
+            if (isDamaged)
+            {
+                // If we're not already in a damage state, trigger the animation
+                if (!isCurrentlyTakingDamage)
+                {
+                    OnDamageTaken();
+                    isCurrentlyTakingDamage = true;
+                    damageStartTime = Time.time;
+                }
+                // Update the damage start time if we're still taking damage
+                else
+                {
+                    damageStartTime = Time.time;
+                }
+            }
+            else if (isHealing || Time.time > damageStartTime + damageResetTime)
+            {
+                // Reset the damage state if we're healing or enough time has passed
+                isCurrentlyTakingDamage = false;
+            }
+
+            // Lerp Ghost Bars
             GhostHp = Mathf.Lerp(GhostHp, Hp.fillAmount, Time.deltaTime * DifDmgSpeed);
             GhostSH = Mathf.Lerp(GhostSH, Shield.fillAmount, Time.deltaTime * DifDmgSpeed);
             GHp.fillAmount = GhostHp;

@@ -350,6 +350,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: c95cb325882b3e5d0bcf232709bf503d, type: 2}
   - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
   - {fileID: 11400000, guid: fa56fcf444849cf4ca2b4daaeea4309c, type: 2}
+  - {fileID: 11400000, guid: 265a32c5b81d7ed98865d0dc2f16f03d, type: 2}
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -520,41 +521,6 @@ MonoBehaviour:
   acceleration: 5
   deceleration: 2.5
   returnToMovementRotationDelay: 0.5
-  dashDistance: 100
-  dashDuration: 0.75
-  dashCooldown: 0
-  useBlink: 0
-  leavesTrail: 1
-  dashKey: 8
-  dashEffectPrefab: {fileID: 0}
-  dashCurve:
-    serializedVersion: 2
-    m_Curve:
-    - serializedVersion: 3
-      time: 0
-      value: 0
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    - serializedVersion: 3
-      time: 1
-      value: 1
-      inSlope: 0
-      outSlope: 0
-      tangentMode: 0
-      weightedMode: 0
-      inWeight: 0
-      outWeight: 0
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  overshootAmount: 0.15
-  endSlowdownFactor: 0.708
-  trailScale: 0.89
-  bypassEnergyCheck: 0
 --- !u!1 &2870354689144864420
 GameObject:
   m_ObjectHideFlags: 0

@@ -53,12 +53,37 @@ public class Spell_03 : Spell
     private Queue<GameObject> markerPool = new Queue<GameObject>();
     private int poolSize = 50;
 
+    void Awake()
+    {
+        Debug.Log($"Spell_03 (Dash) Awake called");
+    }
+
+    // Override SetNfts to handle NFT data
+    public override void SetNfts(NFTsSpell nFTsSpell)
+    {
+        Debug.Log($"Spell_03 SetNfts called with NFT: {(nFTsSpell != null ? nFTsSpell.KeyId : "null")}");
+        base.SetNfts(nFTsSpell);
+        
+        if (nFTsSpell == null || GlobalManager.GMD == null || GlobalManager.GMD.DebugMode)
+        {
+            Debug.LogWarning($"Spell_03 SetNfts early return - nFTsSpell null: {nFTsSpell == null}, GMD null: {GlobalManager.GMD == null}");
+            return;
+        }
+
+        // Load configuration from NFT data if available
+        NFTs = nFTsSpell;
+        Debug.Log($"Spell_03 (Dash) initialized with NFT data. Key: {NFTs.KeyId}, Team: {MyTeam}, PlayerId: {PlayerId}");
+    }
+
     protected override void Start()
     {
+        Debug.Log($"Spell_03 Start called. NFTs: {(NFTs != null ? NFTs.KeyId : "null")}, Team: {MyTeam}, PlayerId: {PlayerId}");
         base.Start();
 
         // Find the player's unit
-        var (_, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
+        var (station, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
+        Debug.Log($"Spell_03 FindPlayerMainStation result - station: {(station != null ? "found" : "null")}, unit: {(mainStationUnit != null ? mainStationUnit.name : "null")}");
+        
         playerUnit = mainStationUnit;
 
         if (playerUnit != null)
@@ -66,6 +91,7 @@ public class Spell_03 : Spell
             playerCollider = playerUnit.GetComponent<Collider>();
             InitializeMarkerPool();
             StartDash();
+            Debug.Log($"Spell_03 starting dash for player unit {playerUnit.name} at position {playerUnit.transform.position}");
         }
         else
         {
@@ -102,7 +128,13 @@ public class Spell_03 : Spell
 
     private void StartDash()
     {
-        if (playerUnit == null) return;
+        if (playerUnit == null)
+        {
+            Debug.LogError("Spell_03 StartDash called with null playerUnit");
+            return;
+        }
+
+        Debug.Log($"Spell_03 StartDash - Getting movement direction for player at {playerUnit.transform.position}");
 
         // Get player's movement direction or facing direction
         dashDirection = playerUnit.transform.forward;
@@ -115,6 +147,8 @@ public class Spell_03 : Spell
                 dashDirection = moveDir;
             }
         }
+
+        Debug.Log($"Spell_03 dash direction set to {dashDirection}");
 
         // Calculate start and end positions
         dashStartPosition = playerUnit.transform.position;
@@ -131,6 +165,8 @@ public class Spell_03 : Spell
             playerCollider.enabled = false;
         }
 
+        Debug.Log($"Spell_03 dash started from {dashStartPosition} to {dashEndPosition}");
+
         // If it's a blink, just teleport
         if (useBlink)
         {
@@ -140,6 +176,7 @@ public class Spell_03 : Spell
             {
                 // If we hit something, blink to just before the hit point
                 dashEndPosition = hit.point - (dashDirection * 0.5f);
+                Debug.Log($"Spell_03 blink hit obstacle at {hit.point}, adjusted end position to {dashEndPosition}");
             }
 
             // Teleport to end position
@@ -271,6 +308,7 @@ public class Spell_03 : Spell
 
     private void EndDash()
     {
+        Debug.Log($"Spell_03 EndDash called. Position: {(playerUnit != null ? playerUnit.transform.position.ToString() : "null player")}");
         isDashing = false;
 
         // Restore collision
@@ -287,6 +325,7 @@ public class Spell_03 : Spell
 
         // Destroy the spell object after effects are done
         float cleanupDelay = leavesTrail ? 1.5f : 0.1f;
+        Debug.Log($"Spell_03 will be destroyed in {cleanupDelay} seconds");
         Destroy(gameObject, cleanupDelay);
     }
 

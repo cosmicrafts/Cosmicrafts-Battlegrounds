@@ -18,7 +18,7 @@ MonoBehaviour:
   basePrefab: {fileID: 2198226034328220048, guid: 321ac9165335945d9834ca25cd527fcb, type: 3}
   hpOverride: 3223
   shieldOverride: 2903
-  bulletDamageOverride: 100
+  bulletDamageOverride: 35
   levelOverride: 2
   skills:
   - skillName: 0

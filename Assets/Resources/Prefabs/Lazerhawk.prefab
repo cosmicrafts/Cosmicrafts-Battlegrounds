@@ -65,11 +65,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MyTeam: 0
   PlayerId: 1
-  Duration: 1
-  damagePerSecond: 160
+  Duration: 1.5
+  damagePerSecond: 350
   damageInterval: 0.1
-  beamLength: 120
-  beamWidth: 4
+  beamLength: 40
+  beamWidth: 2.57
   damageType: 0
   criticalStrikeChance: 0.075
   criticalStrikeMultiplier: 2.5

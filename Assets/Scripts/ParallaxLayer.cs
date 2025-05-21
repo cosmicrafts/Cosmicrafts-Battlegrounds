@@ -17,6 +17,29 @@ namespace Cosmicrafts
         [Tooltip("Apply an extra speed factor to make layers move at different rates")]
         public Vector2 speedMultiplier = Vector2.one;
 
+        [Header("Scale Animation")]
+        [Tooltip("Enable scale animation based on parallax movement")]
+        public bool enableScaleAnimation = false;
+
+        [Tooltip("How much the scale changes with distance (0 = no scale change, 1 = full scale change)")]
+        [Range(0f, 1f)]
+        public float scaleAnimationFactor = 0.2f;
+
+        [Tooltip("Maximum scale multiplier when closest to camera")]
+        [Range(1f, 3f)]
+        public float maxScaleMultiplier = 1.5f;
+
+        [Tooltip("Minimum scale multiplier when farthest from camera")]
+        [Range(0.1f, 1f)]
+        public float minScaleMultiplier = 0.8f;
+
+        [Tooltip("How smoothly the scale changes (higher = smoother)")]
+        [Range(0.1f, 10f)]
+        public float scaleSmoothing = 2f;
+
+        [Tooltip("Reference distance for scaling (distance at which scale is 1.0)")]
+        public float referenceDistance = 10f;
+
         [Header("Grid Generation")]
         [Tooltip("Size of the grid in X and Z (e.g. 3 = 3x3 grid)")]
         [Range(1, 5)]
@@ -38,18 +61,30 @@ namespace Cosmicrafts
         // Track created grid objects
         private List<GameObject> gridObjects = new List<GameObject>();
 
+        // Scale animation variables
+        private Vector3 originalScale;
+        private Vector3 targetScale;
+        private float baseDistance;
+
         private void Start()
         {
             mainCamera = Camera.main;
             if (mainCamera != null)
             {
                 lastCameraPosition = mainCamera.transform.position;
+                // Store the initial distance as our reference
+                baseDistance = Vector3.Distance(transform.position, mainCamera.transform.position);
             }
             else
             {
                 Debug.LogWarning("ParallaxLayer could not find main camera. Using current position as fallback.");
                 lastCameraPosition = transform.position;
+                baseDistance = referenceDistance;
             }
+            
+            // Store original scale for animation
+            originalScale = transform.localScale;
+            targetScale = originalScale;
             
             // Generate grid if enabled
             if (generateGridOnStart && !isGeneratingGrid)
@@ -79,6 +114,43 @@ namespace Cosmicrafts
 
             // Move the layer
             transform.position -= parallaxDelta;
+
+            // Handle scale animation if enabled
+            if (enableScaleAnimation)
+            {
+                // Calculate current distance to camera
+                float currentDistance = Vector3.Distance(transform.position, mainCamera.transform.position);
+                
+                // Calculate how far we are from our reference distance
+                float distanceRatio = currentDistance / baseDistance;
+                
+                // Invert the ratio so closer = bigger, farther = smaller
+                float inverseRatio = 1f / distanceRatio;
+                
+                // Apply the scale animation factor
+                float scaleEffect = Mathf.Lerp(1f, inverseRatio, scaleAnimationFactor);
+                
+                // Clamp the scale effect between our min and max multipliers
+                float finalScaleMultiplier = Mathf.Clamp(scaleEffect, minScaleMultiplier, maxScaleMultiplier);
+                
+                // Calculate target scale
+                targetScale = originalScale * finalScaleMultiplier;
+                
+                // Debug scaling values
+                Debug.Log($"Distance: {currentDistance:F2}, Ratio: {distanceRatio:F2}, Scale: {finalScaleMultiplier:F2}");
+                
+                // Smoothly interpolate to target scale
+                transform.localScale = Vector3.Lerp(
+                    transform.localScale,
+                    targetScale,
+                    Time.deltaTime * scaleSmoothing
+                );
+            }
+            else if (transform.localScale != originalScale)
+            {
+                // Reset scale if animation is disabled
+                transform.localScale = originalScale;
+            }
 
             // Update last camera position
             lastCameraPosition = mainCamera.transform.position;

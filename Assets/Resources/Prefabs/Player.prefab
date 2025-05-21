@@ -311,9 +311,9 @@ MonoBehaviour:
   - {fileID: 897222552463288225}
   useAutoDeployment: 1
   maxActiveUnits: 4
-  CurrentEnergy: 30
+  CurrentEnergy: 6.4
   MaxEnergy: 30
-  SpeedEnergy: 5.9
+  SpeedEnergy: 0.7
   dashEnergyCost: 2
   TestingDeck:
   - {fileID: 11400000, guid: ce625a8613266e59db1eee1061f68475, type: 2}

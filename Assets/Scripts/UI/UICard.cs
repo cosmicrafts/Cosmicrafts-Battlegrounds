@@ -13,16 +13,22 @@ public class UICard : MonoBehaviour
     //NFT data source
     protected NFTsCard Data;
 
-    //UI Text references
-    public TMP_Text Txt_Name;
-    public TMP_Text Txt_Cost;
-    public TMP_Text Txt_Type;
-    public TMP_Text Txt_Details;
+    [Header("Text Components")]
+    [Tooltip("Card name text component")]
+    [SerializeField] protected TMP_Text Txt_Name;
+    [Tooltip("Energy cost text component")]
+    [SerializeField] protected TMP_Text Txt_Cost;
+    [Tooltip("Card type text component")]
+    [SerializeField] protected TMP_Text Txt_Type;
+    [Tooltip("Card details/description text component")]
+    [SerializeField] protected TMP_Text Txt_Details;
     
-    //UI Icon reference
-    public Image Icon;
-    //UI Animator reference
-    public Animator animator;
+    [Header("UI Components")]
+    [Tooltip("Card icon image component")]
+    [SerializeField] public Image Icon;
+    [Tooltip("Card animator component")]
+    [SerializeField] public Animator animator;
+
     //Is a skill or unit
     protected bool IsSkill;
 
@@ -52,27 +58,27 @@ public class UICard : MonoBehaviour
         NameCard = Lang.GetEntityName(data.KeyId); 
         KeyName = data.KeyId;
 
-        //Set the name and descriftion of the NFT
-        Txt_Name.text = Lang.GetEntityName(data.KeyId);
-        Txt_Cost.text = data.EnergyCost.ToString();
+        //Set the name and description of the NFT
+        if (Txt_Name != null) Txt_Name.text = Lang.GetEntityName(data.KeyId);
+        if (Txt_Cost != null) Txt_Cost.text = data.EnergyCost.ToString();
         if (Txt_Details != null)
         {
             Txt_Details.text = Lang.GetEntityDescription(data.KeyId);
         }
         //Set the icon of the NFT
-        Icon.sprite = ResourcesServices.ValidateSprite(data.IconSprite);
+        if (Icon != null) Icon.sprite = ResourcesServices.ValidateSprite(data.IconSprite);
         //Set type of the NFT
         if (data as NFTsSpell != null)
         {
             //This card is a spell
             TypeCard = NFTClass.Skill;
-            Txt_Type.text = Lang.GetText("mn_skill");
+            if (Txt_Type != null) Txt_Type.text = Lang.GetText("mn_skill");
         } else
         {
             //This card is a unit
             NFTsUnit nFTsUnit = data as NFTsUnit;
             TypeCard = (NFTClass)nFTsUnit.EntType;
-            Txt_Type.text = Lang.GetText(TypeCard == NFTClass.Station ? "mn_station" : "mn_ship");
+            if (Txt_Type != null) Txt_Type.text = Lang.GetText(TypeCard == NFTClass.Station ? "mn_station" : "mn_ship");
         }
     }
 
@@ -86,20 +92,20 @@ public class UICard : MonoBehaviour
     public void SelectCard()
     {
         IsSelected = true;
-        Txt_Name.color = Color.green;
+        if (Txt_Name != null) Txt_Name.color = Color.green;
     }
 
     //Removes the selection of this card
     public void DeselectCard()
     {
         IsSelected = false;
-        Txt_Name.color = Color.white;
+        if (Txt_Name != null) Txt_Name.color = Color.white;
     }
 
     //Refresh icon sprite
     public void RefreshIcon()
     {
-        if (Icon != null)
+        if (Icon != null && Data != null)
             Icon.sprite = ResourcesServices.ValidateSprite(Data.IconSprite);
     }
 }

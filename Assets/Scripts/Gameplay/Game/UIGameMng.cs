@@ -89,12 +89,8 @@
         
         private void Update()
         {
-            //
             // The UIGameCard instances handle number key presses through callbacks
             // and then call UIGameMng.DeployCard or UIGameMng.SelectCard as needed
-            
-            // This is now handled by the Input System and InputManager
-            // Number key detection is done via subscribed callbacks in UIGameCard
         }
         
         private void OnPrimaryAction(InputAction.CallbackContext context)
@@ -176,7 +172,6 @@
             {
                 UIDeck[idc].SetSelection(true);
                 selectedCardIndex = idc;
-                // No longer need to activate AreaDeploy
                 Debug.Log($"Card {idc} selected");
             }
         }
@@ -192,7 +187,6 @@
                 }
             }
             selectedCardIndex = -1;
-            // Remove the reference to AreaDeploy.SetActive
         }
         
         // Deploy the selected card at a position
@@ -224,11 +218,7 @@
             
             if (energyInt >= card.EnergyCost)
             {
-               // Debug.Log($"Deploying card {cardIndex}");
-                
                 // When position is Vector3.zero, it means we want to auto-deploy
-                // But we don't need to do extra logic here - Player.DeplyUnit handles it correctly
-                // Just pass the card to DeplyUnit which will use a random spawn position
                 if (GameMng.P != null)
                 {
                     // Get the card from the player's deck if available
@@ -274,7 +264,6 @@
             else
             {
                 Debug.Log($"Not enough energy to deploy card {cardIndex}. Need {card.EnergyCost}, have {energyInt}");
-                // Maybe play a "not enough energy" feedback here
             }
         }
 

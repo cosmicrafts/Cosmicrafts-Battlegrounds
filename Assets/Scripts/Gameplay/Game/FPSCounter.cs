@@ -1,9 +1,9 @@
 using UnityEngine;
-using UnityEngine.UI;
+using TMPro;
 
 public class FPSCounter : MonoBehaviour
 {
-    public Text fpsText; // Assign a UI Text element in the Inspector
+    public TMP_Text fpsText; // Changed from Text to TMP_Text
     private float deltaTime = 0.0f;
 
     void Update()

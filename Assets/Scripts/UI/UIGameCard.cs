@@ -3,6 +3,7 @@ using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using Cosmicrafts;
 using UnityEngine.InputSystem;
+using TMPro;
 
 /*
  * This code represents a in the game card instance
@@ -17,7 +18,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     //Cost of the card
     public int EnergyCost = 99;
     //Text reference for the cost
-    public Text TextCost;
+    public TMP_Text TextCost;
     //Image reference for the card icon
     public Image SpIcon;
     //Selection Icon

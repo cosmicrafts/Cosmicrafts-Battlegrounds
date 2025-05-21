@@ -4749,7 +4749,7 @@ GameObject:
   - component: {fileID: 19896866}
   - component: {fileID: 19961294}
   m_Layer: 0
-  m_Name: SparkleShield
+  m_Name: Shield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

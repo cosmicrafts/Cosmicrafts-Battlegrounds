@@ -10,7 +10,7 @@ using System.Collections.Generic;
  * A mobility spell that allows quick movement in a direction:
  * 1. Can be configured as a dash (smooth movement) or blink (instant teleport)
  * 2. Uses player's movement direction or facing direction
- * 3. Creates visual effects along the path
+ * 3. VFX follows the unit's tail transform
  */
 public class Spell_03 : Spell
 {
@@ -21,23 +21,24 @@ public class Spell_03 : Spell
     public float dashDuration = 0.1f;
     [Tooltip("Whether to instantly teleport instead of dashing")]
     public bool useBlink = false;
-    [Tooltip("Whether to create visual trail effects")]
-    public bool leavesTrail = true;
-    [Tooltip("Prefab for the dash effect")]
-    public GameObject dashEffectPrefab;
 
     [Header("Dash Animation")]
     [Tooltip("Controls how the dash accelerates and decelerates")]
     public AnimationCurve dashCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
-    [Range(0f, 2f)]
     [Tooltip("Higher values make the dash 'overshoot' the target before settling")]
+    [Range(0f, 2f)]
     public float overshootAmount = 0.15f;
-    [Range(0f, 1f)]
     [Tooltip("Controls how much the character slows down at the end of the dash")]
+    [Range(0f, 1f)]
     public float endSlowdownFactor = 0.2f;
-    [Range(0.1f, 2f)]
-    [Tooltip("Controls the size of the trail elements")]
-    public float trailScale = 0.3f;
+    
+    [Header("Advanced Motion")]
+    [Tooltip("Adds a vertical arc to the dash")]
+    [Range(0f, 2f)]
+    public float arcHeight = 0.5f;
+    [Tooltip("Controls the smoothness of direction changes during dash")]
+    [Range(1f, 20f)]
+    public float turnSpeed = 10f;
 
     // Runtime variables
     private bool isDashing = false;
@@ -49,16 +50,11 @@ public class Spell_03 : Spell
     private Collider playerCollider;
     private bool wasCollisionEnabled = true;
 
-    // Trail effect pool
-    private Queue<GameObject> markerPool = new Queue<GameObject>();
-    private int poolSize = 50;
-
     void Awake()
     {
         Debug.Log($"Spell_03 (Dash) Awake called");
     }
 
-    // Override SetNfts to handle NFT data
     public override void SetNfts(NFTsSpell nFTsSpell)
     {
         Debug.Log($"Spell_03 SetNfts called with NFT: {(nFTsSpell != null ? nFTsSpell.KeyId : "null")}");
@@ -70,34 +66,46 @@ public class Spell_03 : Spell
             return;
         }
 
-        // Load configuration from NFT data if available
         NFTs = nFTsSpell;
         Debug.Log($"Spell_03 (Dash) initialized with NFT data. Key: {NFTs.KeyId}, Team: {MyTeam}, PlayerId: {PlayerId}");
     }
 
     protected override void Start()
     {
-        Debug.Log($"Spell_03 Start called. NFTs: {(NFTs != null ? NFTs.KeyId : "null")}, Team: {MyTeam}, PlayerId: {PlayerId}");
         base.Start();
 
-        // Find the player's unit
-        var (station, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
-        Debug.Log($"Spell_03 FindPlayerMainStation result - station: {(station != null ? "found" : "null")}, unit: {(mainStationUnit != null ? mainStationUnit.name : "null")}");
-        
-        playerUnit = mainStationUnit;
-
-        if (playerUnit != null)
+        // Get the player directly since we have the PlayerId and Team
+        Player player = GameMng.P;
+        if (player != null && player.ID == PlayerId && player.MyTeam == MyTeam)
         {
-            playerCollider = playerUnit.GetComponent<Collider>();
-            InitializeMarkerPool();
-            StartDash();
-            Debug.Log($"Spell_03 starting dash for player unit {playerUnit.name} at position {playerUnit.transform.position}");
+            // Get the Unit component directly from the player
+            playerUnit = player.GetComponent<Unit>();
+            if (playerUnit != null)
+            {
+                playerCollider = playerUnit.GetComponent<Collider>();
+                
+                // Debug log to check if we have the tail point
+                if (playerUnit.TailPoint != null)
+                {
+                    Debug.Log($"Found player unit tail point at {playerUnit.TailPoint.position}");
+                }
+                else
+                {
+                    Debug.LogWarning("Player unit found but TailPoint is not set!");
+                }
+                
+                StartDash();
+            }
+            else
+            {
+                Debug.LogError("Player GameObject found but missing Unit component!");
+                Destroy(gameObject);
+            }
         }
         else
         {
-            Debug.LogWarning("Could not find player unit for dash spell");
+            Debug.LogError($"Could not find player. ID: {PlayerId}, Team: {MyTeam}");
             Destroy(gameObject);
-            return;
         }
     }
 
@@ -108,21 +116,6 @@ public class Spell_03 : Spell
         if (isDashing)
         {
             ExecuteDash();
-        }
-    }
-
-    private void InitializeMarkerPool()
-    {
-        for (int i = 0; i < poolSize; i++)
-        {
-            GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            marker.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
-            marker.SetActive(false);
-            
-            // Remove collider to prevent physics interactions
-            Destroy(marker.GetComponent<Collider>());
-            
-            markerPool.Enqueue(marker);
         }
     }
 
@@ -165,32 +158,26 @@ public class Spell_03 : Spell
             playerCollider.enabled = false;
         }
 
-        Debug.Log($"Spell_03 dash started from {dashStartPosition} to {dashEndPosition}");
-
-        // If it's a blink, just teleport
+        // If using blink, teleport immediately
         if (useBlink)
         {
-            // Perform raycast to ensure we don't blink through walls
             RaycastHit hit;
             if (Physics.Raycast(dashStartPosition, dashDirection, out hit, dashDistance))
             {
-                // If we hit something, blink to just before the hit point
                 dashEndPosition = hit.point - (dashDirection * 0.5f);
                 Debug.Log($"Spell_03 blink hit obstacle at {hit.point}, adjusted end position to {dashEndPosition}");
             }
 
-            // Teleport to end position
             playerUnit.transform.position = dashEndPosition;
-
-            // Create effect if prefab is assigned
-            if (dashEffectPrefab != null)
-            {
-                Instantiate(dashEffectPrefab, dashStartPosition, Quaternion.identity);
-                Instantiate(dashEffectPrefab, dashEndPosition, Quaternion.identity);
-            }
-
-            // End dash immediately
             EndDash();
+        }
+
+        // Parent this spell object to the unit's tail point if it exists
+        if (playerUnit.TailPoint != null)
+        {
+            transform.SetParent(playerUnit.TailPoint, false);
+            transform.localPosition = Vector3.zero;
+            transform.localRotation = Quaternion.identity;
         }
     }
 
@@ -198,112 +185,42 @@ public class Spell_03 : Spell
     {
         if (playerUnit == null) return;
 
-        // Increment timer
         dashTimer += Time.deltaTime;
-
-        // Calculate progress (0 to 1)
         float progress = Mathf.Clamp01(dashTimer / dashDuration);
-
-        // Store previous position for trail effects
-        Vector3 oldPosition = playerUnit.transform.position;
-
-        // Apply animation curve for smooth motion
         float curvedProgress = dashCurve.Evaluate(progress);
 
-        // Apply overshoot if configured
-        float animatedProgress = curvedProgress;
+        // Calculate advanced motion effects
+        Vector3 targetPosition = Vector3.Lerp(dashStartPosition, dashEndPosition, curvedProgress);
+
+        // Add arc
+        if (arcHeight > 0)
+        {
+            float arcOffset = Mathf.Sin(progress * Mathf.PI) * arcHeight;
+            targetPosition += Vector3.up * arcOffset;
+        }
+
+        // Apply overshoot
         if (overshootAmount > 0 && progress > 0.5f && progress < 0.9f)
         {
-            animatedProgress += Mathf.Sin((progress - 0.5f) * 3f * Mathf.PI) * overshootAmount * (1f - progress);
+            float overshoot = Mathf.Sin((progress - 0.5f) * 3f * Mathf.PI) * overshootAmount * (1f - progress);
+            targetPosition = Vector3.Lerp(targetPosition, dashEndPosition + dashDirection * overshoot, (progress - 0.5f) * 2);
         }
 
-        // Apply slight slowdown at the end
+        // Apply end slowdown
         if (progress > 0.7f)
         {
-            float slowdownFactor = Mathf.Lerp(1f, 1f - endSlowdownFactor, (progress - 0.7f) / 0.3f);
-            animatedProgress = Mathf.Lerp(curvedProgress, 1f, slowdownFactor);
-        }
-
-        // Calculate the current position along the dash path
-        Vector3 targetPosition = Vector3.Lerp(dashStartPosition, dashEndPosition, animatedProgress);
-
-        // Apply a subtle arc to the dash path
-        if (progress > 0.1f && progress < 0.9f)
-        {
-            float arcHeight = dashDistance * 0.05f * Mathf.Sin(progress * Mathf.PI);
-            targetPosition += Vector3.up * arcHeight;
+            float slowdown = Mathf.Lerp(1f, 1f - endSlowdownFactor, (progress - 0.7f) / 0.3f);
+            targetPosition = Vector3.Lerp(targetPosition, dashEndPosition, slowdown);
         }
 
         // Move the player
         playerUnit.transform.position = targetPosition;
-
-        // Create trail effects
-        if (leavesTrail)
-        {
-            CreateTrailEffects(oldPosition, targetPosition, progress);
-        }
-
-        // Create destination effect near completion
-        if (progress > 0.8f && progress < 0.85f && dashEffectPrefab != null)
-        {
-            Instantiate(dashEffectPrefab, dashEndPosition, Quaternion.identity);
-        }
 
         // Check if dash is complete
         if (progress >= 1.0f)
         {
             EndDash();
         }
-    }
-
-    private void CreateTrailEffects(Vector3 oldPosition, Vector3 newPosition, float progress)
-    {
-        // Calculate trail density based on speed
-        float distanceMoved = Vector3.Distance(oldPosition, newPosition);
-        int trailCount = Mathf.Clamp(Mathf.CeilToInt(distanceMoved * 2f), 1, 3);
-
-        for (int i = 0; i < trailCount; i++)
-        {
-            float lerpFactor = i / (float)trailCount;
-            Vector3 trailPos = Vector3.Lerp(oldPosition, newPosition, lerpFactor);
-
-            GameObject marker = GetMarker();
-            
-            // Scale marker based on speed and progress
-            float dynamicScale = trailScale * (1f - 0.5f * progress);
-            marker.transform.localScale = new Vector3(dynamicScale, dynamicScale, dynamicScale);
-            marker.transform.position = trailPos;
-
-            // Color progression
-            if (marker.GetComponent<Renderer>())
-            {
-                Color startColor = new Color(1f, 0.8f, 0.2f);  // Vibrant yellow
-                Color endColor = new Color(1f, 0.2f, 0.1f);    // Deep red
-                Color color = Color.Lerp(startColor, endColor, progress);
-                color.a = Mathf.Lerp(0.8f, 0.4f, progress);
-                marker.GetComponent<Renderer>().material.color = color;
-            }
-
-            StartCoroutine(ReturnMarkerAfterDelay(marker, 0.7f * (1f - progress * 0.5f)));
-        }
-
-        // Create flash effects at start/end
-        if (dashTimer < Time.deltaTime)
-        {
-            CreateFlashEffect(dashStartPosition, new Color(1f, 0.9f, 0.2f, 0.9f), 0.8f);
-        }
-    }
-
-    private void CreateFlashEffect(Vector3 position, Color color, float scale)
-    {
-        GameObject flash = GetMarker();
-        flash.transform.localScale = new Vector3(scale, scale, scale);
-        flash.transform.position = position;
-        if (flash.GetComponent<Renderer>())
-        {
-            flash.GetComponent<Renderer>().material.color = color;
-        }
-        StartCoroutine(ReturnMarkerAfterDelay(flash, 1.0f));
     }
 
     private void EndDash()
@@ -317,39 +234,8 @@ public class Spell_03 : Spell
             playerCollider.enabled = wasCollisionEnabled;
         }
 
-        // Create end flash effect
-        if (leavesTrail)
-        {
-            CreateFlashEffect(dashEndPosition, new Color(1f, 0.3f, 0.1f, 0.9f), 0.8f);
-        }
-
-        // Destroy the spell object after effects are done
-        float cleanupDelay = leavesTrail ? 1.5f : 0.1f;
-        Debug.Log($"Spell_03 will be destroyed in {cleanupDelay} seconds");
-        Destroy(gameObject, cleanupDelay);
-    }
-
-    private GameObject GetMarker()
-    {
-        if (markerPool.Count > 0)
-        {
-            GameObject marker = markerPool.Dequeue();
-            marker.SetActive(true);
-            return marker;
-        }
-        return GameObject.CreatePrimitive(PrimitiveType.Sphere);
-    }
-
-    private void ReturnMarker(GameObject marker)
-    {
-        marker.SetActive(false);
-        markerPool.Enqueue(marker);
-    }
-
-    private IEnumerator ReturnMarkerAfterDelay(GameObject marker, float delay)
-    {
-        yield return new WaitForSeconds(delay);
-        ReturnMarker(marker);
+        // Let the VFX finish playing before destroying
+        Destroy(gameObject, 2f);
     }
 }
 } 

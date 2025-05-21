@@ -54,7 +54,7 @@ namespace Cosmicrafts
         [HideInInspector]
         protected bool Disabled = false;
         [HideInInspector]
-        protected float Casting = 1f;
+        protected float Casting = .5f;
 
         float ShieldLoad = 0f;
         float ShieldCharge = 0f;
@@ -71,6 +71,9 @@ namespace Cosmicrafts
         [SerializeField]
         protected Animator MyAnim;
         protected Vector3 LastImpact;
+        
+        [Tooltip("Transform that VFX effects will follow (e.g. for dash trails)")]
+        public Transform TailPoint;
 
         protected Rigidbody MyRb;
 
@@ -252,7 +255,7 @@ namespace Cosmicrafts
             if (!IsBaseStation || MyTeam != GameMng.P.MyTeam)
             {
                 // For non-player base stations, destroy normally
-                Destroy(gameObject, 2f); // Give time for death animation to play
+                Destroy(gameObject, .25f); // Give time for death animation to play
             }
         }
 

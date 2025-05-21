@@ -923,7 +923,7 @@ MonoBehaviour:
   StopSpeed: 99
   StoppingDistance: 1
   AvoidanceRange: 1.5
-  RotationDamping: 0
+  RotationDamping: 0.86
   AlignRotationWithMovement: 1
   followPlayerWhenIdle: 1
   playerFollowDistance: 8

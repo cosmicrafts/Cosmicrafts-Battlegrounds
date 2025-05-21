@@ -4845,19 +4845,19 @@ MonoBehaviour:
     - serializedVersion: 3
       time: 1
       value: 1
-      inSlope: 2.5178308
-      outSlope: 2.5178308
+      inSlope: 0.3975259
+      outSlope: 0.3975259
       tangentMode: 0
       weightedMode: 0
-      inWeight: 0.082651794
+      inWeight: 0.1806966
       outWeight: 0
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  overshootAmount: 0.15
-  endSlowdownFactor: 0.2
-  arcHeight: 0.47
-  turnSpeed: 10
+  overshootAmount: 1.03
+  endSlowdownFactor: 0
+  arcHeight: 0.21
+  turnSpeed: 20
 --- !u!1001 &7805477846708123724
 PrefabInstance:
   m_ObjectHideFlags: 0

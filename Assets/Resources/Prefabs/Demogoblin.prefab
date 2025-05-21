@@ -912,6 +912,10 @@ MonoBehaviour:
   ShieldGameObject: {fileID: 8358885684385215374}
   UI: {fileID: 8725141663424671622}
   MyAnim: {fileID: 5587368828233238574}
+  TailPoint: {fileID: 0}
+  HasTaunt: 0
+  TauntRadius: 5
+  TauntCooldown: 1
   MySt: {fileID: 2198226033917351815}
   Aceleration: 10
   MaxSpeed: 60
@@ -920,7 +924,7 @@ MonoBehaviour:
   StopSpeed: 94.6
   StoppingDistance: 4.8
   AvoidanceRange: 0.1
-  RotationDamping: 0.1
+  RotationDamping: 0.767
   AlignRotationWithMovement: 1
   followPlayerWhenIdle: 1
   playerFollowDistance: 5
@@ -973,7 +977,7 @@ MonoBehaviour:
   criticalStrikeMultiplier: 2.5
   RotateToEnemy: 1
   StopToAttack: 0
-  rotationSpeed: 9.72
+  rotationSpeed: 8.26
   Bullet: {fileID: 4495777382389081428, guid: 588cb03a86c399a8eb466ab28e2f1681, type: 3}
   Cannons:
   - {fileID: 1478323959484795093}

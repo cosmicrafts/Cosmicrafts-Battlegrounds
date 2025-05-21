@@ -69,7 +69,7 @@ MonoBehaviour:
   damagePerSecond: 350
   damageInterval: 0.1
   beamLength: 40
-  beamWidth: 2.57
+  beamWidth: 4.76
   damageType: 0
   criticalStrikeChance: 0.075
   criticalStrikeMultiplier: 2.5

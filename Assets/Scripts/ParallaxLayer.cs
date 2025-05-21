@@ -26,7 +26,7 @@ namespace Cosmicrafts
         public float scaleAnimationFactor = 0.2f;
 
         [Tooltip("Maximum scale multiplier when closest to camera")]
-        [Range(1f, 3f)]
+        [Range(1f, 20f)]
         public float maxScaleMultiplier = 1.5f;
 
         [Tooltip("Minimum scale multiplier when farthest from camera")]

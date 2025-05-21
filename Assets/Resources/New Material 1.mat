@@ -106,8 +106,8 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _HorizontalScale: -8
-    - _IsometricSkew: 0.073
+    - _HorizontalScale: -24
+    - _IsometricSkew: 0.034
     - _Metallic: 0
     - _OcclusionStrength: 1
     - _Parallax: 0.005

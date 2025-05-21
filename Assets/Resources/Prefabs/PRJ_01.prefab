@@ -179,7 +179,7 @@ MonoBehaviour:
   Speed: 0
   Dmg: 0
   canvasDamageRef: {fileID: 7751084914488314239, guid: 48826ce7a53e443408841cb8be937705, type: 3}
-  impact: {fileID: 8994491411004452053, guid: a6a405c512eefab4cb21693a2ff0f2d4, type: 3}
+  impact: {fileID: 1231636063597364, guid: 3aa0fab185f378240b831342bde74b26, type: 3}
   trajectoryType: 0
   WaveringAmplitude: 0.5
   WaveringFrequency: 2

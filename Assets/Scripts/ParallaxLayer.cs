@@ -137,7 +137,7 @@ namespace Cosmicrafts
                 targetScale = originalScale * finalScaleMultiplier;
                 
                 // Debug scaling values
-                Debug.Log($"Distance: {currentDistance:F2}, Ratio: {distanceRatio:F2}, Scale: {finalScaleMultiplier:F2}");
+               // Debug.Log($"Distance: {currentDistance:F2}, Ratio: {distanceRatio:F2}, Scale: {finalScaleMultiplier:F2}");
                 
                 // Smoothly interpolate to target scale
                 transform.localScale = Vector3.Lerp(

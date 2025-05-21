@@ -69,7 +69,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     
     private void OnCardHotkeyPressed(InputAction.CallbackContext context)
     {
-        Debug.Log($"Hotkey pressed for card {IdCardDeck}");
+      //  Debug.Log($"Hotkey pressed for card {IdCardDeck}");
         
         // Only trigger card if the context is performed
         if (context.performed)
@@ -138,7 +138,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
                 else
                 {
                     // Not enough energy - provide visual feedback
-                    Debug.Log($"Not enough energy to deploy card {IdCardDeck}. Need {EnergyCost}, have {Mathf.FloorToInt(player.CurrentEnergy)}");
+                 //   Debug.Log($"Not enough energy to deploy card {IdCardDeck}. Need {EnergyCost}, have {Mathf.FloorToInt(player.CurrentEnergy)}");
                     // Flash the card red or play sound effect for feedback
                 }
             }
@@ -178,7 +178,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             uiGameMng.SelectCard(IdCardDeck);
 
             // Log drag start for debugging
-            Debug.Log($"Started dragging card {IdCardDeck} with pointer ID {dragPointerId}");
+          //  Debug.Log($"Started dragging card {IdCardDeck} with pointer ID {dragPointerId}");
         }
     }
     
@@ -230,7 +230,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             if (Physics.Raycast(ray, out hit, 100f))
             {
                 // Valid drop - deploy the card at hit position
-                Debug.Log($"Card {IdCardDeck} dropped at position {hit.point}");
+              //  Debug.Log($"Card {IdCardDeck} dropped at position {hit.point}");
                 
                 // Deploy the card using game manager
                 uiGameMng.DeployCard(IdCardDeck, hit.point);
@@ -239,7 +239,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             {
                 // No hit - use auto-deployment
                 Debug.Log($"Card {IdCardDeck} dropped - using auto-deployment");
-                uiGameMng.DeployCard(IdCardDeck, Vector3.zero);
+              //  uiGameMng.DeployCard(IdCardDeck, Vector3.zero);
             }
             
             // Deselect all cards after drag

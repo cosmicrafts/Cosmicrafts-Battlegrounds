@@ -132,7 +132,7 @@
                     Vector3 spawnPos = GetFormationPosition();
                     MySt.Destination = spawnPos;
                     MySt.StoppingDistance = spawnPointStoppingDistance;
-                    Debug.Log($"Ship {name} immediately moving to spawn position {spawnPos} on start");
+                  //  Debug.Log($"Ship {name} immediately moving to spawn position {spawnPos} on start");
                 }
             }
             else if (originalSpawnPointWorldPosition != Vector3.zero)
@@ -669,7 +669,7 @@
             // Debug any existing spawn point assignment
             if (this.spawnPointTransform != null && this.spawnPointTransform != spawnPointTransform)
             {
-                Debug.Log($"Ship {name} changing spawn point from {this.spawnPointTransform.name} to {spawnPointTransform?.name ?? "null"}");
+             //   Debug.Log($"Ship {name} changing spawn point from {this.spawnPointTransform.name} to {spawnPointTransform?.name ?? "null"}");
             }
             
             // Always store the absolute world position
@@ -715,14 +715,14 @@
             if (spawnPointTransform != null)
             {
                 // This logging will help see which spawn point is assigned to which ship
-                Debug.Log($"Ship {name} CLAIMED spawn point {spawnPointTransform.name} at position {worldSpawnPoint}");
+               // Debug.Log($"Ship {name} CLAIMED spawn point {spawnPointTransform.name} at position {worldSpawnPoint}");
             }
             
             // Debug log that spawn point was set
-            Debug.Log($"Ship {name} spawn point set: world={worldSpawnPoint}, " +
-                      $"spawnTransform={spawnPointTransform?.name ?? "none"}, " +
-                      $"relative={originalSpawnPointLocalPosition}, " +
-                      $"playerTransform={(playerTransform != null ? "valid" : "null")}");
+           // Debug.Log($"Ship {name} spawn point set: world={worldSpawnPoint}, " +
+                      //$"spawnTransform={spawnPointTransform?.name ?? "none"}, " +
+                      //$"relative={originalSpawnPointLocalPosition}, " +
+                      //$"playerTransform={(playerTransform != null ? "valid" : "null")}");
         }
         
         // Method to update spawn point positions during formation changes
@@ -759,7 +759,7 @@
                 if (originalSpawnPointWorldPosition != Vector3.zero)
                 {
                     originalSpawnPointLocalPosition = player.InverseTransformPoint(originalSpawnPointWorldPosition);
-                    Debug.Log($"Ship {name} updated relative position to {originalSpawnPointLocalPosition} after receiving player reference");
+                 //   Debug.Log($"Ship {name} updated relative position to {originalSpawnPointLocalPosition} after receiving player reference");
                 }
                 
                 // Also update the formation behavior to follow by default
@@ -774,7 +774,7 @@
             if (playerTransform == null && GameMng.P != null)
             {
                 SetPlayerTransform(GameMng.P.transform);
-                Debug.Log($"Ship {name} set player reference in OnEnable");
+             //   Debug.Log($"Ship {name} set player reference in OnEnable");
             }
             
             // Reset our follow timer to update destination immediately
@@ -789,7 +789,7 @@
             {
                 Vector3 spawnPos = GetFormationPosition();
                 MySt.Destination = spawnPos;
-                Debug.Log($"Ship {name} immediately moving to spawn position {spawnPos} on enable");
+              //  Debug.Log($"Ship {name} immediately moving to spawn position {spawnPos} on enable");
             }
         }
     }

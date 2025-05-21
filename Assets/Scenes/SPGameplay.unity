@@ -167,6 +167,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 0.678
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 1
+  scaleAnimationFactor: 1
+  maxScaleMultiplier: 1.61
+  minScaleMultiplier: 0.381
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 1
   generateGridOnStart: 1
   tileSize: {x: 0, y: 0}
@@ -834,6 +840,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 0.96
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 1
+  scaleAnimationFactor: 0.2
+  maxScaleMultiplier: 1.5
+  minScaleMultiplier: 0.8
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 2
   generateGridOnStart: 1
   tileSize: {x: 0, y: 0}
@@ -1119,6 +1131,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 0.886
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 0
+  scaleAnimationFactor: 0.2
+  maxScaleMultiplier: 1.5
+  minScaleMultiplier: 0.8
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 2
   generateGridOnStart: 1
   tileSize: {x: 0, y: 0}
@@ -6091,10 +6109,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3197eac9242d6a6eb8ebe8645e1751cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  parallaxFactor: 0.881
+  parallaxFactor: 0.185
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 1
+  scaleAnimationFactor: 1
+  maxScaleMultiplier: 1.61
+  minScaleMultiplier: 0.381
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 1
-  generateGridOnStart: 0
+  generateGridOnStart: 1
   tileSize: {x: 0, y: 0}
 --- !u!1 &791240058
 GameObject:
@@ -6144,6 +6168,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 0.634
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 0
+  scaleAnimationFactor: 0.2
+  maxScaleMultiplier: 1.5
+  minScaleMultiplier: 0.8
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 3
   generateGridOnStart: 1
   tileSize: {x: 0, y: 0}
@@ -6486,6 +6516,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 0.86
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 0
+  scaleAnimationFactor: 0.2
+  maxScaleMultiplier: 1.5
+  minScaleMultiplier: 0.8
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 1
   generateGridOnStart: 0
   tileSize: {x: 0, y: 0}
@@ -11407,6 +11443,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   parallaxFactor: 0.733
   speedMultiplier: {x: 1, y: 1}
+  enableScaleAnimation: 0
+  scaleAnimationFactor: 0.2
+  maxScaleMultiplier: 1.5
+  minScaleMultiplier: 0.8
+  scaleSmoothing: 2
+  referenceDistance: 10
   gridSize: 1
   generateGridOnStart: 0
   tileSize: {x: 0, y: 0}

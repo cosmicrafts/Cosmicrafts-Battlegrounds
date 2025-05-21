@@ -29,6 +29,11 @@ public class BotEnemy : MonoBehaviour
     [HideInInspector]
     public readonly Team MyTeam = Team.Red;
 
+    // Spawn points setup - copied from Player.cs
+    [Header("Unit Spawning")]
+    [Tooltip("List of empty GameObjects that will act as spawn points. Units will spawn at these local positions.")]
+    public List<Transform> spawnPoints = new List<Transform>();
+
     //Prefab Base Station (assign in inspector)
     public GameObject prefabBaseStation;
 
@@ -90,6 +95,9 @@ public class BotEnemy : MonoBehaviour
         CanGenEnergy = true;
         rng = new System.Random();
 
+        // Initialize spawn points if none exist
+        InitializeSpawnPoints();
+
         //Add bot's base station to bot's units list and set the bot's enemy base station
         MyUnits.Add(GameMng.GM.Targets[0]);
         TargetUnit = GameMng.GM.Targets[1];
@@ -117,6 +125,108 @@ public class BotEnemy : MonoBehaviour
 
         //Start AI loop
         StartCoroutine(IA());
+    }
+
+    // Initialize spawn points if none exist - simplified from Player.cs
+    private void InitializeSpawnPoints()
+    {
+        if (spawnPoints == null || spawnPoints.Count == 0)
+        {
+            Debug.Log("Bot: No spawn points found, creating default spawn points");
+            
+            // Create a container for spawn points
+            GameObject spawnPointsContainer = new GameObject("BotSpawnPoints");
+            spawnPointsContainer.transform.SetParent(transform);
+            spawnPointsContainer.transform.localPosition = Vector3.zero;
+            
+            // Create default spawn points in an arc
+            int numSpawnPoints = 5;
+            float arcAngle = 120f;
+            float radius = 20f;
+            
+            for (int i = 0; i < numSpawnPoints; i++)
+            {
+                float angle = -arcAngle/2 + (arcAngle * i / (numSpawnPoints - 1));
+                float radians = angle * Mathf.Deg2Rad;
+                
+                // Create spawn point GameObject
+                GameObject spawnPoint = new GameObject($"BotSpawnPoint_{i + 1}");
+                spawnPoint.transform.SetParent(spawnPointsContainer.transform);
+                
+                // Set local position in arc formation
+                spawnPoint.transform.localPosition = new Vector3(
+                    Mathf.Sin(radians) * radius,
+                    0f,
+                    Mathf.Cos(radians) * radius
+                );
+                
+                spawnPoints.Add(spawnPoint.transform);
+            }
+            
+            Debug.Log($"Bot: Created {numSpawnPoints} default spawn points");
+        }
+    }
+
+    // Get a spawn position from the spawn points - simplified from Player.cs
+    private Vector3 GetSpawnPosition(ShipsDataBase unitData)
+    {
+        if (spawnPoints == null || spawnPoints.Count == 0)
+            return transform.position;
+
+        // Create a deterministic but unique mapping between units and spawn points
+        int index = 0;
+        
+        if (unitData != null)
+        {
+            // Hash the unit name for consistent spawn point assignment
+            index = Mathf.Abs(unitData.name.GetHashCode()) % spawnPoints.Count;
+            
+            // Check if this spawn point is already in use
+            bool spawnPointInUse = false;
+            foreach (Unit activeUnit in activeUnits)
+            {
+                if (activeUnit != null && 
+                    Vector3.Distance(activeUnit.transform.position, spawnPoints[index].position) < 2f)
+                {
+                    spawnPointInUse = true;
+                    break;
+                }
+            }
+            
+            // If spawn point is in use, find the next available one
+            if (spawnPointInUse)
+            {
+                int attempts = 0;
+                while (spawnPointInUse && attempts < spawnPoints.Count)
+                {
+                    index = (index + 1) % spawnPoints.Count;
+                    attempts++;
+                    
+                    // Check if this new point is in use
+                    spawnPointInUse = false;
+                    foreach (Unit activeUnit in activeUnits)
+                    {
+                        if (activeUnit != null && 
+                            Vector3.Distance(activeUnit.transform.position, spawnPoints[index].position) < 2f)
+                        {
+                            spawnPointInUse = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Fallback to random spawn point
+            index = Random.Range(0, spawnPoints.Count);
+        }
+
+        Transform spawnPoint = spawnPoints[index];
+        if (spawnPoint == null)
+            return transform.position;
+
+        return spawnPoint.position;
     }
 
     // Update is called once per frame
@@ -345,8 +455,10 @@ public class BotEnemy : MonoBehaviour
             //Check if the bot has enough energy
             if (SelectedUnit.cost <= CurrentEnergy && activeUnits.Count < maxActiveUnits)
             {
-                //Select a random position (check the child game objects of the bot)
-                Vector3 PositionSpawn = transform.GetChild(Random.Range(0, transform.childCount)).position;
+                // Use spawn points system instead of random child position
+                Vector3 PositionSpawn = GetSpawnPosition(SelectedUnit);
+                
+                Debug.Log($"Bot spawning {SelectedUnit.name} at position {PositionSpawn}");
 
                 //Get or create unit from pool
                 Unit unit = GetUnitFromPool(SelectedUnit, PositionSpawn);

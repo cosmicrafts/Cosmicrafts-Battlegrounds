@@ -133,7 +133,16 @@ namespace Cosmicrafts
                     {
                         if (MyShip != null && StopToAttack)
                         {
-                            MyShip.ResetDestination();
+                            // Only reset destination if we don't have any valid targets
+                            if (InRange.Count == 0)
+                            {
+                                MyShip.ResetDestination();
+                            }
+                            else
+                            {
+                                // Try to find a new target instead of resetting
+                                FindNewTarget();
+                            }
                         }
                         wasTargetNull = true;
                     }
@@ -366,22 +375,65 @@ namespace Cosmicrafts
         /// </summary>
         public void SetTarget(Unit target)
         {
-            Unit previousTarget = Target;
+            // If target is null, clear current target
+            if (target == null)
+            {
+                Target = null;
+                if (MyShip != null)
+                {
+                    MyShip.ResetDestination();
+                }
+                return;
+            }
+            
+            // If target is already set, don't change unless it's a taunt unit
+            if (Target != null && Target != target)
+            {
+                // Only switch if new target is a taunt unit or current target is not a taunt unit
+                if (!target.HasTaunt && Target.HasTaunt)
+                {
+                    return;
+                }
+            }
+            
+            // Set new target
             Target = target;
             
-            // Update ship behavior
-            if (MyShip == null || !StopToAttack) return;
-            
-            if (Target == null)
+            // Update ship destination
+            if (MyShip != null)
             {
-                // If we lost our target, call ResetDestination which now includes player-following logic
-                MyShip.ResetDestination();
+                MyShip.SetDestination(Target.transform.position, RangeDetector * 0.5f);
             }
-            else
+            
+            // Reset target selection cooldown
+            targetSelectionCooldown = 0f;
+            
+            Debug.Log($"[{MyUnit.MyTeam}] Unit {gameObject.name} targeting {target.name} (HasTaunt: {target.HasTaunt})");
+        }
+
+        /// <summary>
+        /// Handle taunt effect by forcing target selection
+        /// </summary>
+        public void HandleTauntEffect()
+        {
+            // Force immediate target re-evaluation regardless of cooldown
+            targetSelectionCooldown = 0f;
+            
+            // Clear current target to force re-evaluation
+            SetTarget(null);
+            
+            // Find best target from current list
+            Unit newTarget = FindBestTargetFromList();
+            if (newTarget != null)
             {
-                // Position slightly inside the range to ensure we're in attack range
-                float optimalDistance = RangeDetector * 0.8f;
-                MyShip.SetDestination(Target.transform.position, optimalDistance);
+                Debug.Log($"Taunt effect: Selected new target {newTarget.name}");
+                SetTarget(newTarget);
+                
+                // Force ship to move towards taunt target
+                if (MyShip != null)
+                {
+                    MyShip.SetDestination(newTarget.transform.position, RangeDetector * 0.5f);
+                }
             }
         }
 
@@ -461,12 +513,43 @@ namespace Cosmicrafts
                 return null;
                 
             Unit bestTarget = null;
+            float closestDistance = float.MaxValue;
             
+            // First pass: Look for taunt units with absolute priority
+            foreach (Unit enemy in InRange)
+            {
+                if (enemy == null || enemy.GetIsDeath()) continue;
+                
+                // If this is a taunt unit, it gets absolute priority
+                if (enemy.HasTaunt)
+                {
+                    float distance = Vector3.Distance(transform.position, enemy.transform.position);
+                    // Only consider taunt units within detection range
+                    if (distance <= RangeDetector)
+                    {
+                        if (distance < closestDistance)
+                        {
+                            bestTarget = enemy;
+                            closestDistance = distance;
+                        }
+                    }
+                }
+            }
+            
+            // If we found a taunt unit, return it immediately and force target switch
+            if (bestTarget != null)
+            {
+                Debug.Log($"Found taunt unit {bestTarget.name} at distance {closestDistance}");
+                targetSelectionCooldown = 0f; // Override any cooldown
+                return bestTarget;
+            }
+            
+            // Second pass: Look for regular units based on priority mode
             switch (priorityMode)
             {
                 case TargetPriorityMode.Closest:
                     // Find closest enemy
-                    float closestDistance = float.MaxValue;
+                    closestDistance = float.MaxValue;
                     foreach (Unit enemy in InRange)
                     {
                         if (enemy == null || enemy.GetIsDeath()) continue;
@@ -509,10 +592,6 @@ namespace Cosmicrafts
                         }
                     }
                     break;
-                    
-                // Future implementation for HighestThreat
-                // case TargetPriorityMode.HighestThreat:
-                //     break;
             }
             
             return bestTarget;

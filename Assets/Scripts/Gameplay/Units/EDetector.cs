@@ -210,5 +210,22 @@
                 Debug.LogError("No SphereCollider found on detector!");
             }
         }
+
+        // Called by taunt units to force a target refresh
+        public void ForceRefreshTarget()
+        {
+            if (MyShooter == null) return;
+
+            // Clear current target
+            MyShooter.SetTarget(null);
+            
+            // Force an immediate scan for nearby enemies
+            ScanForNearbyEnemies();
+            
+            if (showDebugLogs)
+            {
+                Debug.Log($"[{myTeam}] Detector: Force refreshed target due to taunt");
+            }
+        }
     }
 }

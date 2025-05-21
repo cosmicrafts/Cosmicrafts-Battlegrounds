@@ -898,7 +898,7 @@ MonoBehaviour:
   PlayerId: 1
   MyTeam: 0
   HitPoints: 550
-  Shield: 550
+  Shield: 8000
   ShieldDelay: 1.41
   Size: 1
   DodgeChance: 0
@@ -912,6 +912,10 @@ MonoBehaviour:
   ShieldGameObject: {fileID: 8358885684385215374}
   UI: {fileID: 8725141663424671622}
   MyAnim: {fileID: 6364282005187429036}
+  TailPoint: {fileID: 0}
+  HasTaunt: 1
+  TauntRadius: 100
+  TauntCooldown: 1
   MySt: {fileID: 2198226033917351815}
   Aceleration: 2
   MaxSpeed: 60

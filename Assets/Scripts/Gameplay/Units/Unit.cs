@@ -79,6 +79,12 @@ namespace Cosmicrafts
 
         private float shieldVisualTimer = 0f;
 
+        [Header("Taunt Ability")]
+        public bool HasTaunt = false;
+        public float TauntRadius = 5f;
+        public float TauntCooldown = 1f;
+        private float tauntTimer = 0f;
+
         private void Awake()
         {
             // Empty Awake method - we don't need to cache animation clips anymore
@@ -104,7 +110,51 @@ namespace Cosmicrafts
             transform.localScale = new Vector3(Size, Size, Size);
             MyAnim = Mesh.GetComponent<Animator>();
             Portal.transform.parent = null;
-            transform.LookAt(CMath.LookToY(transform.position, GameMng.GM.GetDefaultTargetPosition(MyTeam)));
+
+            // New rotation logic based on unit context
+            if (IsBaseStation)
+            {
+                if (MyTeam == Team.Blue)
+                {
+                    // Player base station - face forward (up)
+                    transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+                }
+                else
+                {
+                    // Bot base station - face the player base
+                    if (GameMng.P != null)
+                    {
+                        Vector3 directionToPlayer = (GameMng.P.transform.position - transform.position).normalized;
+                        transform.rotation = Quaternion.LookRotation(directionToPlayer, Vector3.up);
+                    }
+                    else
+                    {
+                        // Fallback - face down
+                        transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+                    }
+                }
+            }
+            else
+            {
+                // For regular units, use spawn point's rotation if available
+                Ship ship = GetComponent<Ship>();
+                if (ship != null && ship.spawnPointTransform != null)
+                {
+                    // Use spawn point's rotation
+                    transform.rotation = ship.spawnPointTransform.rotation;
+                }
+                else
+                {
+                    // Fallback - face towards team's objective
+                    Vector3 targetPos = MyTeam == Team.Blue ? 
+                        transform.position + Vector3.forward : // Player units face forward
+                        (GameMng.P != null ? GameMng.P.transform.position : transform.position + Vector3.back); // Bot units face player
+                    
+                    Vector3 direction = (targetPos - transform.position).normalized;
+                    transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+                }
+            }
+
             Destroy(Portal, 3f);
             GameMng.GM.AddUnit(this);
         }
@@ -145,6 +195,45 @@ namespace Cosmicrafts
                 if (shieldVisualTimer <= 0 && ShieldGameObject != null)
                 {
                     ShieldGameObject.SetActive(false);
+                }
+            }
+
+            // Taunt logic
+            if (HasTaunt && !IsDeath)
+            {
+                tauntTimer -= Time.deltaTime;
+                if (tauntTimer <= 0f)
+                {
+                    tauntTimer = TauntCooldown;
+                    // Pulse taunt
+                    Collider[] colliders = Physics.OverlapSphere(transform.position, TauntRadius);
+                    foreach (var col in colliders)
+                    {
+                        if (col == null || col.gameObject == null || col.gameObject == this.gameObject) continue;
+                        Unit otherUnit = col.GetComponent<Unit>();
+                        if (otherUnit != null && !otherUnit.IsMyTeam(MyTeam) && !otherUnit.GetIsDeath())
+                        {
+                            // Get both EDetector and Shooter components
+                            EDetector detector = otherUnit.GetComponentInChildren<EDetector>();
+                            Shooter shooter = otherUnit.GetComponent<Shooter>();
+                            
+                            // Force immediate target re-evaluation
+                            if (detector != null)
+                            {
+                                detector.ForceRefreshTarget();
+                            }
+                            
+                            if (shooter != null)
+                            {
+                                // Clear current target and force re-evaluation
+                                shooter.SetTarget(null);
+                                shooter.HandleTauntEffect();
+                                
+                                // Debug log to verify taunt effect
+                                Debug.Log($"[{MyTeam}] Taunt unit {gameObject.name} affecting {otherUnit.name}");
+                            }
+                        }
+                    }
                 }
             }
         }

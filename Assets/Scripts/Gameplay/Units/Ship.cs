@@ -104,9 +104,15 @@
             Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
             MySt.Destination = Target.position;
             MySt.StoppingDistance = StoppingDistance;
-            foreach (RaySensor sensor in AvoidanceSensors)
+            if (AvoidanceSensors != null)
             {
-                sensor.Length = AvoidanceRange;
+                foreach (RaySensor sensor in AvoidanceSensors)
+                {
+                    if (sensor != null)
+                    {
+                        sensor.Length = AvoidanceRange;
+                    }
+                }
             }
             
             // Initialize target rotation to current rotation
@@ -139,7 +145,7 @@
             {
                 Debug.Log($"Ship {name} has spawn position: {originalSpawnPointWorldPosition}");
             }
-            else
+            else if (!name.Contains("(Clone)"))  // Only warn if it's not a spawned clone
             {
                 Debug.LogWarning($"Ship {name} has NO spawn point assigned! Will use default behaviors");
                 

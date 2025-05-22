@@ -939,11 +939,11 @@ MonoBehaviour:
   flagShield: 0
   Mesh: {fileID: 5035403892015974878}
   Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
-  Portal: {fileID: 3721508634898023609}
+  Portal: {fileID: 2490142858176861816}
   ShieldGameObject: {fileID: 8358885684385215374}
   UI: {fileID: 8725141663424671622}
   MyAnim: {fileID: 8883037043907230907}
-  TailPoint: {fileID: 0}
+  TailPoint: {fileID: 1942850922384119778}
   HasTaunt: 0
   TauntRadius: 5
   TauntCooldown: 1
@@ -1370,6 +1370,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}
+--- !u!1 &2490142858176861816 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3952169841054198065, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}
+  m_PrefabInstance: {fileID: 1465409562270482249}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &2490142858176965408 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3952169841054094441, guid: 6a5aa798c6a904313ae10b3b01c75f62, type: 3}

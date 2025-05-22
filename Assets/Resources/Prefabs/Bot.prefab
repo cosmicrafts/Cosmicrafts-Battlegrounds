@@ -912,7 +912,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 50d6e62f8e07b3f4c913a97ee6f3a33f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  Alias: Barracuda
+  Alias: Mecha Kraken
   UnitMesh: {fileID: 4904473198983471026}
 --- !u!114 &2198226034328220053
 MonoBehaviour:
@@ -948,21 +948,21 @@ MonoBehaviour:
   HasTaunt: 1
   TauntRadius: 100
   TauntCooldown: 1
-  MySt: {fileID: 2198226033917351815, guid: f6bdacfacc75138fcb2f9387363197b1, type: 3}
+  MySt: {fileID: 2198226033917351815}
   Aceleration: 2
   MaxSpeed: 60
   DragSpeed: 99
   TurnSpeed: 99
   StopSpeed: 99
   StoppingDistance: 1
-  AvoidanceRange: 1.5
+  AvoidanceRange: 1
   RotationDamping: 0.86
   AlignRotationWithMovement: 1
-  followPlayerWhenIdle: 1
-  playerFollowDistance: 8
-  returnToSpawnWhenIdle: 1
-  spawnPointStoppingDistance: 1
-  returnToSpawnPriority: 0.7
+  followPlayerWhenIdle: 0
+  playerFollowDistance: 1
+  returnToSpawnWhenIdle: 0
+  spawnPointStoppingDistance: 0.5
+  returnToSpawnPriority: 0
   originalSpawnPointLocalPosition: {x: 0, y: 0, z: 0}
   originalSpawnPointWorldPosition: {x: 0, y: 0, z: 0}
   spawnPointTransform: {fileID: 0}
@@ -981,7 +981,8 @@ MonoBehaviour:
   - {fileID: 2198226032991477277, guid: f6bdacfacc75138fcb2f9387363197b1, type: 3}
   - {fileID: 2198226033913644468, guid: f6bdacfacc75138fcb2f9387363197b1, type: 3}
   - {fileID: 2198226033598466411, guid: f6bdacfacc75138fcb2f9387363197b1, type: 3}
-  Thrusters: []
+  Thrusters:
+  - {fileID: 5200662773400736600}
   CanMove: 1
   moveSpawnPointsWithPlayer: 1
   spawnPointUpdateInterval: 0.5
@@ -1626,6 +1627,11 @@ PrefabInstance:
 --- !u!4 &3279429730010382996 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 3387505018749762034, guid: 994e77bd63d01469bb15ef8ae5cc6d20, type: 3}
+  m_PrefabInstance: {fileID: 180155165942315878}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &5200662773400736600 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5380813195950123070, guid: 994e77bd63d01469bb15ef8ae5cc6d20, type: 3}
   m_PrefabInstance: {fileID: 180155165942315878}
   m_PrefabAsset: {fileID: 0}
 --- !u!1001 &784030904721311167

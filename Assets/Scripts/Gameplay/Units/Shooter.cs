@@ -408,7 +408,7 @@ namespace Cosmicrafts
             // Reset target selection cooldown
             targetSelectionCooldown = 0f;
             
-            Debug.Log($"[{MyUnit.MyTeam}] Unit {gameObject.name} targeting {target.name} (HasTaunt: {target.HasTaunt})");
+            // Debug.Log($"[{MyUnit.MyTeam}] Unit {gameObject.name} targeting {target.name} (HasTaunt: {target.HasTaunt})");
         }
 
         /// <summary>
@@ -539,7 +539,7 @@ namespace Cosmicrafts
             // If we found a taunt unit, return it immediately and force target switch
             if (bestTarget != null)
             {
-                Debug.Log($"Found taunt unit {bestTarget.name} at distance {closestDistance}");
+                // Debug.Log($"Found taunt unit {bestTarget.name} at distance {closestDistance}");
                 targetSelectionCooldown = 0f; // Override any cooldown
                 return bestTarget;
             }

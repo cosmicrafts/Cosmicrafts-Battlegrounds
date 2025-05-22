@@ -104,16 +104,9 @@
             Target = GameMng.GM.GetFinalTransformTarget(MyTeam);
             MySt.Destination = Target.position;
             MySt.StoppingDistance = StoppingDistance;
-            if (AvoidanceSensors != null)
-            {
-                foreach (RaySensor sensor in AvoidanceSensors)
-                {
-                    if (sensor != null)
-                    {
-                        sensor.Length = AvoidanceRange;
-                    }
-                }
-            }
+            
+            // Start coroutine to wait for sensors
+            StartCoroutine(InitializeSensors());
             
             // Initialize target rotation to current rotation
             targetRotation = transform.rotation;
@@ -130,7 +123,7 @@
             // Debug log to check if spawn point is set
             if (spawnPointTransform != null)
             {
-                Debug.Log($"Ship {name} has spawn point set: {spawnPointTransform.name}");
+               // Debug.Log($"Ship {name} has spawn point set: {spawnPointTransform.name}");
                 
                 // Immediately update our position to match spawn point
                 if (returnToSpawnWhenIdle)
@@ -145,7 +138,7 @@
             {
                 Debug.Log($"Ship {name} has spawn position: {originalSpawnPointWorldPosition}");
             }
-            else if (!name.Contains("(Clone)"))  // Only warn if it's not a spawned clone
+            else
             {
                 Debug.LogWarning($"Ship {name} has NO spawn point assigned! Will use default behaviors");
                 
@@ -165,7 +158,24 @@
                     originalSpawnPointLocalPosition = relativePos;
                     originalSpawnPointWorldPosition = playerTransform.TransformPoint(relativePos);
                     
-                    Debug.Log($"Created default spawn position for {name}: {originalSpawnPointWorldPosition}");
+                   // Debug.Log($"Created default spawn position for {name}: {originalSpawnPointWorldPosition}");
+                }
+            }
+        }
+
+        private IEnumerator InitializeSensors()
+        {
+            // Wait until AvoidanceSensors are available
+            while (AvoidanceSensors == null || AvoidanceSensors.Length == 0)
+            {
+                yield return new WaitForEndOfFrame();
+            }
+
+            foreach (RaySensor sensor in AvoidanceSensors)
+            {
+                if (sensor != null)
+                {
+                    sensor.Length = AvoidanceRange;
                 }
             }
         }
@@ -620,7 +630,7 @@
             if (playerTransform == null && GameMng.P != null)
             {
                 SetPlayerTransform(GameMng.P.transform);
-                Debug.Log($"Ship {name} updated player reference during reset");
+               // Debug.Log($"Ship {name} updated player reference during reset");
             }
             
             // Re-enable SteeringRig and set target
@@ -639,7 +649,7 @@
                     MySt.Destination = returnPosition;
                     MySt.StoppingDistance = spawnPointStoppingDistance;
                     
-                    Debug.Log($"Reset ship {name} - returning to spawn position: {returnPosition}");
+                   // Debug.Log($"Reset ship {name} - returning to spawn position: {returnPosition}");
                 }
                 // Second priority - follow player
                 else if (followPlayerWhenIdle && playerTransform != null)

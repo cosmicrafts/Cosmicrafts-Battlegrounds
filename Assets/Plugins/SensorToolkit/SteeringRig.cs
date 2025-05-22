@@ -325,6 +325,18 @@ namespace SensorToolkit
         Vector3 repulsionForce()
         {
             var rf = Vector3.zero;
+            
+            // Safety check for sensors
+            if (sensors == null)
+            {
+                sensors = GetComponentsInChildren<RaySensor>();
+                if (sensors == null || sensors.Length == 0)
+                {
+                    Debug.LogWarning($"SteeringRig on {gameObject.name} has no RaySensor components in children!");
+                    return rf;
+                }
+            }
+            
             for (int i = 0; i < sensors.Length; i++)
             {
                 var s = sensors[i];

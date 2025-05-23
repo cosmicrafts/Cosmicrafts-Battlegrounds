@@ -233,7 +233,7 @@
         {
             if (IsDeath) return;
             
-            // Shield regeneration
+            // Shield regeneration 
             if (Shield < GetMaxShield() && CanRegenerateShield() && ShieldRegenRate > 0)
             {
                 // Add the regeneration amount, taking into account fractional regeneration

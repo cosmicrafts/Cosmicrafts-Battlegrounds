@@ -352,7 +352,7 @@ namespace Cosmicrafts
                 return;
                 
             cardCallbacks[cardNumber - 1] = callback;
-            Debug.Log($"Subscribed to card {cardNumber} selection");
+            //Debug.Log($"Subscribed to card {cardNumber} selection");
         }
         
         public static void UnsubscribeFromCardSelection(int cardNumber, System.Action<InputAction.CallbackContext> callback)
@@ -369,7 +369,7 @@ namespace Cosmicrafts
         public static void SubscribeToZoomInput(System.Action<InputAction.CallbackContext> callback)
         {
             zoomInputCallback = callback;
-            Debug.Log("Subscribed to zoom input events");
+           // Debug.Log("Subscribed to zoom input events");
         }
         
         public static void UnsubscribeFromZoomInput(System.Action<InputAction.CallbackContext> callback)

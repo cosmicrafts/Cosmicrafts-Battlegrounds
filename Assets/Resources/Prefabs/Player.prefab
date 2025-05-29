@@ -314,11 +314,15 @@ MonoBehaviour:
   CurrentEnergy: 6.4
   MaxEnergy: 30
   SpeedEnergy: 0.7
+  CurrentXP: 0
+  MaxXP: 100
+  PlayerLevel: 1
+  XPPerKill: 10
   dashEnergyCost: 2
   TestingDeck:
-  - {fileID: 11400000, guid: f634919198124665da4d9ef47cf9f972, type: 2}
-  - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
+  - {fileID: 11400000, guid: bc2a0b862a3438464a42c0c5db533a9a, type: 2}
   - {fileID: 11400000, guid: fa56fcf444849cf4ca2b4daaeea4309c, type: 2}
+  - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
   - {fileID: 11400000, guid: 265a32c5b81d7ed98865d0dc2f16f03d, type: 2}
 --- !u!54 &2198226034328220052
 Rigidbody:

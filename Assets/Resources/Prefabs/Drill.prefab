@@ -811,7 +811,7 @@ GameObject:
   - component: {fileID: 2198226034328220042}
   - component: {fileID: 2198226034328220043}
   m_Layer: 3
-  m_Name: DrillFighter
+  m_Name: Drill
   m_TagString: Unit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

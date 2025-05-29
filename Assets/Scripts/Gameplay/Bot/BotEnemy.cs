@@ -458,7 +458,7 @@ public class BotEnemy : MonoBehaviour
                 // Use spawn points system instead of random child position
                 Vector3 PositionSpawn = GetSpawnPosition(SelectedUnit);
                 
-                Debug.Log($"Bot spawning {SelectedUnit.name} at position {PositionSpawn}");
+                // Debug.Log($"Bot spawning {SelectedUnit.name} at position {PositionSpawn}");
 
                 //Get or create unit from pool
                 Unit unit = GetUnitFromPool(SelectedUnit, PositionSpawn);

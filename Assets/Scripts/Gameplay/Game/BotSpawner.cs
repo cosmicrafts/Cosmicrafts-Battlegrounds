@@ -52,7 +52,7 @@ namespace Cosmicrafts
             usedPositions.Add(playerBasePosition);
             usedPositions.Add(baseStationPosition);
             
-            Debug.Log($"BotSpawner initialized with team {botTeam}, base at {baseStationPosition}");
+            // Debug.Log($"BotSpawner initialized with team {botTeam}, base at {baseStationPosition}");
         }
         
         // Spawn everything needed
@@ -94,7 +94,7 @@ namespace Cosmicrafts
             {
                 bots.Add(baseBot);
                 baseBot.botName = "Bot_Base";
-                Debug.Log($"Bot base station created at {baseStationPosition}");
+                // Debug.Log($"Bot base station created at {baseStationPosition}");
             }
         }
         
@@ -108,7 +108,7 @@ namespace Cosmicrafts
             
             // Calculate how many more bots to spawn
             int additionalBots = numberOfBots - 1;
-            Debug.Log($"Spawning {additionalBots} additional bots");
+            // Debug.Log($"Spawning {additionalBots} additional bots");
             
             for (int i = 0; i < additionalBots; i++)
             {
@@ -138,7 +138,7 @@ namespace Cosmicrafts
                     botBaseSO.ApplySkillsOnDeploy(botUnit);
                     
                     botUnit.setId(Random.Range(10000, 99999));
-                    Debug.Log($"Additional bot {i+1} spawned at {botPosition}");
+                    // Debug.Log($"Additional bot {i+1} spawned at {botPosition}");
                 }
                 
                 // Track the bot

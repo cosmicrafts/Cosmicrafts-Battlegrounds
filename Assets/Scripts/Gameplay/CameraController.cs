@@ -51,7 +51,7 @@ public class CameraController : MonoBehaviour
         // Subscribe to scroll events from Input System
         InputManager.SubscribeToZoomInput(HandleZoomInput);
         
-        Debug.Log("Camera controller initialized with Input System zoom support");
+       // Debug.Log("Camera controller initialized with Input System zoom support");
     }
     
     void OnDestroy()

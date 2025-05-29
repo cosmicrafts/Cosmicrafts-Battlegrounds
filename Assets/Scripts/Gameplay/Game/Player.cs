@@ -53,6 +53,15 @@ public class Player : MonoBehaviour
     [Range(0, 99)]
     public float SpeedEnergy = 1;
     
+    [Header("XP System")]
+    [Range(0, 9999)]
+    public int CurrentXP = 0;
+    [Range(0, 9999)]
+    public int MaxXP = 100;
+    [Range(1, 99)]
+    public int PlayerLevel = 1;
+    public int XPPerKill = 10; // Base XP gained from killing a unit
+    
     [Header("Dash Settings")]
     [Range(0, 10)]
     public float dashEnergyCost = 2f;
@@ -1034,6 +1043,55 @@ public class Player : MonoBehaviour
         Mesh cubeMesh = tempCube.GetComponent<MeshFilter>().sharedMesh;
         Destroy(tempCube);
         return cubeMesh;
+    }
+
+    public void AddXP(int amount)
+    {
+        Debug.Log($"[Player] Adding {amount} XP. Current: {CurrentXP}, Max: {MaxXP}, Level: {PlayerLevel}");
+        CurrentXP += amount;
+        
+        // Check for level up
+        while (CurrentXP >= MaxXP)
+        {
+            LevelUp();
+        }
+        
+        // Update UI if needed
+        if (GameMng.UI != null)
+        {
+            Debug.Log($"[Player] Updating UI with XP: {CurrentXP}/{MaxXP}, Level: {PlayerLevel}");
+            GameMng.UI.UpdateXP(CurrentXP, MaxXP, PlayerLevel);
+        }
+        else
+        {
+            Debug.LogWarning("[Player] GameMng.UI is null! Cannot update XP UI");
+        }
+    }
+    
+    private void LevelUp()
+    {
+        Debug.Log($"[Player] Leveling up from {PlayerLevel} to {PlayerLevel + 1}");
+        PlayerLevel++;
+        CurrentXP -= MaxXP;
+        MaxXP = (int)(MaxXP * 1.5f); // Increase XP needed for next level
+        
+        // Apply level up bonuses
+        MaxEnergy += 2; // Increase max energy
+        CurrentEnergy = MaxEnergy; // Restore energy to max
+        
+        // Update UI
+        if (GameMng.UI != null)
+        {
+            Debug.Log($"[Player] Updating UI after level up. Energy: {CurrentEnergy}/{MaxEnergy}, XP: {CurrentXP}/{MaxXP}");
+            GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
+            GameMng.UI.UpdateXP(CurrentXP, MaxXP, PlayerLevel);
+        }
+        else
+        {
+            Debug.LogWarning("[Player] GameMng.UI is null! Cannot update UI after level up");
+        }
+        
+        Debug.Log($"Player leveled up to level {PlayerLevel}! Max Energy increased to {MaxEnergy}");
     }
 }
 }

@@ -64,7 +64,7 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
             // Subscribe to card selection events via InputManager
             InputManager.SubscribeToCardSelection(hotkeyNumber, OnCardHotkeyPressed);
             
-            Debug.Log($"Card {IdCardDeck} registered for hotkey {hotkeyNumber}");
+          //  Debug.Log($"Card {IdCardDeck} registered for hotkey {hotkeyNumber}");
         }
     }
     

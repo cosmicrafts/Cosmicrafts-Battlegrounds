@@ -30,6 +30,11 @@
         public TMP_Text EnergyLabel;
         public Image EnergyBar;
 
+        [Header("XP System UI")]
+        public TMP_Text LevelLabel;
+        public TMP_Text XPLabel;
+        public Image XPBar;
+
         //Results Metrics text references
         public TMP_Text MTxtEnergyUsed;
         public TMP_Text MTxtEnergyGenerated;
@@ -79,6 +84,17 @@
             
             // Make sure all cards are deselected at start
             DeselectCards();
+
+            // Initialize XP UI if player exists
+            if (GameMng.P != null)
+            {
+                Debug.Log("[UIGameMng] Initializing XP UI");
+                UpdateXP(GameMng.P.CurrentXP, GameMng.P.MaxXP, GameMng.P.PlayerLevel);
+            }
+            else
+            {
+                Debug.LogWarning("[UIGameMng] GameMng.P is null! Cannot initialize XP UI");
+            }
         }
         
         private void OnDestroy()
@@ -286,6 +302,42 @@
                 {
                     card.TextCost.color = energy >= card.EnergyCost ? Color.white : Color.red;
                 }
+            }
+        }
+
+        // Update the XP bar and text
+        public void UpdateXP(int currentXP, int maxXP, int level)
+        {
+            Debug.Log($"[UIGameMng] Updating XP UI - Current: {currentXP}, Max: {maxXP}, Level: {level}");
+            
+            if (LevelLabel != null)
+            {
+                LevelLabel.text = $"Level {level}";
+                Debug.Log($"[UIGameMng] Updated LevelLabel to: Level {level}");
+            }
+            else
+            {
+                Debug.LogWarning("[UIGameMng] LevelLabel is null!");
+            }
+            
+            if (XPLabel != null)
+            {
+                XPLabel.text = $"{currentXP}/{maxXP} XP";
+                Debug.Log($"[UIGameMng] Updated XPLabel to: {currentXP}/{maxXP} XP");
+            }
+            else
+            {
+                Debug.LogWarning("[UIGameMng] XPLabel is null!");
+            }
+            
+            if (XPBar != null)
+            {
+                XPBar.fillAmount = (float)currentXP / maxXP;
+                Debug.Log($"[UIGameMng] Updated XPBar fill amount to: {(float)currentXP / maxXP}");
+            }
+            else
+            {
+                Debug.LogWarning("[UIGameMng] XPBar is null!");
             }
         }
 

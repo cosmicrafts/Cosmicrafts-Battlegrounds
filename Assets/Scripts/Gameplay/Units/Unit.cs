@@ -321,6 +321,25 @@ namespace Cosmicrafts
             HitPoints = 0;
             IsDeath = true;
 
+            // Award XP to the player if this is an enemy unit
+            if (!IsMyTeam(GameMng.P?.MyTeam ?? Team.Blue) && GameMng.P != null)
+            {
+                // Calculate XP based on unit level and type
+                int xpReward = GameMng.P.XPPerKill;
+                
+                // Bonus XP for higher level units
+                xpReward += Level * 2;
+                
+                // Extra XP for base stations
+                if (IsBaseStation)
+                {
+                    xpReward *= 5;
+                }
+                
+                GameMng.P.AddXP(xpReward);
+                Debug.Log($"Awarded {xpReward} XP for destroying {gameObject.name} (Level {Level})");
+            }
+
             // Broadcast the death event
             OnDeath?.Invoke(this);
             OnUnitDeath?.Invoke(this);

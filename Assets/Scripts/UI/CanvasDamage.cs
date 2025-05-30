@@ -7,52 +7,135 @@ public class CanvasDamage : MonoBehaviour
     [SerializeField]
     TMP_Text damageText;
 
-    [SerializeField]
-    float bounceHeight = 0.5f;  // The height of the bounce
-    [SerializeField]
-    float bounceDuration = 0.5f;  // The duration of the bounce animation
+    [Header("Animation Settings")]
+    [SerializeField] private float bounceHeight = 1f;  // Increased default height
+    [SerializeField] private float bounceDuration = 0.5f;
+    [SerializeField] private float fadeDuration = 0.5f;
+    [SerializeField] private float startHeight = 1.5f;  // Height above unit to start
+    [SerializeField] private float randomHorizontalOffset = 0.3f;  // Random horizontal offset for variety
 
-    float damageValue;
-    Camera mainCamera;
+    [Header("Colors")]
+    [SerializeField] private Color normalDamageColor = Color.white;
+    [SerializeField] private Color criticalDamageColor = Color.red;
+    [SerializeField] private Color shieldDamageColor = Color.cyan;
+
+    [Header("UI Positioning")]
+    [SerializeField] private bool maintainConstantScale = true;
+    [SerializeField] private float baseOrthographicSize = 60f;
+    [SerializeField] private float minScaleMultiplier = 0.5f;
+    [SerializeField] private float maxScaleMultiplier = 2f;
+
+    private float damageValue;
+    private bool isCritical;
+    private bool isShieldDamage;
+    private Camera mainCamera;
+    private Vector3 originalScale;
+    private Vector3 targetPosition;
+    private Vector3 startPosition;
+    private Vector3 randomOffset;
+
+    // Cache for performance
+    private static readonly WaitForEndOfFrame waitForEndOfFrame = new WaitForEndOfFrame();
+    private static readonly Vector3 upVector = Vector3.up;
+
+    void Awake()
+    {
+        mainCamera = Camera.main;
+        originalScale = transform.localScale;
+        
+        // Generate random offset for variety
+        randomOffset = new Vector3(
+            Random.Range(-randomHorizontalOffset, randomHorizontalOffset),
+            0f,
+            Random.Range(-randomHorizontalOffset, randomHorizontalOffset)
+        );
+    }
 
     void Start()
     {
+        // Set initial position higher above the target
+        startPosition = targetPosition + (upVector * startHeight) + randomOffset;
+        transform.position = startPosition;
+
+        // Configure text
         damageText.text = damageValue.ToString();
-        StartCoroutine(BounceAnimation());  // Start the bouncing animation
-        Destroy(gameObject, .5f);  // Destroy the game object after 2.5 seconds
+        damageText.color = isShieldDamage ? shieldDamageColor : (isCritical ? criticalDamageColor : normalDamageColor);
+        
+        // Start animation
+        StartCoroutine(BounceAndFadeAnimation());
     }
 
-    public void SetDamage(float newDamage)
+    void LateUpdate()
     {
-        mainCamera = Camera.main;
-        damageValue = newDamage;
+        if (!mainCamera) return;
 
-        // Update the damage text
-        damageText.text = damageValue.ToString();
+        // Match camera rotation exactly like UIUnit.cs
+        transform.rotation = mainCamera.transform.rotation;
 
-        // The UI always looks at the camera
-        if (mainCamera)
+        // Scale UI based on camera zoom
+        if (maintainConstantScale && mainCamera.orthographic)
         {
-            transform.LookAt(mainCamera.transform);
+            float currentOrthographicSize = mainCamera.orthographicSize;
+            float scaleFactor = Mathf.Clamp(
+                currentOrthographicSize / baseOrthographicSize,
+                minScaleMultiplier,
+                maxScaleMultiplier
+            );
+            transform.localScale = Vector3.Scale(originalScale, Vector3.one * scaleFactor);
         }
     }
 
-    IEnumerator BounceAnimation()
+    public void SetDamage(float newDamage, bool critical = false, bool shieldDamage = false)
     {
-        Vector3 originalPosition = transform.position;
+        damageValue = newDamage;
+        isCritical = critical;
+        isShieldDamage = shieldDamage;
+        targetPosition = transform.position;
+    }
+
+    IEnumerator BounceAndFadeAnimation()
+    {
         float elapsedTime = 0f;
+        Color startColor = damageText.color;
+        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
+        Vector3 currentPosition = startPosition;
 
         while (elapsedTime < bounceDuration)
         {
             float progress = elapsedTime / bounceDuration;
             float bounce = Mathf.Sin(progress * Mathf.PI) * bounceHeight;
 
-            transform.position = originalPosition + new Vector3(0, bounce, 0);
+            // Update position with bounce
+            currentPosition = startPosition + (upVector * bounce);
+            transform.position = currentPosition;
+
+            // Start fading out after bounce
+            if (progress > 0.5f)
+            {
+                float fadeProgress = (progress - 0.5f) * 2f;
+                damageText.color = Color.Lerp(startColor, endColor, fadeProgress);
+            }
 
             elapsedTime += Time.deltaTime;
-            yield return null;
+            yield return waitForEndOfFrame;
         }
 
-        transform.position = originalPosition;  // Reset to the original position
+        // Final fade out
+        float remainingFadeTime = fadeDuration;
+        while (remainingFadeTime > 0)
+        {
+            damageText.color = Color.Lerp(startColor, endColor, 1f - (remainingFadeTime / fadeDuration));
+            remainingFadeTime -= Time.deltaTime;
+            yield return waitForEndOfFrame;
+        }
+
+        Destroy(gameObject);
+    }
+
+    void OnDestroy()
+    {
+        // Clean up any references
+        damageText = null;
+        mainCamera = null;
     }
 }

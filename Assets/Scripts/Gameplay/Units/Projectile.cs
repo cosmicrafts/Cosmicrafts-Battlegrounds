@@ -300,18 +300,34 @@
 
             try
             {
+                bool isCritical = false;
+                int finalDamage = Dmg;
+
                 if (Random.value < target.DodgeChance)
                 {
-                    Dmg = 0;
+                    finalDamage = 0;
                 }
 
                 // Additional safety check right before calling OnImpactShield
                 if (target.Shield > 0 && !target.flagShield && target.gameObject.activeInHierarchy)
                 {
+                    // Show shield damage number
+                    if (canvasDamageRef != null)
+                    {
+                        // Position the damage number above the target
+                        Vector3 spawnPosition = target.transform.position;
+                        GameObject damageObj = Instantiate(canvasDamageRef, spawnPosition, Quaternion.identity);
+                        CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
+                        if (damageText != null)
+                        {
+                            damageText.SetDamage(finalDamage, false, true);
+                        }
+                    }
+
                     // Final safety check via reflection to avoid direct method call that might crash
                     try
                     {
-                        target.OnImpactShield(Dmg);
+                        target.OnImpactShield(finalDamage);
                     }
                     catch (System.Exception ex)
                     {
@@ -319,7 +335,7 @@
                         // Fallback - just apply damage directly
                         if (target != null && target.gameObject != null && target.gameObject.activeInHierarchy)
                         {
-                            target.AddDmg(Dmg);
+                            target.AddDmg(finalDamage);
                         }
                     }
                 }
@@ -329,7 +345,19 @@
                     // Only add damage if target is still active
                     if (target.gameObject.activeInHierarchy)
                     {
-                        target.AddDmg(Dmg);
+                        // Show damage number
+                        if (canvasDamageRef != null)
+                        {
+                            // Position the damage number above the target
+                            Vector3 spawnPosition = target.transform.position;
+                            GameObject damageObj = Instantiate(canvasDamageRef, spawnPosition, Quaternion.identity);
+                            CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
+                            if (damageText != null)
+                            {
+                                damageText.SetDamage(finalDamage, isCritical);
+                            }
+                        }
+                        target.AddDmg(finalDamage);
                     }
                 }
             }

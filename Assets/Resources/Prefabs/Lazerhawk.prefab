@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2073964834277820717}
   - component: {fileID: 7317854136659309962}
   - component: {fileID: 6134375252558460818}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Lazerhawk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -49,7 +49,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   Alias: Laserhawk
-  PreviewEffect: {fileID: 0}
+  PreviewEffect: {fileID: 2952778753973073564}
 --- !u!114 &7317854136659309962
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -64,11 +64,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   MyTeam: 0
   PlayerId: 1
-  Duration: 1.5
-  damagePerSecond: 350
+  Duration: 3
+  damagePerSecond: 360
   damageInterval: 0.1
-  beamLength: 40
-  beamWidth: 4.76
+  beamLength: 60
+  beamWidth: 8
   damageType: 0
   criticalStrikeChance: 0.075
   criticalStrikeMultiplier: 2.5
@@ -79,6 +79,7 @@ MonoBehaviour:
   laserMaterial: {fileID: 2100000, guid: ca1acb5899a06ce49929eaf92b18cc69, type: 2}
   hitEffectPrefab: {fileID: 2952778753973073564}
   laserColor: {r: 0.024353027, g: 0.72063136, b: 1, a: 0.63529414}
+  canvasDamageRef: {fileID: 0}
 --- !u!65 &6134375252558460818
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -110,7 +111,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7979143876567707645}
   - component: {fileID: 7450480653438804957}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: linerenderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -188,21 +189,21 @@ LineRenderer:
       m_Curve:
       - serializedVersion: 3
         time: 0
-        value: 1
-        inSlope: -0.39137784
-        outSlope: -0.39137784
+        value: 0.5717293
+        inSlope: 0.63980174
+        outSlope: 0.63980174
         tangentMode: 0
         weightedMode: 0
         inWeight: 0
-        outWeight: 0.1267869
+        outWeight: 0.13289918
       - serializedVersion: 3
         time: 1
         value: 0.99730873
-        inSlope: -0.8439348
-        outSlope: -0.8439348
+        inSlope: -0.13839376
+        outSlope: -0.13839376
         tangentMode: 0
         weightedMode: 0
-        inWeight: 0.10608822
+        inWeight: 0.13060552
         outWeight: 0.33333334
       m_PreInfinity: 2
       m_PostInfinity: 2
@@ -259,7 +260,7 @@ GameObject:
   - component: {fileID: 496598506920561982}
   - component: {fileID: 5758731904756010108}
   - component: {fileID: 2872716334958103857}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Lightning
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5179,7 +5180,7 @@ GameObject:
   - component: {fileID: 61979564867045080}
   - component: {fileID: 8953011124641779367}
   - component: {fileID: 3119025748327866323}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: OuterSphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9912,7 +9913,7 @@ GameObject:
   - component: {fileID: 8050692356080456502}
   - component: {fileID: 8665403994356066475}
   - component: {fileID: 2823871236141984094}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: BlueShockwaveImpact
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14853,7 +14854,7 @@ GameObject:
   - component: {fileID: 1593789137667218289}
   - component: {fileID: 7210206013352449111}
   - component: {fileID: 1373127361551747404}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Shockwave
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19693,7 +19694,7 @@ GameObject:
   - component: {fileID: 8400731555958661152}
   - component: {fileID: 5305538103402554172}
   - component: {fileID: 6122535136623944282}
-  m_Layer: 0
+  m_Layer: 11
   m_Name: Dust
   m_TagString: Untagged
   m_Icon: {fileID: 0}

@@ -44,6 +44,8 @@
         public GameObject hitEffectPrefab;
         [Tooltip("Color of the laser beam")]
         public Color laserColor = Color.blue;
+        [Tooltip("Damage number prefab")]
+        public GameObject canvasDamageRef;
         
         // Private variables
         private Unit _mainStationUnit;
@@ -183,30 +185,66 @@
                 Unit unit = FindUnitById(unitId);
                 if (unit != null && !unit.GetIsDeath())
                 {
+                    bool isCritical = Random.value < criticalStrikeChance;
+                    int finalDamage = isCritical ? Mathf.RoundToInt(damage * criticalStrikeMultiplier) : damage;
+
+                    // Check for dodge
+                    if (Random.value < unit.DodgeChance)
+                    {
+                        finalDamage = 0;
+                    }
+
                     // Check if unit has active shield
                     if (unit.Shield > 0 && !unit.flagShield)
                     {
+                        // Show shield damage number at the unit's position
+                        if (canvasDamageRef != null)
+                        {
+                            GameObject damageObj = Instantiate(canvasDamageRef, unit.transform.position, Quaternion.identity);
+                            CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
+                            if (damageText != null)
+                            {
+                                damageText.SetDamage(finalDamage, false, true);
+                            }
+                        }
+
                         try
                         {
-                            // Trigger shield impact effect
-                            unit.OnImpactShield(damage);
+                            unit.OnImpactShield(finalDamage);
                         }
                         catch (System.Exception ex)
                         {
                             Debug.LogWarning($"Failed to call OnImpactShield: {ex.Message}");
-                            // Fallback - just apply damage directly
-                            unit.AddDmg(damage, damageType);
+                            unit.AddDmg(finalDamage, damageType);
                         }
                     }
                     else
                     {
-                        // Normal damage application
-                        unit.AddDmg(damage, damageType);
+                        // Show normal damage number at the unit's position
+                        if (canvasDamageRef != null)
+                        {
+                            GameObject damageObj = Instantiate(canvasDamageRef, unit.transform.position, Quaternion.identity);
+                            CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
+                            if (damageText != null)
+                            {
+                                damageText.SetDamage(finalDamage, isCritical);
+                            }
+                        }
+
+                        unit.AddDmg(finalDamage, damageType);
                     }
-                    
+
+                    // Add damage to match tracker
                     if (!unit.IsMyTeam(MyTeam))
                     {
-                        GameMng.MT?.AddDamage(damage);
+                        GameMng.MT?.AddDamage(finalDamage);
+                    }
+
+                    // Trigger UI update
+                    UIUnit uiUnit = unit.GetComponent<UIUnit>();
+                    if (uiUnit != null)
+                    {
+                        uiUnit.OnDamageTaken();
                     }
                 }
             }
@@ -332,8 +370,8 @@
                 laserLineRenderer = gameObject.AddComponent<LineRenderer>();
                 laserLineRenderer.positionCount = 2;
                 laserLineRenderer.useWorldSpace = true;
-                laserLineRenderer.startWidth = beamWidth * 1.5f;
-                laserLineRenderer.endWidth = beamWidth * 0.5f;
+                laserLineRenderer.startWidth = beamWidth;
+                laserLineRenderer.endWidth = beamWidth;
             }
             
             // Apply the material and color
@@ -391,22 +429,22 @@
             if (laserLineRenderer != null)
             {
                 laserLineRenderer.SetPositions(_laserPositions);
-                laserLineRenderer.startWidth = beamWidth * 1.5f;
-                laserLineRenderer.endWidth = beamWidth * 0.5f;
+                laserLineRenderer.startWidth = beamWidth;
+                laserLineRenderer.endWidth = beamWidth;
             }
             
             // Update VFX positions
             if (laserStartVFX != null)
             {
                 laserStartVFX.transform.position = _laserPositions[0];
-                laserStartVFX.transform.localScale = Vector3.one * beamWidth * 1.2f;
+                laserStartVFX.transform.localScale = Vector3.one * beamWidth;
                 laserStartVFX.SetActive(true);
             }
             
             if (laserEndVFX != null)
             {
                 laserEndVFX.transform.position = _laserPositions[1];
-                laserEndVFX.transform.localScale = Vector3.one * beamWidth * 0.8f;
+                laserEndVFX.transform.localScale = Vector3.one * beamWidth;
                 laserEndVFX.SetActive(true);
             }
         }

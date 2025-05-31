@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 7751084914488314237}
   - component: {fileID: 7751084914488314238}
   - component: {fileID: 8719979491583594760}
-  m_Layer: 8
+  m_Layer: 13
   m_Name: DamageCanvas
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -60,8 +60,8 @@ Canvas:
   m_VertexColorAlwaysGammaSpace: 0
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
-  m_SortingLayerID: 1554655663
-  m_SortingOrder: 0
+  m_SortingLayerID: -675829863
+  m_SortingOrder: 13
   m_TargetDisplay: 0
 --- !u!114 &7751084914488314237
 MonoBehaviour:
@@ -116,9 +116,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   damageText: {fileID: 7751084915617012549}
-  bounceHeight: 3
-  bounceDuration: 0.25
-  fadeDuration: 0.25
+  bounceHeight: 4
+  bounceDuration: 1.25
+  fadeDuration: 1.25
   startHeight: 4
   randomHorizontalOffset: 0.3
   normalDamageColor: {r: 1, g: 1, b: 1, a: 1}
@@ -139,7 +139,7 @@ GameObject:
   - component: {fileID: 7751084915617012550}
   - component: {fileID: 7751084915617012548}
   - component: {fileID: 7751084915617012549}
-  m_Layer: 8
+  m_Layer: 13
   m_Name: Text (TMP)
   m_TagString: Untagged
   m_Icon: {fileID: 0}

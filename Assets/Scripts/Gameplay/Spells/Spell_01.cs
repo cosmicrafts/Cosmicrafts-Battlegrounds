@@ -419,10 +419,22 @@
         {
             if (_mainStationUnit == null) return;
 
-            Vector3 stationPosition = _mainStationUnit.transform.position;
+            // Get the power-up origin position from shooter
+            Vector3 beamStart = _mainStationUnit.transform.position;
+            if (_shooter != null)
+            {
+                if (_shooter.powerUpOrigin != null)
+                {
+                    beamStart = _shooter.powerUpOrigin.position;
+                }
+                else if (_shooter.Cannons != null && _shooter.Cannons.Length > 0)
+                {
+                    beamStart = _shooter.Cannons[0].position;
+                }
+            }
             
-            // Calculate beam positions - use mainstation's rotation directly
-            _laserPositions[0] = stationPosition + Vector3.up * 2.0f;
+            // Calculate beam positions
+            _laserPositions[0] = beamStart;
             _laserPositions[1] = _laserPositions[0] + (_mainStationUnit.transform.forward * beamLength);
 
             // Update line renderer

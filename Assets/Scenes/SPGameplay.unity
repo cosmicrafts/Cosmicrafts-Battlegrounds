@@ -131,7 +131,7 @@ GameObject:
   - component: {fileID: 43502206}
   - component: {fileID: 43502205}
   - component: {fileID: 43502204}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: Planet
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -808,8 +808,8 @@ GameObject:
   - component: {fileID: 628258973}
   - component: {fileID: 628258972}
   - component: {fileID: 628258974}
-  m_Layer: 0
-  m_Name: Plane
+  m_Layer: 6
+  m_Name: Space1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1152,8 +1152,8 @@ GameObject:
   - component: {fileID: 680417340}
   - component: {fileID: 680417339}
   - component: {fileID: 680417338}
-  m_Layer: 0
-  m_Name: Plane_02
+  m_Layer: 6
+  m_Name: Space2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1262,8 +1262,8 @@ GameObject:
   - component: {fileID: 699998332}
   - component: {fileID: 699998331}
   - component: {fileID: 699998333}
-  m_Layer: 0
-  m_Name: Hit 20 pink arrow
+  m_Layer: 7
+  m_Name: Nebula 1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -7021,8 +7021,8 @@ GameObject:
   - component: {fileID: 1349297940}
   - component: {fileID: 1349297939}
   - component: {fileID: 1349297938}
-  m_Layer: 0
-  m_Name: Hit 20 pink arrow_01
+  m_Layer: 7
+  m_Name: Nebula 2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -11948,8 +11948,8 @@ GameObject:
   - component: {fileID: 1392641458}
   - component: {fileID: 1392641457}
   - component: {fileID: 1392641456}
-  m_Layer: 0
-  m_Name: Hit 20 pink arrow_02
+  m_Layer: 7
+  m_Name: Nebula 3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

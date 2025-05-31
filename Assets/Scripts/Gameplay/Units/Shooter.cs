@@ -18,6 +18,8 @@ namespace Cosmicrafts
         [Range(1f, 10f)] public float rotationSpeed = 5f;
         public GameObject Bullet;
         public Transform[] Cannons;
+        [Tooltip("Transform for power-up effects like lasers. If not set, will use first cannon position.")]
+        public Transform powerUpOrigin;
         
         [Header("Targeting Settings")]
         [Tooltip("How often to check if a target is still valid (seconds)")]

@@ -12,7 +12,7 @@ GameObject:
   - component: {fileID: 2073964834277820717}
   - component: {fileID: 7317854136659309962}
   - component: {fileID: 6134375252558460818}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: Lazerhawk
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -27,7 +27,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 169654}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.7071068, y: 0, z: 0, w: 0.7071068}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -35,7 +35,7 @@ Transform:
   - {fileID: 5211242468086733653}
   - {fileID: 7979143876567707645}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: -90, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2073964834277820717
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -66,9 +66,9 @@ MonoBehaviour:
   PlayerId: 1
   Duration: 3
   damagePerSecond: 360
-  damageInterval: 0.1
+  damageInterval: 0.25
   beamLength: 60
-  beamWidth: 8
+  beamWidth: 4
   damageType: 0
   criticalStrikeChance: 0.075
   criticalStrikeMultiplier: 2.5
@@ -76,10 +76,10 @@ MonoBehaviour:
   laserLineRenderer: {fileID: 7450480653438804957}
   laserStartVFX: {fileID: 2952778753973073564}
   laserEndVFX: {fileID: 2952778753973073564}
-  laserMaterial: {fileID: 2100000, guid: ca1acb5899a06ce49929eaf92b18cc69, type: 2}
+  laserMaterial: {fileID: 2100000, guid: 318203c6414c96e4b8f06814ceaa12d4, type: 2}
   hitEffectPrefab: {fileID: 2952778753973073564}
   laserColor: {r: 0.024353027, g: 0.72063136, b: 1, a: 0.63529414}
-  canvasDamageRef: {fileID: 0}
+  canvasDamageRef: {fileID: 7751084914488314239, guid: d7823e126f5b20c4d9f16c1ce9b8ae39, type: 3}
 --- !u!65 &6134375252558460818
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -111,7 +111,7 @@ GameObject:
   m_Component:
   - component: {fileID: 7979143876567707645}
   - component: {fileID: 7450480653438804957}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: linerenderer
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -260,7 +260,7 @@ GameObject:
   - component: {fileID: 496598506920561982}
   - component: {fileID: 5758731904756010108}
   - component: {fileID: 2872716334958103857}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: Lightning
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -297,7 +297,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 1
-  looping: 0
+  looping: 1
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -5180,7 +5180,7 @@ GameObject:
   - component: {fileID: 61979564867045080}
   - component: {fileID: 8953011124641779367}
   - component: {fileID: 3119025748327866323}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: OuterSphere
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -5217,7 +5217,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 0
-  looping: 0
+  looping: 1
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -9913,7 +9913,7 @@ GameObject:
   - component: {fileID: 8050692356080456502}
   - component: {fileID: 8665403994356066475}
   - component: {fileID: 2823871236141984094}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: BlueShockwaveImpact
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -9930,7 +9930,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 61979564867045080}
@@ -10031,7 +10031,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 0
-  looping: 0
+  looping: 1
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -14854,7 +14854,7 @@ GameObject:
   - component: {fileID: 1593789137667218289}
   - component: {fileID: 7210206013352449111}
   - component: {fileID: 1373127361551747404}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: Shockwave
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -14891,7 +14891,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 0
-  looping: 0
+  looping: 1
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0
@@ -19694,7 +19694,7 @@ GameObject:
   - component: {fileID: 8400731555958661152}
   - component: {fileID: 5305538103402554172}
   - component: {fileID: 6122535136623944282}
-  m_Layer: 11
+  m_Layer: 12
   m_Name: Dust
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -19731,7 +19731,7 @@ ParticleSystem:
   ringBufferMode: 0
   ringBufferLoopRange: {x: 0, y: 1}
   emitterVelocityMode: 1
-  looping: 0
+  looping: 1
   prewarm: 0
   playOnAwake: 1
   useUnscaledTime: 0

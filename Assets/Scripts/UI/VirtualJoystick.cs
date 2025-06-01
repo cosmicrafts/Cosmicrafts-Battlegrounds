@@ -10,11 +10,13 @@ namespace Cosmicrafts
         [Header("UI References")]
         [SerializeField] private RectTransform joystickBackground;
         [SerializeField] private RectTransform joystickHandle;
+        [SerializeField] private RectTransform directionIndicator;
         
         [Header("Settings")]
         [SerializeField] private float handleRange = 1f;
         [SerializeField] private float deadZone = 0f;
         [SerializeField] private bool centerOnPress = true;
+        [SerializeField] private bool showDirectionIndicator = true;
 
         private Canvas canvas;
         private Camera cam;
@@ -42,6 +44,12 @@ namespace Cosmicrafts
                 {
                     joystickHandle.position = center;
                 }
+            }
+
+            // Initialize direction indicator
+            if (directionIndicator != null)
+            {
+                directionIndicator.gameObject.SetActive(showDirectionIndicator);
             }
         }
 
@@ -112,8 +120,33 @@ namespace Cosmicrafts
                 // Update handle position
                 Vector2 handlePosition = (Vector2)center + (input * handleRange);
                 joystickHandle.position = handlePosition;
-                
-                // Debug.Log($"Joystick input: {input}, Handle pos: {handlePosition}");
+
+                // Update direction indicator rotation and position
+                if (directionIndicator != null && showDirectionIndicator)
+                {
+                    if (input != Vector2.zero)
+                    {
+                        float angle = Mathf.Atan2(input.y, input.x) * Mathf.Rad2Deg;
+                        directionIndicator.rotation = Quaternion.Euler(0, 0, angle);
+                        directionIndicator.position = center;
+                        directionIndicator.gameObject.SetActive(true);
+
+                        // Counter-rotate the background
+                        if (joystickBackground != null)
+                        {
+                            joystickBackground.rotation = Quaternion.Euler(0, 0, -angle);
+                        }
+                    }
+                    else
+                    {
+                        directionIndicator.gameObject.SetActive(false);
+                        // Reset background rotation
+                        if (joystickBackground != null)
+                        {
+                            joystickBackground.rotation = Quaternion.identity;
+                        }
+                    }
+                }
             }
         }
 
@@ -135,6 +168,13 @@ namespace Cosmicrafts
             {
                 center = joystickBackground.position;
                 joystickHandle.position = center;
+                joystickBackground.rotation = Quaternion.identity; // Reset background rotation
+            }
+            
+            // Reset direction indicator
+            if (directionIndicator != null)
+            {
+                directionIndicator.gameObject.SetActive(false);
             }
             
             isControlling = false;

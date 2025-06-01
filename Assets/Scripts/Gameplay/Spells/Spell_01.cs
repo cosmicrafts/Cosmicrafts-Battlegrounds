@@ -190,9 +190,10 @@
                     // Spawn hit effect on the unit
                     if (hitEffectPrefab != null)
                     {
-                        GameObject hitEffect = Instantiate(hitEffectPrefab, unit.transform.position, Quaternion.identity, unit.transform);
-                        hitEffect.transform.localScale = Vector3.one * visualBeamWidth * 0.5f;
-                        Destroy(hitEffect, 2f); // Destroy after 2 seconds
+                        GameObject hitEffect = Instantiate(hitEffectPrefab, unit.transform.position, Quaternion.identity);
+                        hitEffect.transform.localScale = Vector3.one * visualBeamWidth;
+                        hitEffect.SetActive(true);
+                        Destroy(hitEffect, 0.25f);
                     }
 
                     // Check if unit has active shield
@@ -411,6 +412,8 @@
             if (hasModifiedRange && _shooter != null)
             {
                 _shooter.RangeDetector = originalShooterRange;
+                // Force target re-evaluation
+                _shooter.ResetShooter();
             }
 
             // Clean up VFX

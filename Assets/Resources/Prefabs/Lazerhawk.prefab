@@ -65,11 +65,11 @@ MonoBehaviour:
   MyTeam: 0
   PlayerId: 1
   Duration: 3
-  damagePerSecond: 1500
-  damageInterval: 0.1
+  damagePerSecond: 350
+  damageInterval: 0.25
   beamLength: 60
-  beamWidth: 7.66
-  visualBeamWidth: 1
+  beamWidth: 8
+  visualBeamWidth: 0.75
   damageType: 0
   criticalStrikeChance: 0.075
   criticalStrikeMultiplier: 1
@@ -9920,7 +9920,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &5211242468086733653
 Transform:
   m_ObjectHideFlags: 0

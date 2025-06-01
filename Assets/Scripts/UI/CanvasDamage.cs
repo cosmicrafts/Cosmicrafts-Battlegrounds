@@ -15,9 +15,12 @@ public class CanvasDamage : MonoBehaviour
     [SerializeField] private float randomHorizontalOffset = 0.3f;  // Random horizontal offset for variety
 
     [Header("Colors")]
-    [SerializeField] private Color normalDamageColor = Color.white;
-    [SerializeField] private Color criticalDamageColor = Color.red;
-    [SerializeField] private Color shieldDamageColor = Color.cyan;
+    [SerializeField] private Color normalDamageColorTop = Color.white;
+    [SerializeField] private Color normalDamageColorBottom = new Color(1f, 1f, 1f, 0.5f);
+    [SerializeField] private Color criticalDamageColorTop = Color.red;
+    [SerializeField] private Color criticalDamageColorBottom = new Color(1f, 0f, 0f, 0.5f);
+    [SerializeField] private Color shieldDamageColorTop = Color.cyan;
+    [SerializeField] private Color shieldDamageColorBottom = new Color(0f, 1f, 1f, 0.5f);
 
     [Header("UI Positioning")]
     [SerializeField] private bool maintainConstantScale = true;
@@ -49,6 +52,9 @@ public class CanvasDamage : MonoBehaviour
             0f,
             Random.Range(-randomHorizontalOffset, randomHorizontalOffset)
         );
+
+        // Enable vertex gradient on the text
+        damageText.enableVertexGradient = true;
     }
 
     void Start()
@@ -59,10 +65,39 @@ public class CanvasDamage : MonoBehaviour
 
         // Configure text
         damageText.text = damageValue.ToString();
-        damageText.color = isShieldDamage ? shieldDamageColor : (isCritical ? criticalDamageColor : normalDamageColor);
+        UpdateTextGradient();
         
         // Start animation
         StartCoroutine(BounceAndFadeAnimation());
+    }
+
+    private void UpdateTextGradient()
+    {
+        VertexGradient gradient = new VertexGradient();
+        
+        if (isShieldDamage)
+        {
+            gradient.topLeft = shieldDamageColorTop;
+            gradient.topRight = shieldDamageColorTop;
+            gradient.bottomLeft = shieldDamageColorBottom;
+            gradient.bottomRight = shieldDamageColorBottom;
+        }
+        else if (isCritical)
+        {
+            gradient.topLeft = criticalDamageColorTop;
+            gradient.topRight = criticalDamageColorTop;
+            gradient.bottomLeft = criticalDamageColorBottom;
+            gradient.bottomRight = criticalDamageColorBottom;
+        }
+        else
+        {
+            gradient.topLeft = normalDamageColorTop;
+            gradient.topRight = normalDamageColorTop;
+            gradient.bottomLeft = normalDamageColorBottom;
+            gradient.bottomRight = normalDamageColorBottom;
+        }
+        
+        damageText.colorGradient = gradient;
     }
 
     void LateUpdate()
@@ -91,13 +126,20 @@ public class CanvasDamage : MonoBehaviour
         isCritical = critical;
         isShieldDamage = shieldDamage;
         targetPosition = transform.position;
+        
+        if (damageText != null)
+        {
+            UpdateTextGradient();
+        }
     }
 
     IEnumerator BounceAndFadeAnimation()
     {
         float elapsedTime = 0f;
-        Color startColor = damageText.color;
-        Color endColor = new Color(startColor.r, startColor.g, startColor.b, 0f);
+        Color startColorTop = damageText.colorGradient.topLeft;
+        Color startColorBottom = damageText.colorGradient.bottomLeft;
+        Color endColorTop = new Color(startColorTop.r, startColorTop.g, startColorTop.b, 0f);
+        Color endColorBottom = new Color(startColorBottom.r, startColorBottom.g, startColorBottom.b, 0f);
         Vector3 currentPosition = startPosition;
 
         while (elapsedTime < bounceDuration)
@@ -113,7 +155,13 @@ public class CanvasDamage : MonoBehaviour
             if (progress > 0.5f)
             {
                 float fadeProgress = (progress - 0.5f) * 2f;
-                damageText.color = Color.Lerp(startColor, endColor, fadeProgress);
+                VertexGradient currentGradient = new VertexGradient(
+                    Color.Lerp(startColorTop, endColorTop, fadeProgress),
+                    Color.Lerp(startColorTop, endColorTop, fadeProgress),
+                    Color.Lerp(startColorBottom, endColorBottom, fadeProgress),
+                    Color.Lerp(startColorBottom, endColorBottom, fadeProgress)
+                );
+                damageText.colorGradient = currentGradient;
             }
 
             elapsedTime += Time.deltaTime;
@@ -124,7 +172,14 @@ public class CanvasDamage : MonoBehaviour
         float remainingFadeTime = fadeDuration;
         while (remainingFadeTime > 0)
         {
-            damageText.color = Color.Lerp(startColor, endColor, 1f - (remainingFadeTime / fadeDuration));
+            float fadeProgress = 1f - (remainingFadeTime / fadeDuration);
+            VertexGradient currentGradient = new VertexGradient(
+                Color.Lerp(startColorTop, endColorTop, fadeProgress),
+                Color.Lerp(startColorTop, endColorTop, fadeProgress),
+                Color.Lerp(startColorBottom, endColorBottom, fadeProgress),
+                Color.Lerp(startColorBottom, endColorBottom, fadeProgress)
+            );
+            damageText.colorGradient = currentGradient;
             remainingFadeTime -= Time.deltaTime;
             yield return waitForEndOfFrame;
         }

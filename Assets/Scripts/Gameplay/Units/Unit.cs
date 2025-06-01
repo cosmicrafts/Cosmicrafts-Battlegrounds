@@ -104,7 +104,6 @@ namespace Cosmicrafts
             SolidBase = Mesh.GetComponent<SphereCollider>();
 
             UI.Init(MaxHp - 1, MaxShield - 1);
-            UI.SetColorBars(!IsMyTeam(GameMng.P.MyTeam));
             
             TrigerBase.radius = SolidBase.radius;
             transform.localScale = new Vector3(Size, Size, Size);

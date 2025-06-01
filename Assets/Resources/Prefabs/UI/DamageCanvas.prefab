@@ -121,9 +121,12 @@ MonoBehaviour:
   fadeDuration: 0.25
   startHeight: 6
   randomHorizontalOffset: 1
-  normalDamageColor: {r: 1, g: 1, b: 1, a: 1}
-  criticalDamageColor: {r: 1, g: 0, b: 0, a: 1}
-  shieldDamageColor: {r: 0.09411765, g: 0.63529414, b: 0.8862745, a: 1}
+  normalDamageColorTop: {r: 1, g: 1, b: 1, a: 1}
+  normalDamageColorBottom: {r: 1, g: 1, b: 1, a: 1}
+  criticalDamageColorTop: {r: 1, g: 0.36078432, b: 0, a: 1}
+  criticalDamageColorBottom: {r: 1, g: 0.78039217, b: 0, a: 1}
+  shieldDamageColorTop: {r: 0.6708535, g: 0.90151525, b: 1, a: 1}
+  shieldDamageColorBottom: {r: 0.24335521, g: 0.7736024, b: 1, a: 1}
   maintainConstantScale: 0
   baseOrthographicSize: 20
   minScaleMultiplier: 0.25

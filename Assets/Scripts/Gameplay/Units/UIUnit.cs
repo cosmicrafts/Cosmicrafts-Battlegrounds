@@ -26,6 +26,14 @@
         // Reference to the TMP text to display the level
         public TextMeshProUGUI LevelText;
 
+        // Reference to the level plate image
+        public Image LevelPlate;
+
+        // Team-specific level plate sprites
+        [Header("Level Plate Sprites")]
+        public Sprite BlueTeamLevelPlate;
+        public Sprite RedTeamLevelPlate;
+
         // Reference to the Animation component
         public Animation Animation;
 
@@ -84,7 +92,7 @@
             // Get the Unit component
             Unit unit = GetComponentInParent<Unit>();
 
-            // Set team-specific colors
+            // Set team-specific colors and sprites
             if (unit != null)
             {
                 if (unit.MyTeam == Team.Blue)
@@ -94,6 +102,12 @@
                     Shield.color = Player2ShieldColor;
                     GHp.color = Player2DifHpColor;
                     GShield.color = Player2DifShieldColor;
+                    
+                    // Set blue team level plate
+                    if (LevelPlate != null && BlueTeamLevelPlate != null)
+                    {
+                        LevelPlate.sprite = BlueTeamLevelPlate;
+                    }
                 }
                 else if (unit.MyTeam == Team.Red)
                 {
@@ -102,6 +116,12 @@
                     Shield.color = Player1ShieldColor;
                     GHp.color = Player1DifHpColor;
                     GShield.color = Player1DifShieldColor;
+                    
+                    // Set red team level plate
+                    if (LevelPlate != null && RedTeamLevelPlate != null)
+                    {
+                        LevelPlate.sprite = RedTeamLevelPlate;
+                    }
                 }
 
                 // Set the level text

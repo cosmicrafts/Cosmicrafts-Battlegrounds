@@ -14,12 +14,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 2198226034328220048, guid: dc759b24ff2064b469d6f5efc33f4546, type: 3}
   IconSprite: {fileID: 21300000, guid: 7e79c5be19db6bea38b0f966b436a09e, type: 3}
-  Name: Deva
+  Name: GV
   LocalID: 1
   Faction: 0
   NftType: 0
   HitPoints: 500
-  Shield: 450
+  Shield: 100
   EnergyCost: 1
   Damage: 65
   Speed: 20.4

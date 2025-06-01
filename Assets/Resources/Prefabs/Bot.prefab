@@ -1097,6 +1097,7 @@ MonoBehaviour:
   Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   Cannons:
   - {fileID: 1478323959484795093}
+  powerUpOrigin: {fileID: 0}
   targetValidationRate: 1
   targetLoseTolerance: 1.5
   priorityMode: 0
@@ -1313,7 +1314,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2882220714408672440}
-  m_Layer: 0
+  m_Layer: 10
   m_Name: Tail
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1886,9 +1887,73 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 2198226034328220055}
     m_Modifications:
+    - target: {fileID: -9153600017669923384, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -7720606467239792592, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -7563670837237884348, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -7256081421015793879, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -6142027045174383143, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: -5753121111694892248, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
       propertyPath: m_Name
       value: Galactic_Vanguard
+      objectReference: {fileID: 0}
+    - target: {fileID: -5753121111694892248, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -4047327749311703401, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -3659537164196805309, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -1048455360302631502, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -105219052840977914, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: -72698916304613863, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 32766739142623957, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 312739998326938065, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 519246943195748756, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1909556054527119064, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 3735685695549096137, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 3969538393327941604, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
       propertyPath: m_LocalScale.x
@@ -1942,6 +2007,14 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 5506316692525484999, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 5562875419839207317, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 6958842789785303739, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
       propertyPath: m_DirtyAABB
       value: 0
@@ -1969,6 +2042,10 @@ PrefabInstance:
     - target: {fileID: 6958842789785303739, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
       propertyPath: m_AABB.m_Extent.z
       value: 0.74579513
+      objectReference: {fileID: 0}
+    - target: {fileID: 8448818429683344287, guid: 19a19e4493534f2578fece5f1c2c5a74, type: 3}
+      propertyPath: m_Layer
+      value: 10
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

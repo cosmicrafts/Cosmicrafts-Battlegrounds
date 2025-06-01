@@ -1,11 +1,15 @@
 using System.Collections;
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;  // Add this for Image component
 
 public class CanvasDamage : MonoBehaviour
 {
     [SerializeField]
     TMP_Text damageText;
+
+    [Header("Critical Hit Effect")]
+    [SerializeField] private Image criticalHitImage;  // Reference to the critical hit image
 
     [Header("Animation Settings")]
     [SerializeField] private float bounceHeight = 1f;  // Increased default height
@@ -126,6 +130,12 @@ public class CanvasDamage : MonoBehaviour
         isCritical = critical;
         isShieldDamage = shieldDamage;
         targetPosition = transform.position;
+        
+        // Activate/deactivate critical hit image
+        if (criticalHitImage != null)
+        {
+            criticalHitImage.gameObject.SetActive(critical);
+        }
         
         if (damageText != null)
         {

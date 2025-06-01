@@ -358,6 +358,7 @@ namespace Cosmicrafts
                         BulletDamage;
                     
                     bullet.Dmg = damage;
+                    bullet.IsCritical = isCritical;  // Pass the critical flag to the projectile
                     
                     // Add visual effect for critical hits
                     if (isCritical)

@@ -12,6 +12,8 @@
         public float Speed;
         [HideInInspector]
         public int Dmg;
+        [HideInInspector]
+        public bool IsCritical;  // Add critical hit flag
 
         public GameObject canvasDamageRef;
         public GameObject impact;
@@ -300,7 +302,6 @@
 
             try
             {
-                bool isCritical = false;
                 int finalDamage = Dmg;
 
                 if (Random.value < target.DodgeChance)
@@ -354,7 +355,7 @@
                             CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
                             if (damageText != null)
                             {
-                                damageText.SetDamage(finalDamage, isCritical);
+                                damageText.SetDamage(finalDamage, IsCritical);  // Pass the critical flag
                             }
                         }
                         target.AddDmg(finalDamage);

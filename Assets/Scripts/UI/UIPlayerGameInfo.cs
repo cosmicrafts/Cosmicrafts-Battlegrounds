@@ -17,6 +17,16 @@ public class UIPlayerGameInfo : MonoBehaviour
     public Image XpBar;
     public Image Avatar;
 
+    private string FormatPrincipalId(string principalId)
+    {
+        if (string.IsNullOrEmpty(principalId) || principalId.Length < 8)
+            return principalId;
+
+        string firstPart = principalId.Substring(0, 5);
+        string lastPart = principalId.Substring(principalId.Length - 3);
+        return $"{firstPart}...{lastPart}";
+    }
+
     private void OnEnable()
     {
         // Subscribe to player data events
@@ -51,10 +61,10 @@ public class UIPlayerGameInfo : MonoBehaviour
             PlayerName.text = player.Username;
         }
 
-        // Update wallet ID (principal ID)
+        // Update wallet ID (principal ID) with shortened format
         if (WalletId != null)
         {
-            WalletId.text = ICPService.Instance.PrincipalId;
+            WalletId.text = FormatPrincipalId(ICPService.Instance.PrincipalId);
         }
 
         // Update level

@@ -33,7 +33,7 @@
         [Header("XP System UI")]
         public TMP_Text LevelLabel;
         public TMP_Text XPLabel;
-        public Image XPBar;
+        public Slider XPBar;
 
         //Results Metrics text references
         public TMP_Text MTxtEnergyUsed;
@@ -312,7 +312,7 @@
             
             if (LevelLabel != null)
             {
-                LevelLabel.text = $"Level {level}";
+                LevelLabel.text = $"{level}";
                 Debug.Log($"[UIGameMng] Updated LevelLabel to: Level {level}");
             }
             else
@@ -332,8 +332,8 @@
             
             if (XPBar != null)
             {
-                XPBar.fillAmount = (float)currentXP / maxXP;
-                Debug.Log($"[UIGameMng] Updated XPBar fill amount to: {(float)currentXP / maxXP}");
+                XPBar.value = (float)currentXP / maxXP;
+                Debug.Log($"[UIGameMng] Updated XPBar value to: {(float)currentXP / maxXP}");
             }
             else
             {

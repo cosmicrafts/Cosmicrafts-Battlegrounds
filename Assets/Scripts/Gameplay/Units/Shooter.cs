@@ -429,7 +429,7 @@ namespace Cosmicrafts
             Unit newTarget = FindBestTargetFromList();
             if (newTarget != null)
             {
-                Debug.Log($"Taunt effect: Selected new target {newTarget.name}");
+              //  Debug.Log($"Taunt effect: Selected new target {newTarget.name}");
                 SetTarget(newTarget);
                 
                 // Force ship to move towards taunt target

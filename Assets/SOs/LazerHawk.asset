@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: LazerHawk
   m_EditorClassIdentifier: 
   Prefab: {fileID: 169654, guid: 3b7f8b2e446b1b0439c69edb635440a5, type: 3}
-  IconSprite: {fileID: 21300000, guid: 253ade5030af1b643bf9a54cceb26f01, type: 3}
+  IconSprite: {fileID: 21300000, guid: b2471f587ee4d181ca6457081ee75af7, type: 3}
   Name: Spellzuru
   LocalID: 33
   Faction: 0

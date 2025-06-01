@@ -229,7 +229,7 @@ namespace Cosmicrafts
                                 shooter.HandleTauntEffect();
                                 
                                 // Debug log to verify taunt effect
-                                Debug.Log($"[{MyTeam}] Taunt unit {gameObject.name} affecting {otherUnit.name}");
+                              //  Debug.Log($"[{MyTeam}] Taunt unit {gameObject.name} affecting {otherUnit.name}");
                             }
                         }
                     }

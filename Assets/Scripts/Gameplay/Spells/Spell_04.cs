@@ -32,7 +32,6 @@ public class Spell_04 : Spell
         
         if (_mainStationUnit == null)
         {
-            Debug.LogError("[Spell_04] Failed to find main station unit!");
             Destroy(gameObject);
             return;
         }
@@ -40,14 +39,8 @@ public class Spell_04 : Spell
         // Find the nearest enemy
         _targetUnit = Shooter.FindNearestEnemyFromPoint(_mainStationUnit.transform.position, MyTeam, 50f);
         
-        if (_targetUnit != null)
-        {
-            LaunchMissile();
-        }
-        else
-        {
-            Destroy(gameObject);
-        }
+        // Launch the missile regardless of target
+        LaunchMissile();
     }
     
     private void LaunchMissile()
@@ -68,9 +61,27 @@ public class Spell_04 : Spell
         {
             // Set up the missile properties
             missile.MyTeam = MyTeam;
-            missile.SetTarget(_targetUnit.gameObject);
             missile.Speed = missileSpeed;
             missile.Dmg = explosionDamage;
+            
+            if (_targetUnit != null)
+            {
+                // If we have a target, set it
+                missile.SetTarget(_targetUnit.gameObject);
+            }
+            else
+            {
+                // If no target, shoot in the unit's forward direction
+                Vector3 targetPosition = _mainStationUnit.transform.position + (_mainStationUnit.transform.forward * 100f);
+                
+                // Create a temporary target at the target position
+                GameObject tempTarget = new GameObject("TempMissileTarget");
+                tempTarget.transform.position = targetPosition;
+                
+                // Set the temporary target and then destroy it after a frame
+                missile.SetTarget(tempTarget);
+                Destroy(tempTarget, 0.1f);
+            }
         }
         
         // Destroy the spell object after launching

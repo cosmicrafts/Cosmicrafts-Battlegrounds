@@ -375,7 +375,7 @@ MonoBehaviour:
   dashEnergyCost: 2
   TestingDeck:
   - {fileID: 11400000, guid: 6d13ad9c5163f992ea602c1171826be1, type: 2}
-  - {fileID: 11400000, guid: fa56fcf444849cf4ca2b4daaeea4309c, type: 2}
+  - {fileID: 11400000, guid: 444e2119928c183ecb8e87733527c193, type: 2}
   - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
   - {fileID: 11400000, guid: 265a32c5b81d7ed98865d0dc2f16f03d, type: 2}
 --- !u!54 &2198226034328220052

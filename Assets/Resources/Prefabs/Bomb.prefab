@@ -4862,3 +4862,4 @@ MonoBehaviour:
   criticalStrikeMultiplier: 2
   showRadiusGizmo: 1
   gizmoColor: {r: 0, g: 0, b: 0, a: 0.76862746}
+  canvasDamageRef: {fileID: 7751084914488314239, guid: d7823e126f5b20c4d9f16c1ce9b8ae39, type: 3}

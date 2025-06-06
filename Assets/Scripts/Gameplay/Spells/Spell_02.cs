@@ -48,6 +48,8 @@ public class Spell_02 : Spell
     public bool showRadiusGizmo = true;
     [Tooltip("Color of the radius gizmo")]
     public Color gizmoColor = new Color(1f, 0.5f, 0f, 0.3f);
+    [Tooltip("Damage number prefab")]
+    public GameObject canvasDamageRef;
     
     // Runtime variables
     private Unit _mainStationUnit;
@@ -222,15 +224,67 @@ public class Spell_02 : Spell
                     
                     // Calculate final damage
                     int finalDamage = CalculateDamage(damageFalloff);
-                    
-                    // Apply damage
-                    unit.AddDmg(finalDamage, damageType);
-                    
-                    // Visual feedback
-                    // Debug.Log($"Explosion hit {unit.name} for {finalDamage} damage at distance {distance:F2}m");
-                    
-                    // Apply knockback effect (optional)
-                    ApplyKnockback(unit, distance, radius);
+                    bool isCritical = Random.value < criticalStrikeChance;
+                    finalDamage = isCritical ? Mathf.RoundToInt(finalDamage * criticalStrikeMultiplier) : finalDamage;
+
+                    // Check for dodge
+                    if (Random.value < unit.DodgeChance)
+                    {
+                        finalDamage = 0;
+                    }
+
+                    // Check if unit has active shield
+                    if (unit.Shield > 0 && !unit.flagShield)
+                    {
+                        // Show shield damage number at the unit's position
+                        if (canvasDamageRef != null)
+                        {
+                            GameObject damageObj = Instantiate(canvasDamageRef, unit.transform.position, Quaternion.identity);
+                            CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
+                            if (damageText != null)
+                            {
+                                damageText.SetDamage(finalDamage, false, true);
+                            }
+                        }
+
+                        try
+                        {
+                            unit.OnImpactShield(finalDamage);
+                        }
+                        catch (System.Exception ex)
+                        {
+                            Debug.LogWarning($"Failed to call OnImpactShield: {ex.Message}");
+                            unit.AddDmg(finalDamage, damageType);
+                        }
+                    }
+                    else
+                    {
+                        // Show normal damage number at the unit's position
+                        if (canvasDamageRef != null)
+                        {
+                            GameObject damageObj = Instantiate(canvasDamageRef, unit.transform.position, Quaternion.identity);
+                            CanvasDamage damageText = damageObj.GetComponent<CanvasDamage>();
+                            if (damageText != null)
+                            {
+                                damageText.SetDamage(finalDamage, isCritical);
+                            }
+                        }
+
+                        unit.AddDmg(finalDamage, damageType);
+                    }
+
+                    // Add damage to match tracker
+                    if (!unit.IsMyTeam(MyTeam))
+                    {
+                        GameMng.MT?.AddDamage(finalDamage);
+                    }
+
+                    // Trigger UI update
+                    UIUnit uiUnit = unit.GetComponent<UIUnit>();
+                    if (uiUnit != null)
+                    {
+                        uiUnit.OnDamageTaken();
+                    }
                     
                     hitCount++;
                 }

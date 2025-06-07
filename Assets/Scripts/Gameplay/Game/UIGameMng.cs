@@ -5,6 +5,7 @@
     using UnityEngine.UI;
     using UnityEngine.InputSystem;
     using System.Collections.Generic;
+    using System;
 
     /*
      * This is the in-game UI controller
@@ -13,6 +14,9 @@
      */
     public class UIGameMng : MonoBehaviour
     {
+        // Event for XP updates
+        public event Action<int, int, int> OnXPUpdated;
+
         //Screens objects references
         public GameObject VictoryScreen;
         public GameObject DefeatScreen;
@@ -394,6 +398,9 @@
                 XPBarFill.color = XPBarFillColor;
                 XPBarGhost.color = XPBarGhostColor;
             }
+
+            // Notify subscribers of XP update
+            OnXPUpdated?.Invoke(currentXP, maxXP, level);
         }
 
         // Call this when XP is gained from destroying a unit

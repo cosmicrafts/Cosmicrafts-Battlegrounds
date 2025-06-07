@@ -76,6 +76,7 @@
         [SerializeField] private bool maintainConstantScale = true;
         
         private Vector3 originalScale;
+        private Unit unitComponent;
 
         void Awake()
         {
@@ -90,12 +91,12 @@
         void Start()
         {
             // Get the Unit component
-            Unit unit = GetComponentInParent<Unit>();
+            unitComponent = GetComponentInParent<Unit>();
 
             // Set team-specific colors and sprites
-            if (unit != null)
+            if (unitComponent != null)
             {
-                if (unit.MyTeam == Team.Blue)
+                if (unitComponent.MyTeam == Team.Blue)
                 {
                     // Set Player 2 (Blue team) colors
                     Hp.color = Player2HpColor;
@@ -109,7 +110,7 @@
                         LevelPlate.sprite = BlueTeamLevelPlate;
                     }
                 }
-                else if (unit.MyTeam == Team.Red)
+                else if (unitComponent.MyTeam == Team.Red)
                 {
                     // Set Player 1 (Red team) colors
                     Hp.color = Player1HpColor;
@@ -124,16 +125,51 @@
                     }
                 }
 
-                // Set the level text
-                if (LevelText != null)
+                // Set the initial level text
+                UpdateLevelText(unitComponent.GetLevel());
+
+                // If this is the player's unit, subscribe to XP updates
+                if (unitComponent.MyTeam == GameMng.P?.MyTeam)
                 {
-                    LevelText.text = unit.GetLevel().ToString();
+                    // Subscribe to XP updates from UIGameMng
+                    if (GameMng.UI != null)
+                    {
+                        GameMng.UI.OnXPUpdated += OnXPUpdated;
+                    }
                 }
             }
 
             // Initialize previousHp and previousShield with current values
             previousHp = Hp.fillAmount;
             previousShield = Shield.fillAmount;
+        }
+
+        void OnDestroy()
+        {
+            // Unsubscribe from XP updates
+            if (GameMng.UI != null)
+            {
+                GameMng.UI.OnXPUpdated -= OnXPUpdated;
+            }
+        }
+
+        // Method to update the level text
+        public void UpdateLevelText(int level)
+        {
+            if (LevelText != null)
+            {
+                LevelText.text = level.ToString();
+            }
+        }
+
+        // Callback for when XP is updated
+        private void OnXPUpdated(int currentXP, int maxXP, int level)
+        {
+            // Only update if this is the player's unit
+            if (unitComponent != null && unitComponent.MyTeam == GameMng.P?.MyTeam)
+            {
+                UpdateLevelText(level);
+            }
         }
 
         private void LateUpdate()

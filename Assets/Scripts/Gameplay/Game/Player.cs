@@ -1090,6 +1090,13 @@ public class Player : MonoBehaviour
         {
             Debug.LogWarning("[Player] GameMng.UI is null! Cannot update UI after level up");
         }
+
+        // Update the player's UIUnit level text if it exists
+        UIUnit playerUI = GetComponentInChildren<UIUnit>();
+        if (playerUI != null)
+        {
+            playerUI.UpdateLevelText(PlayerLevel);
+        }
         
         Debug.Log($"Player leveled up to level {PlayerLevel}! Max Energy increased to {MaxEnergy}");
     }

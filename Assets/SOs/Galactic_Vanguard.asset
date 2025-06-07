@@ -20,7 +20,7 @@ MonoBehaviour:
   NftType: 0
   HitPoints: 500
   Shield: 100
-  EnergyCost: 3
+  EnergyCost: 1
   Damage: 65
   Speed: 20.4
   Level: 8

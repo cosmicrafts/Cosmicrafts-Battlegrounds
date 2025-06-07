@@ -14,7 +14,6 @@ public class UIPlayerGameInfo : MonoBehaviour
     public TMP_Text PlayerName;
     public TMP_Text WalletId;
     public TMP_Text Level;
-    public Image XpBar;
     public Image Avatar;
 
     private string FormatPrincipalId(string principalId)
@@ -88,7 +87,6 @@ public class UIPlayerGameInfo : MonoBehaviour
        // WalletId.text = Utils.GetWalletIDShort(user.WalletId);
        // PlayerName.text = user.NikeName;
        // Level.text = $"{Lang.GetText("mn_lvl")} {user.Level}";
-        //XpBar.fillAmount = (float)user.Xp / (float)user.GetNextXpGoal();
         //Avatar.sprite = ResourcesServices.LoadAvatarUser(user.Avatar);
         //Avatar.sprite = ResourcesServices.LoadAvatarIcon(user.Avatar);
     }

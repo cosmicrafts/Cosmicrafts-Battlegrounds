@@ -54,6 +54,7 @@
         private bool isCurrentlyTakingDamage = false;
         private float damageStartTime = 0f;
         private const float damageResetTime = 1f; // Time before considering it a new damage sequence
+        private bool hasPlayedDamageAnimation = false; // Track if damage animation has played
 
         // Player 1 Colors
         [Header("Player 1 Colors")]
@@ -261,9 +262,10 @@
         // Method to trigger the animation when the unit takes damage
         public void OnDamageTaken()
         {
-            if (Animation != null && Animation["ShowBars"] != null)
+            if (!hasPlayedDamageAnimation && Animation != null && Animation["ShowBars"] != null)
             {
                 Animation.Play("ShowBars");
+                hasPlayedDamageAnimation = true; // Mark that we've played the animation
             }
         }
     }

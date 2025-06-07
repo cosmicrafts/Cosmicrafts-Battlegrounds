@@ -365,14 +365,13 @@ MonoBehaviour:
   - {fileID: 897222552463288225}
   useAutoDeployment: 1
   maxActiveUnits: 4
-  CurrentEnergy: 30
-  MaxEnergy: 30
-  SpeedEnergy: 1.2
+  CurrentEnergy: 8
+  MaxEnergy: 10
+  SpeedEnergy: 0.5
   CurrentXP: 0
   MaxXP: 100
   PlayerLevel: 1
   XPPerKill: 10
-  dashEnergyCost: 2
   TestingDeck:
   - {fileID: 11400000, guid: ce625a8613266e59db1eee1061f68475, type: 2}
   - {fileID: 11400000, guid: 444e2119928c183ecb8e87733527c193, type: 2}

@@ -17,4 +17,4 @@ MonoBehaviour:
   Name: Missiles
   LocalID: 0
   Faction: 0
-  EnergyCost: 2
+  EnergyCost: 3

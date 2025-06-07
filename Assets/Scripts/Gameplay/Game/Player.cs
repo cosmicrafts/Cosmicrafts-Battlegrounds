@@ -61,10 +61,6 @@ public class Player : MonoBehaviour
     [Range(1, 99)]
     public int PlayerLevel = 1;
     public int XPPerKill = 10; // Base XP gained from killing a unit
-    
-    [Header("Dash Settings")]
-    [Range(0, 10)]
-    public float dashEnergyCost = 2f;
 
     public ScriptableObject[] TestingDeck = new ScriptableObject[8];
 

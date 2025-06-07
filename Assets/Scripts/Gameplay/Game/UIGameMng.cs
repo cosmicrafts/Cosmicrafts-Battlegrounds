@@ -29,10 +29,11 @@
         //Cards objects references
         public UIGameCard[] UIDeck = new UIGameCard[8];
 
-        //Time, energy number and energy bar references
-        public TMP_Text TimeOut;
+        [Header("Energy System")]
         public TMP_Text EnergyLabel;
         public Image EnergyBar;
+        public Image EnergyBarGhost;
+        [SerializeField] private float energyAnimationSpeed = 10f;
 
         [Header("XP System UI")]
         public TMP_Text LevelLabel;
@@ -192,12 +193,6 @@
             }
         }
 
-        // Update the UI time
-        public void UpdateTimeOut(string newtime)
-        {
-            TimeOut.text = newtime;
-        }
-
         // Shows a card as selected
         public void SelectCard(int idc)
         {
@@ -304,28 +299,45 @@
             }
         }
 
+        private void LateUpdate()
+        {
+            // Animate Fill Bar to catch up to Ghost
+            if (XPBarFill != null && XPBarGhost != null)
+            {
+                // Smoothly animate fill towards target
+                currentFill = Mathf.Lerp(currentFill, targetFill, Time.deltaTime * xpAnimationSpeed);
+                
+                // Update fill bar to show progress
+                XPBarFill.fillAmount = currentFill;
+            }
+
+            // Animate Energy Bar Ghost
+            if (EnergyBar != null && EnergyBarGhost != null)
+            {
+                // Smoothly animate ghost towards current fill
+                EnergyBarGhost.fillAmount = Mathf.Lerp(EnergyBarGhost.fillAmount, EnergyBar.fillAmount, Time.deltaTime * energyAnimationSpeed);
+            }
+        }
+
         // Update the energy bar and text
         public void UpdateEnergy(float energy, float max)
         {
             if (EnergyLabel != null)
             {
-                EnergyLabel.text = ((int)energy).ToString(energy == max ? "F0" : "F0");
+                EnergyLabel.text = ((int)energy).ToString();
             }
             
             if (EnergyBar != null)
             {
-                // Get the actual max energy from the player if available
-                float actualMax = max;
+                // Get energy values directly from Player
                 if (GameMng.P != null)
                 {
-                    actualMax = GameMng.P.MaxEnergy;
+                    // Set fill amount immediately for main bar
+                    EnergyBar.fillAmount = energy / max;
                 }
-                
-                // For radial fill, we map 0-1 to 0-0.25 (90 degrees)
-                float fillAmount = energy / actualMax;
-                EnergyBar.fillAmount = fillAmount * 0.25f; // 0.25 represents 90 degrees (1/4 of a circle)
             }
 
+            // Update card costs colors based on current energy
             foreach (UIGameCard card in UIDeck)
             {
                 if (card != null)
@@ -344,19 +356,6 @@
                 targetFill = 0f;
                 XPBarFill.fillAmount = 0f;
                 XPBarGhost.fillAmount = 0f;
-            }
-        }
-
-        private void LateUpdate()
-        {
-            // Animate Fill Bar to catch up to Ghost
-            if (XPBarFill != null && XPBarGhost != null)
-            {
-                // Smoothly animate fill towards target
-                currentFill = Mathf.Lerp(currentFill, targetFill, Time.deltaTime * xpAnimationSpeed);
-                
-                // Update fill bar to show progress
-                XPBarFill.fillAmount = currentFill;
             }
         }
 

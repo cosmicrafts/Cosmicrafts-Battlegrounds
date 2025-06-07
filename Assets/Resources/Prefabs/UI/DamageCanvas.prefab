@@ -198,12 +198,17 @@ MonoBehaviour:
   fadeDuration: 0.25
   startHeight: 7
   randomHorizontalOffset: 2
+  xpGainScaleMultiplier: 1.5
+  xpBounceDuration: 0.8
+  xpFadeDuration: 1.2
   normalDamageColorTop: {r: 1, g: 1, b: 1, a: 1}
   normalDamageColorBottom: {r: 1, g: 1, b: 1, a: 1}
   criticalDamageColorTop: {r: 1, g: 0.36078432, b: 0, a: 1}
   criticalDamageColorBottom: {r: 1, g: 0.78039217, b: 0, a: 1}
   shieldDamageColorTop: {r: 0.6708535, g: 0.90151525, b: 1, a: 1}
   shieldDamageColorBottom: {r: 0.24335521, g: 0.7736024, b: 1, a: 1}
+  xpGainColorTop: {r: 1, g: 0.0042137504, b: 0.8017655, a: 1}
+  xpGainColorBottom: {r: 0.61585915, g: 0, b: 0.49281842, a: 1}
   maintainConstantScale: 0
   baseOrthographicSize: 20
   minScaleMultiplier: 0.25

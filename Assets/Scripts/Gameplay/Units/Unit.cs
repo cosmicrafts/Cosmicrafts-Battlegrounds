@@ -337,6 +337,12 @@ namespace Cosmicrafts
                 
                 GameMng.P.AddXP(xpReward);
                 Debug.Log($"Awarded {xpReward} XP for destroying {gameObject.name} (Level {Level})");
+
+                // Show XP gain text
+                if (GameMng.UI != null)
+                {
+                    GameMng.UI.ShowXPGain(xpReward, transform.position);
+                }
             }
 
             // Broadcast the death event

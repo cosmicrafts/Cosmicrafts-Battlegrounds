@@ -4826,8 +4826,8 @@ MonoBehaviour:
   MyTeam: 0
   PlayerId: 1
   Duration: 1
-  dashDistance: 45
-  dashDuration: 0.45
+  dashDistance: 60
+  dashDuration: 0.35
   useBlink: 0
   dashCurve:
     serializedVersion: 2

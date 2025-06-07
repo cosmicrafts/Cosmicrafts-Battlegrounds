@@ -48,6 +48,9 @@
         public Color XPBarFillColor = new Color(0.25f, 0.66f, 1f, 1f);
         public Color XPBarGhostColor = new Color(0.25f, 0.66f, 1f, 0.5f);
 
+        [Header("XP Gain Display")]
+        [SerializeField] private GameObject xpGainPrefab; // Assign the CanvasDamage prefab in inspector
+
         //Results Metrics text references
         public TMP_Text MTxtEnergyUsed;
         public TMP_Text MTxtEnergyGenerated;
@@ -307,7 +310,16 @@
             
             if (EnergyBar != null)
             {
-                EnergyBar.fillAmount = energy / max;
+                // Get the actual max energy from the player if available
+                float actualMax = max;
+                if (GameMng.P != null)
+                {
+                    actualMax = GameMng.P.MaxEnergy;
+                }
+                
+                // For radial fill, we map 0-1 to 0-0.25 (90 degrees)
+                float fillAmount = energy / actualMax;
+                EnergyBar.fillAmount = fillAmount * 0.25f; // 0.25 represents 90 degrees (1/4 of a circle)
             }
 
             foreach (UIGameCard card in UIDeck)
@@ -381,6 +393,26 @@
                 // Set colors
                 XPBarFill.color = XPBarFillColor;
                 XPBarGhost.color = XPBarGhostColor;
+            }
+        }
+
+        // Call this when XP is gained from destroying a unit
+        public void ShowXPGain(float xpAmount, Vector3 position)
+        {
+            if (xpGainPrefab != null)
+            {
+                // Position the XP gain number above the target
+                GameObject xpGainObj = Instantiate(xpGainPrefab, position, Quaternion.identity);
+                
+                // Make sure it's not parented to the unit
+                xpGainObj.transform.SetParent(null);
+                
+                CanvasDamage xpGain = xpGainObj.GetComponent<CanvasDamage>();
+                if (xpGain != null)
+                {
+                    // Set the XP gain text and colors - exactly like Projectile.cs
+                    xpGain.SetDamage(xpAmount, false, false, true); // Set xpGain to true
+                }
             }
         }
 

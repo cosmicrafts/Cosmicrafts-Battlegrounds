@@ -17,6 +17,11 @@ public class CanvasDamage : MonoBehaviour
     [SerializeField] private float fadeDuration = 0.5f;
     [SerializeField] private float startHeight = 1.5f;  // Height above unit to start
     [SerializeField] private float randomHorizontalOffset = 0.3f;  // Random horizontal offset for variety
+    [SerializeField] private float xpGainScaleMultiplier = 1.5f;  // How much larger XP text should be
+
+    [Header("XP Gain Animation Settings")]
+    [SerializeField] private float xpBounceDuration = 0.8f;  // Longer bounce for XP
+    [SerializeField] private float xpFadeDuration = 1.2f;    // Longer fade for XP
 
     [Header("Colors")]
     [SerializeField] private Color normalDamageColorTop = Color.white;
@@ -25,6 +30,8 @@ public class CanvasDamage : MonoBehaviour
     [SerializeField] private Color criticalDamageColorBottom = new Color(1f, 0f, 0f, 0.5f);
     [SerializeField] private Color shieldDamageColorTop = Color.cyan;
     [SerializeField] private Color shieldDamageColorBottom = new Color(0f, 1f, 1f, 0.5f);
+    [SerializeField] private Color xpGainColorTop = new Color(0.25f, 0.66f, 1f, 1f);
+    [SerializeField] private Color xpGainColorBottom = new Color(0.25f, 0.66f, 1f, 0.5f);
 
     [Header("UI Positioning")]
     [SerializeField] private bool maintainConstantScale = true;
@@ -35,6 +42,7 @@ public class CanvasDamage : MonoBehaviour
     private float damageValue;
     private bool isCritical;
     private bool isShieldDamage;
+    private bool isXPGain;
     private Camera mainCamera;
     private Vector3 originalScale;
     private Vector3 targetPosition;
@@ -67,8 +75,7 @@ public class CanvasDamage : MonoBehaviour
         startPosition = targetPosition + (upVector * startHeight) + randomOffset;
         transform.position = startPosition;
 
-        // Configure text
-        damageText.text = damageValue.ToString();
+        // Configure text - moved to SetDamage to ensure isXPGain is set first
         UpdateTextGradient();
         
         // Start animation
@@ -79,7 +86,14 @@ public class CanvasDamage : MonoBehaviour
     {
         VertexGradient gradient = new VertexGradient();
         
-        if (isShieldDamage)
+        if (isXPGain)
+        {
+            gradient.topLeft = xpGainColorTop;
+            gradient.topRight = xpGainColorTop;
+            gradient.bottomLeft = xpGainColorBottom;
+            gradient.bottomRight = xpGainColorBottom;
+        }
+        else if (isShieldDamage)
         {
             gradient.topLeft = shieldDamageColorTop;
             gradient.topRight = shieldDamageColorTop;
@@ -124,11 +138,12 @@ public class CanvasDamage : MonoBehaviour
         }
     }
 
-    public void SetDamage(float newDamage, bool critical = false, bool shieldDamage = false)
+    public void SetDamage(float newDamage, bool critical = false, bool shieldDamage = false, bool xpGain = false)
     {
         damageValue = newDamage;
         isCritical = critical;
         isShieldDamage = shieldDamage;
+        isXPGain = xpGain;
         targetPosition = transform.position;
         
         // Activate/deactivate critical hit image
@@ -139,7 +154,15 @@ public class CanvasDamage : MonoBehaviour
         
         if (damageText != null)
         {
+            // Add "XP: " prefix for XP gain
+            damageText.text = isXPGain ? $"XP: {damageValue}" : damageValue.ToString();
             UpdateTextGradient();
+
+            // Scale up for XP gain
+            if (isXPGain)
+            {
+                transform.localScale = originalScale * xpGainScaleMultiplier;
+            }
         }
     }
 
@@ -152,9 +175,13 @@ public class CanvasDamage : MonoBehaviour
         Color endColorBottom = new Color(startColorBottom.r, startColorBottom.g, startColorBottom.b, 0f);
         Vector3 currentPosition = startPosition;
 
-        while (elapsedTime < bounceDuration)
+        // Use XP-specific durations if this is an XP gain
+        float currentBounceDuration = isXPGain ? xpBounceDuration : bounceDuration;
+        float currentFadeDuration = isXPGain ? xpFadeDuration : fadeDuration;
+
+        while (elapsedTime < currentBounceDuration)
         {
-            float progress = elapsedTime / bounceDuration;
+            float progress = elapsedTime / currentBounceDuration;
             float bounce = Mathf.Sin(progress * Mathf.PI) * bounceHeight;
 
             // Update position with bounce
@@ -179,10 +206,10 @@ public class CanvasDamage : MonoBehaviour
         }
 
         // Final fade out
-        float remainingFadeTime = fadeDuration;
+        float remainingFadeTime = currentFadeDuration;
         while (remainingFadeTime > 0)
         {
-            float fadeProgress = 1f - (remainingFadeTime / fadeDuration);
+            float fadeProgress = 1f - (remainingFadeTime / currentFadeDuration);
             VertexGradient currentGradient = new VertexGradient(
                 Color.Lerp(startColorTop, endColorTop, fadeProgress),
                 Color.Lerp(startColorTop, endColorTop, fadeProgress),

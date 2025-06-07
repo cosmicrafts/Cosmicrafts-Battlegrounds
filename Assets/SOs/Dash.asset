@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Prefab: {fileID: 169654, guid: 4eb333cb66a5d999aa2563006dc9e585, type: 3}
   IconSprite: {fileID: 21300000, guid: dff100e51473eddd38c79e5498b410fa, type: 3}
-  Name: 
+  Name: Dash
   LocalID: 0
   Faction: 0
-  EnergyCost: 1
+  EnergyCost: 2

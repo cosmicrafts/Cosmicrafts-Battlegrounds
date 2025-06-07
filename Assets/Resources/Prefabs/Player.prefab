@@ -365,9 +365,9 @@ MonoBehaviour:
   - {fileID: 897222552463288225}
   useAutoDeployment: 1
   maxActiveUnits: 4
-  CurrentEnergy: 8
-  MaxEnergy: 10
-  SpeedEnergy: 0.5
+  CurrentEnergy: 28
+  MaxEnergy: 30
+  SpeedEnergy: 1.5
   CurrentXP: 0
   MaxXP: 100
   PlayerLevel: 1

@@ -1182,7 +1182,7 @@ MonoBehaviour:
   RotateToEnemy: 1
   StopToAttack: 1
   rotationSpeed: 5
-  Bullet: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
+  Bullet: {fileID: 4495777382389081428, guid: 0a5d3dd763306bf4ba154796346ba3c7, type: 3}
   Cannons:
   - {fileID: 1478323959484795093}
   powerUpOrigin: {fileID: 0}

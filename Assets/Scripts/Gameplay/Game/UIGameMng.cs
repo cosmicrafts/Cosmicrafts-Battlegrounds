@@ -33,7 +33,20 @@
         [Header("XP System UI")]
         public TMP_Text LevelLabel;
         public TMP_Text XPLabel;
-        public Slider XPBar;
+        public Image XPBarFill;  // Main XP bar (replaces Slider)
+        public Image XPBarGhost; // Ghost/Incremental bar
+
+        //XP Bar Animation
+        [Header("XP Bar Animation")]
+        [SerializeField] private float xpAnimationSpeed = 5f; // Default speed, adjust in inspector
+        private float currentFill = 0f; // Current fill bar value
+        private float targetFill = 0f;  // Target value for fill bar
+        private int currentLevel = 1;   // Track current level for level up detection
+
+        //XP Bar Colors
+        [Header("XP Bar Colors")]
+        public Color XPBarFillColor = new Color(0.25f, 0.66f, 1f, 1f);
+        public Color XPBarGhostColor = new Color(0.25f, 0.66f, 1f, 0.5f);
 
         //Results Metrics text references
         public TMP_Text MTxtEnergyUsed;
@@ -89,6 +102,7 @@
             if (GameMng.P != null)
             {
                 Debug.Log("[UIGameMng] Initializing XP UI");
+                InitXP(GameMng.P.MaxXP);
                 UpdateXP(GameMng.P.CurrentXP, GameMng.P.MaxXP, GameMng.P.PlayerLevel);
             }
             else
@@ -305,39 +319,68 @@
             }
         }
 
-        // Update the XP bar and text
+        // Initialize XP bars - exactly like UIUnit.Init()
+        public void InitXP(int maxXP)
+        {
+            if (XPBarFill != null && XPBarGhost != null)
+            {
+                currentFill = 0f;
+                targetFill = 0f;
+                XPBarFill.fillAmount = 0f;
+                XPBarGhost.fillAmount = 0f;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            // Animate Fill Bar to catch up to Ghost
+            if (XPBarFill != null && XPBarGhost != null)
+            {
+                // Smoothly animate fill towards target
+                currentFill = Mathf.Lerp(currentFill, targetFill, Time.deltaTime * xpAnimationSpeed);
+                
+                // Update fill bar to show progress
+                XPBarFill.fillAmount = currentFill;
+            }
+        }
+
         public void UpdateXP(int currentXP, int maxXP, int level)
         {
-            Debug.Log($"[UIGameMng] Updating XP UI - Current: {currentXP}, Max: {maxXP}, Level: {level}");
-            
             if (LevelLabel != null)
             {
                 LevelLabel.text = $"{level}";
-                Debug.Log($"[UIGameMng] Updated LevelLabel to: Level {level}");
-            }
-            else
-            {
-                Debug.LogWarning("[UIGameMng] LevelLabel is null!");
             }
             
             if (XPLabel != null)
             {
                 XPLabel.text = $"{currentXP}/{maxXP} XP";
-                Debug.Log($"[UIGameMng] Updated XPLabel to: {currentXP}/{maxXP} XP");
-            }
-            else
-            {
-                Debug.LogWarning("[UIGameMng] XPLabel is null!");
             }
             
-            if (XPBar != null)
+            if (XPBarFill != null && XPBarGhost != null)
             {
-                XPBar.value = (float)currentXP / maxXP;
-                Debug.Log($"[UIGameMng] Updated XPBar value to: {(float)currentXP / maxXP}");
-            }
-            else
-            {
-                Debug.LogWarning("[UIGameMng] XPBar is null!");
+                // Calculate the new target value
+                float newTarget = (float)currentXP / maxXP;
+                
+                // Check if we leveled up
+                bool isLevelUp = level > currentLevel;
+                currentLevel = level;
+                
+                if (isLevelUp)
+                {
+                    // On level up, set ghost to 0 and fill to current
+                    XPBarGhost.fillAmount = 0f;
+                    currentFill = 0f;
+                }
+                
+                // Instantly set ghost bar to new value
+                XPBarGhost.fillAmount = newTarget;
+                
+                // Set the target for fill bar to animate to
+                targetFill = newTarget;
+                
+                // Set colors
+                XPBarFill.color = XPBarFillColor;
+                XPBarGhost.color = XPBarGhostColor;
             }
         }
 

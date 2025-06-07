@@ -86,4 +86,4 @@ MonoBehaviour:
   Duration: 4
   missilePrefab: {fileID: 4495777382389081428, guid: 522ab2b5abf4b6840b2c7f4b8d71598f, type: 3}
   explosionDamage: 250
-  missileSpeed: 15
+  missileSpeed: 45

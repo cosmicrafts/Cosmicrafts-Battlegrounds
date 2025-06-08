@@ -411,6 +411,9 @@
                 Warning.SetActive(false);
             }
             
+            // Hide low health warning when player dies
+            ShowLowHealthWarning(false);
+            
             // Update card states and interactions
             foreach (UIGameCard card in UIDeck)
             {

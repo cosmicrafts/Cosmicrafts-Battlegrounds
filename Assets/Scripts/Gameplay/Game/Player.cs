@@ -739,8 +739,8 @@ public class Player : MonoBehaviour
         // Clean up destroyed units from active units list
         CleanupActiveUnitsList();
 
-        // Check for low health warning on player's base station
-        if (GameMng.GM != null && GameMng.UI != null)
+        // Only check for low health warning if player is alive
+        if (IsAlive && GameMng.GM != null && GameMng.UI != null)
         {
             int playerBaseIndex = (MyTeam == Team.Blue) ? 1 : 0;
             Unit baseStation = GameMng.GM.Targets[playerBaseIndex];

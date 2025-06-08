@@ -334,6 +334,12 @@
                     P.IsAlive = false;
                 }
 
+                // Hide low health warning when player dies
+                if (UI != null)
+                {
+                    UI.ShowLowHealthWarning(false);
+                }
+
                 // Return all player units to pool
                 foreach (Unit unit in units.ToList()) // Use ToList to avoid collection modification issues
                 {

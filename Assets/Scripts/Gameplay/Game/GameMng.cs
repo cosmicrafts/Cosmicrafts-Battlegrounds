@@ -317,6 +317,16 @@
                     P.IsAlive = false;
                 }
 
+                // Return all player units to pool
+                foreach (Unit unit in units.ToList()) // Use ToList to avoid collection modification issues
+                {
+                    if (unit != null && unit.IsMyTeam(P.MyTeam) && !unit.IsBaseStation)
+                    {
+                        // Return to pool through the player's system
+                        P.ReturnUnitToPool(unit);
+                    }
+                }
+
                 // Disable all enemy units
                 foreach (Unit unit in units)
                 {

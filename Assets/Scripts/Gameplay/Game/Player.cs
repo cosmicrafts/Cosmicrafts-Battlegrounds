@@ -429,7 +429,7 @@ public class Player : MonoBehaviour
     }
     
     // Return a unit to the pool when it dies
-    private void ReturnUnitToPool(Unit unit)
+    public void ReturnUnitToPool(Unit unit)
     {
         if (unit == null)
         {

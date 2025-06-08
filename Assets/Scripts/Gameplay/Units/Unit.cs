@@ -77,6 +77,12 @@ namespace Cosmicrafts
         protected Animator MyAnim;
         protected Vector3 LastImpact;
         
+        [Header("Ghost Effect")]
+        [Tooltip("Optional material to use for ghost effect. If not set, no ghost effect will be applied.")]
+        public Material ghostMaterial;
+        private Material originalMaterial;
+        private Renderer meshRenderer;
+        
         [Tooltip("Transform that VFX effects will follow (e.g. for dash trails)")]
         public Transform TailPoint;
 
@@ -107,6 +113,19 @@ namespace Cosmicrafts
             
             TrigerBase = GetComponent<SphereCollider>();
             SolidBase = Mesh.GetComponent<SphereCollider>();
+
+            // Find the mesh renderer (either MeshRenderer or SkinnedMeshRenderer)
+            meshRenderer = Mesh.GetComponent<Renderer>();
+            if (meshRenderer == null)
+            {
+                meshRenderer = Mesh.GetComponentInChildren<Renderer>();
+            }
+            
+            // Store original material if we found a renderer
+            if (meshRenderer != null)
+            {
+                originalMaterial = meshRenderer.material;
+            }
 
             UI.Init(MaxHp - 1, MaxShield - 1);
             
@@ -704,6 +723,13 @@ namespace Cosmicrafts
         public float GetHealthPercentage()
         {
             return (float)HitPoints / (float)MaxHp;
+        }
+
+        public void SetGhostEffect(bool enable)
+        {
+            if (meshRenderer == null || ghostMaterial == null) return;
+            
+            meshRenderer.material = enable ? ghostMaterial : originalMaterial;
         }
     }
 }

@@ -304,6 +304,9 @@
                 baseStation.IsDeath = true;
                 baseStation.UI.HideUI();
                 
+                // Enable ghost effect
+                baseStation.SetGhostEffect(true);
+                
                 // Disable collider
                 Collider collider = baseStation.Mesh.GetComponent<Collider>();
                 if (collider != null)
@@ -367,6 +370,9 @@
                 // Reset the base station
                 baseStation.ResetUnit();
                 baseStation.transform.position = respawnPosition;
+                
+                // Disable ghost effect
+                baseStation.SetGhostEffect(false);
                 
                 // Ensure it's in the units list
                 if (!units.Contains(baseStation))

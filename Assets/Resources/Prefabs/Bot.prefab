@@ -1041,6 +1041,8 @@ MonoBehaviour:
   prefabBaseStation: {fileID: 2198226034328220048}
   DeckUnits:
   - {fileID: 11400000, guid: e6bc65fa66c655a4da48ec661cae23f0, type: 2}
+  - {fileID: 11400000, guid: 6d13ad9c5163f992ea602c1171826be1, type: 2}
+  - {fileID: 11400000, guid: 2483b3775a9db561c9e4807620bd414a, type: 2}
   CurrentEnergy: 1
   MaxEnergy: 10
   SpeedEnergy: 0.25
@@ -1108,6 +1110,7 @@ MonoBehaviour:
   Size: 1
   DodgeChance: 0
   Level: 1
+  explosionScaleMultiplier: 1
   IsBaseStation: 0
   IsInmortal: 0
   flagShield: 0
@@ -1123,7 +1126,7 @@ MonoBehaviour:
   TauntCooldown: 1
   MySt: {fileID: 2198226033917351815}
   Aceleration: 2
-  MaxSpeed: 60
+  MaxSpeed: 10
   DragSpeed: 99
   TurnSpeed: 99
   StopSpeed: 99
@@ -1175,7 +1178,7 @@ MonoBehaviour:
   CanAttack: 1
   RangeDetector: 58
   CoolDown: 0.9
-  BulletSpeed: 51.2
+  BulletSpeed: 99
   BulletDamage: 1
   criticalStrikeChance: 0.25
   criticalStrikeMultiplier: 2
@@ -1599,7 +1602,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2340644484868303492, guid: 4ee5dcc66cf248262b334e3519b00fa3, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.73
+      value: -4.79
       objectReference: {fileID: 0}
     - target: {fileID: 2340644484868303492, guid: 4ee5dcc66cf248262b334e3519b00fa3, type: 3}
       propertyPath: m_LocalPosition.z
@@ -1727,6 +1730,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 2198226034328220055}
     m_Modifications:
     - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: ColorModule.gradient.maxGradient.atime1
       value: 31360
       objectReference: {fileID: 0}
@@ -1763,16 +1778,28 @@ PrefabInstance:
       value: SpawnArea
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 19.013155
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 19.013155
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 19.013155
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -4.58
+      value: -15.9
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalRotation.w
@@ -1897,6 +1924,10 @@ PrefabInstance:
     - target: {fileID: 2912554722822094346, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_Name
       value: Canvas
+      objectReference: {fileID: 0}
+    - target: {fileID: 3437837080083151150, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4762258300378028131, guid: 9462dc2e370c96046bb8c0bf799feb25, type: 3}
       propertyPath: m_AnchorMax.y

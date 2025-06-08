@@ -1151,7 +1151,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &7407300797728712848
 Transform:
   m_ObjectHideFlags: 0
@@ -1212,7 +1212,7 @@ SpriteRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 15
   m_Sprite: {fileID: 21300000, guid: d99f462b5763d4f808e6f2778c615e19, type: 3}
-  m_Color: {r: 0.4648342, g: 1, b: 0, a: 1}
+  m_Color: {r: 1, g: 0.072913244, b: 0, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -1451,6 +1451,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 2198226034328220055}
     m_Modifications:
     - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.b
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.r
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: ColorModule.gradient.maxGradient.atime1
       value: 31360
       objectReference: {fileID: 0}
@@ -1487,16 +1499,28 @@ PrefabInstance:
       value: SpawnArea
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 11.086259
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 11.086259
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 11.086259
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -4.58
+      value: -9.4
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalRotation.w

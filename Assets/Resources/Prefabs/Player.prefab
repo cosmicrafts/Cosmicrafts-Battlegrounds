@@ -449,6 +449,7 @@ MonoBehaviour:
   ShieldGameObject: {fileID: 3148173409814660195}
   UI: {fileID: 4604192858225185969}
   MyAnim: {fileID: 4757232866259007697}
+  ghostMaterial: {fileID: 2100000, guid: c2e9ae388c4feb6b7b998a5c94d5d370, type: 2}
   TailPoint: {fileID: 1959561403022237331}
   HasTaunt: 0
   TauntRadius: 5
@@ -1524,6 +1525,18 @@ PrefabInstance:
     m_TransformParent: {fileID: 2198226034328220055}
     m_Modifications:
     - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.b
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.g
+      value: 0.9703219
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: InitialModule.startColor.maxColor.r
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019680450700, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: ColorModule.gradient.maxGradient.atime1
       value: 31360
       objectReference: {fileID: 0}
@@ -1560,12 +1573,24 @@ PrefabInstance:
       value: SpawnArea
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 15.094838
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 15.094838
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 15.094838
+      objectReference: {fileID: 0}
+    - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -3.11
+      value: -6.69
       objectReference: {fileID: 0}
     - target: {fileID: 4461760019699739548, guid: 5752cf7307bd74443be48ba2fb587d03, type: 3}
       propertyPath: m_LocalPosition.z

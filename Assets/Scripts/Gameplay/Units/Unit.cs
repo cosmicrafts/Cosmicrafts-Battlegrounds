@@ -42,6 +42,11 @@ namespace Cosmicrafts
         [Range(1, 999)]
         public int Level = 1;
 
+        [Header("Death Effects")]
+        [Tooltip("Multiplier for the explosion effect size. Base size is 1.8x the unit's size")]
+        [Range(0.1f, 20f)]
+        public float explosionScaleMultiplier = 1f;
+
         [HideInInspector]
         public bool IsBaseStation = false;
         [HideInInspector]
@@ -320,6 +325,9 @@ namespace Cosmicrafts
             HitPoints = 0;
             IsDeath = true;
 
+            // Play explosion effect immediately
+            BlowUpEffect();
+
             // Award XP to the player if this is an enemy unit
             if (!IsMyTeam(GameMng.P?.MyTeam ?? Team.Blue) && GameMng.P != null)
             {
@@ -461,7 +469,8 @@ namespace Cosmicrafts
         public void BlowUpEffect()
         {
             GameObject explosion = Instantiate(Explosion, transform.position, Quaternion.identity);
-            explosion.transform.localScale = transform.localScale * 1.8f;
+            // Base size is 1.8x the unit's size, multiplied by the custom multiplier
+            explosion.transform.localScale = transform.localScale * 1.8f * explosionScaleMultiplier;
             Destroy(explosion, 4f);
         }
 

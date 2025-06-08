@@ -441,7 +441,7 @@ MonoBehaviour:
   IsInmortal: 0
   flagShield: 0
   Mesh: {fileID: 2346516302837748663}
-  Explosion: {fileID: 169654, guid: 1dadf691cda82fa44a8a66d7dd374612, type: 3}
+  Explosion: {fileID: 6271241949191652176, guid: 739d19610906a434a8d67ca770434aca, type: 3}
   Portal: {fileID: 567947164588322215}
   ShieldGameObject: {fileID: 3148173409814660195}
   UI: {fileID: 4604192858225185969}

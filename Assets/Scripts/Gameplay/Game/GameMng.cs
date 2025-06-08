@@ -20,10 +20,13 @@
         public Vector3[] BS_Positions; // Base stations positions
         
         [Header("Player Respawn Settings")]
-        public int playerLives = 9; // Number of lives before game over
-        public float respawnDelay = 5f; // Seconds to wait before respawning
-        public GameObject respawnEffectPrefab; // Optional visual effect for respawn
+        [Tooltip("Panel that shows when player dies (should contain respawn button)")]
+        public GameObject deathPanel;
+        [Tooltip("Button that triggers respawn")]
+        public UnityEngine.UI.Button respawnButton;
         
+        private int playerLives = 9; // Number of lives before game over
+        private float respawnDelay = 5f; // Seconds to wait before respawning
         private int playerLivesRemaining;
         private GameObject playerBaseStationPrefab; // Store reference to player's base station prefab for respawn
         private bool isRespawning = false;
@@ -63,6 +66,35 @@
             else
             {
                 Debug.LogError("CharacterBaseSO or its BasePrefab not assigned in GameMng!");
+            }
+
+            // Setup respawn button listener
+            if (respawnButton != null)
+            {
+                respawnButton.onClick.AddListener(OnRespawnButtonClicked);
+            }
+            else
+            {
+                Debug.LogWarning("Respawn button not assigned in GameMng!");
+            }
+
+            // Ensure death panel starts disabled
+            if (deathPanel != null)
+            {
+                deathPanel.SetActive(false);
+            }
+            else
+            {
+                Debug.LogWarning("Death panel not assigned in GameMng!");
+            }
+        }
+
+        private void OnDestroy()
+        {
+            // Clean up button listener
+            if (respawnButton != null)
+            {
+                respawnButton.onClick.RemoveListener(OnRespawnButtonClicked);
             }
         }
 
@@ -235,6 +267,15 @@
             InitializePlayer(); // Re-run the full player and enemy setup initialization logic
         }
         
+        // Handle respawn button click
+        private void OnRespawnButtonClicked()
+        {
+            if (!isRespawning)
+            {
+                StartCoroutine(RespawnPlayerBaseStation());
+            }
+        }
+        
         // Handle player base station death
         private void HandlePlayerBaseStationDeath(Unit baseStation)
         {
@@ -242,86 +283,58 @@
             
             if (baseStation == Targets[playerBaseIndex] && !isRespawning)
             {
-                playerLivesRemaining--;
-                Debug.Log($"Player base station destroyed! Lives remaining: {playerLivesRemaining}");
-                
-                if (playerLivesRemaining <= 0)
+                // Show death panel
+                if (deathPanel != null)
                 {
-                    EndGame(P.MyTeam == Team.Blue ? Team.Red : Team.Blue);
+                    deathPanel.SetActive(true);
                 }
-                else
+                
+                // Disable the base station
+                baseStation.IsDeath = true;
+                baseStation.UI.HideUI();
+                
+                // Disable collider
+                Collider collider = baseStation.Mesh.GetComponent<Collider>();
+                if (collider != null)
                 {
-                    Debug.Log($"Player lives remaining: {playerLivesRemaining}");
-                    baseStation.transform.position = BS_Positions[playerBaseIndex];
-                    baseStation.HitPoints = baseStation.GetMaxHitPoints();
-                    baseStation.Shield = baseStation.GetMaxShield();
-                    
-                    if (baseStation.UI != null && baseStation.UI.Canvas != null)
-                    {
-                        baseStation.UI.Canvas.SetActive(true);
-                        baseStation.UI.SetHPBar(1f);
-                        baseStation.UI.SetShieldBar(1f);
-                    }
-                    
-                    baseStation.IsDeath = false;
-                    
-                    Collider collider = baseStation.Mesh.GetComponent<Collider>();
-                    if (collider != null)
-                    {
-                        collider.enabled = true;
-                    }
+                    collider.enabled = false;
                 }
             }
         }
         
-        // Coroutine to reset player base station
-        private IEnumerator ResetPlayerBaseStation(Unit baseStation, int baseIndex)
+        // Coroutine to respawn player base station
+        private IEnumerator RespawnPlayerBaseStation()
         {
             isRespawning = true;
             
-            // Wait for respawn delay
-            yield return new WaitForSeconds(respawnDelay);
-            
-            if (GameOver)
+            // Hide death panel
+            if (deathPanel != null)
             {
-                isRespawning = false;
-                yield break;
+                deathPanel.SetActive(false);
             }
             
-            // Use SpellUtils to ensure we get the correct base station
-            var (station, unit) = SpellUtils.FindPlayerMainStation(P.MyTeam, P.ID);
+            // Get player base station
+            int playerBaseIndex = P.MyTeam == Team.Blue ? 1 : 0;
+            Unit baseStation = Targets[playerBaseIndex];
             
-            // Fallback to our original reference if needed
-            Unit targetUnit = unit != null ? unit : baseStation;
-            
-            // Create respawn effect if available
-            if (respawnEffectPrefab != null)
+            if (baseStation != null)
             {
-                GameObject effect = Instantiate(respawnEffectPrefab, BS_Positions[baseIndex], Quaternion.identity);
-                Destroy(effect, 3f);
-            }
-            
-            if (targetUnit != null)
-            {
-                // Make sure we're resetting the actual base station
+                // TODO: Implement random nearby respawn location based on death position
+                // For now, respawn at original position
+                Vector3 respawnPosition = BS_Positions[playerBaseIndex];
                 
-                // Reset unit first (makes it active again)
-                targetUnit.ResetUnit();
-                
-                // Force position using teleport
-                targetUnit.transform.SetPositionAndRotation(BS_Positions[baseIndex], Quaternion.identity);
-                
-                // Update the Targets reference
-                Targets[baseIndex] = targetUnit;
+                // Reset the base station
+                baseStation.ResetUnit();
+                baseStation.transform.position = respawnPosition;
                 
                 // Ensure it's in the units list
-                if (!units.Contains(targetUnit))
+                if (!units.Contains(baseStation))
                 {
-                    units.Add(targetUnit);
+                    units.Add(baseStation);
                 }
                 
-                // Explicitly restart any needed components
-                var shooter = targetUnit.GetComponent<Shooter>();
+                // Restart shooter component if present
+                var shooter = baseStation.GetComponent<Shooter>();
                 if (shooter != null) 
                 {
                     shooter.enabled = true;
@@ -329,25 +342,11 @@
             }
             else
             {
-                Debug.LogError("[Reset] Failed to find base station unit to reset!");
-                
-                // Last resort: recreate the base station
-                Unit newBaseStation = Instantiate(playerBaseStationPrefab, BS_Positions[baseIndex], Quaternion.identity).GetComponent<Unit>();
-                newBaseStation.setId(GenerateUnitId());
-                newBaseStation.MyTeam = P.MyTeam;
-                newBaseStation.PlayerId = P.ID;
-                
-                // Subscribe to its death event
-                newBaseStation.OnUnitDeath += HandlePlayerBaseStationDeath;
-                
-                // Update the reference in Targets array
-                Targets[baseIndex] = newBaseStation;
-                
-                // Add to units list
-                AddUnit(newBaseStation);
+                Debug.LogError("[Respawn] Failed to find base station unit to respawn!");
             }
             
             isRespawning = false;
+            yield break;
         }
 
         // Modified to handle skill application directly

@@ -523,6 +523,10 @@ namespace Cosmicrafts
             {
                 if (enemy == null || enemy.GetIsDeath()) continue;
                 
+                // Skip targeting player's base station if player is dead
+                if (enemy.IsBaseStation && enemy.MyTeam == GameMng.P?.MyTeam && !GameMng.P.IsAlive)
+                    continue;
+                
                 // If this is a taunt unit, it gets absolute priority
                 if (enemy.HasTaunt)
                 {
@@ -542,7 +546,6 @@ namespace Cosmicrafts
             // If we found a taunt unit, return it immediately and force target switch
             if (bestTarget != null)
             {
-                // Debug.Log($"Found taunt unit {bestTarget.name} at distance {closestDistance}");
                 targetSelectionCooldown = 0f; // Override any cooldown
                 return bestTarget;
             }
@@ -556,6 +559,10 @@ namespace Cosmicrafts
                     foreach (Unit enemy in InRange)
                     {
                         if (enemy == null || enemy.GetIsDeath()) continue;
+                        
+                        // Skip targeting player's base station if player is dead
+                        if (enemy.IsBaseStation && enemy.MyTeam == GameMng.P?.MyTeam && !GameMng.P.IsAlive)
+                            continue;
                         
                         float distance = Vector3.Distance(transform.position, enemy.transform.position);
                         if (distance < closestDistance)
@@ -573,6 +580,10 @@ namespace Cosmicrafts
                     {
                         if (enemy == null || enemy.GetIsDeath()) continue;
                         
+                        // Skip targeting player's base station if player is dead
+                        if (enemy.IsBaseStation && enemy.MyTeam == GameMng.P?.MyTeam && !GameMng.P.IsAlive)
+                            continue;
+                        
                         if (enemy.HitPoints < lowestHP)
                         {
                             bestTarget = enemy;
@@ -587,6 +598,10 @@ namespace Cosmicrafts
                     foreach (Unit enemy in InRange)
                     {
                         if (enemy == null || enemy.GetIsDeath()) continue;
+                        
+                        // Skip targeting player's base station if player is dead
+                        if (enemy.IsBaseStation && enemy.MyTeam == GameMng.P?.MyTeam && !GameMng.P.IsAlive)
+                            continue;
                         
                         if (enemy.HitPoints > highestHP)
                         {

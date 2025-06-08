@@ -316,6 +316,20 @@
                 {
                     P.IsAlive = false;
                 }
+
+                // Disable all enemy units
+                foreach (Unit unit in units)
+                {
+                    if (unit != null && !unit.IsMyTeam(P.MyTeam))
+                    {
+                        unit.DisableUnit();
+                        Shooter shooter = unit.GetComponent<Shooter>();
+                        if (shooter != null)
+                        {
+                            shooter.StopAttack();
+                        }
+                    }
+                }
             }
         }
         
@@ -361,6 +375,20 @@
                 if (P != null)
                 {
                     P.IsAlive = true;
+                }
+
+                // Re-enable all enemy units
+                foreach (Unit unit in units)
+                {
+                    if (unit != null && !unit.IsMyTeam(P.MyTeam))
+                    {
+                        unit.EnableUnit();
+                        Shooter unitShooter = unit.GetComponent<Shooter>();
+                        if (unitShooter != null)
+                        {
+                            unitShooter.CanAttack = true;
+                        }
+                    }
                 }
                 
                 Debug.Log("[GameMng] Player respawn completed successfully");
@@ -500,6 +528,13 @@
         {
             if (GameOver)
                 return transform;
+
+            // If player is dead and this is the enemy team targeting the player's team
+            if (!P.IsAlive && team == Team.Red && Targets[1] != null && Targets[1].MyTeam == P.MyTeam)
+            {
+                // Return a fallback position (current position) instead of targeting dead player
+                return transform;
+            }
 
             return Targets[(int)team] != null ? Targets[(int)team].transform : transform;
         }

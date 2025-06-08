@@ -26,10 +26,19 @@
         public UnityEngine.UI.Button respawnButton;
         
         private int playerLives = 9; // Number of lives before game over
-        private float respawnDelay = 5f; // Seconds to wait before respawning
         private int playerLivesRemaining;
         private GameObject playerBaseStationPrefab; // Store reference to player's base station prefab for respawn
         private bool isRespawning = false;
+
+        // Player state event
+        public delegate void PlayerStateChangedHandler(bool isAlive);
+        public event PlayerStateChangedHandler OnPlayerStateChanged;
+
+        // Public method to set player state and trigger the event
+        public void SetPlayerState(bool isAlive)
+        {
+            OnPlayerStateChanged?.Invoke(isAlive);
+        }
 
         private List<Unit> units = new List<Unit>();
         private List<Spell> spells = new List<Spell>();
@@ -283,6 +292,8 @@
             
             if (baseStation == Targets[playerBaseIndex] && !isRespawning)
             {
+                Debug.Log("[GameMng] Player base station died, triggering death state");
+                
                 // Show death panel
                 if (deathPanel != null)
                 {
@@ -299,6 +310,12 @@
                 {
                     collider.enabled = false;
                 }
+
+                // Update player state
+                if (P != null)
+                {
+                    P.IsAlive = false;
+                }
             }
         }
         
@@ -306,6 +323,7 @@
         private IEnumerator RespawnPlayerBaseStation()
         {
             isRespawning = true;
+            Debug.Log("[GameMng] Starting player respawn process");
             
             // Hide death panel
             if (deathPanel != null)
@@ -338,10 +356,18 @@
                 {
                     shooter.enabled = true;
                 }
+
+                // Update player state
+                if (P != null)
+                {
+                    P.IsAlive = true;
+                }
+                
+                Debug.Log("[GameMng] Player respawn completed successfully");
             }
             else
             {
-                Debug.LogError("[Respawn] Failed to find base station unit to respawn!");
+                Debug.LogError("[GameMng] Failed to find base station unit to respawn!");
             }
             
             isRespawning = false;

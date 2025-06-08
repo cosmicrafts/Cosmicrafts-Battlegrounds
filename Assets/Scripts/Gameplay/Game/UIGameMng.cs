@@ -224,8 +224,13 @@
         // Deploy the selected card at a position
         public void DeployCard(int cardIndex, Vector3 position)
         {
-            if (cardIndex < 0 || cardIndex >= UIDeck.Length || isGameOver)
+            // Don't allow card deployment if game is over or player is dead
+            if (cardIndex < 0 || cardIndex >= UIDeck.Length || isGameOver || 
+                (GameMng.P != null && !GameMng.P.IsAlive))
+            {
+                Debug.Log($"Cannot deploy card: GameOver={isGameOver}, PlayerAlive={(GameMng.P != null ? GameMng.P.IsAlive : false)}");
                 return;
+            }
                 
             UIGameCard card = UIDeck[cardIndex];
             float currentEnergy = 0f;
@@ -343,6 +348,47 @@
                 if (card != null)
                 {
                     card.TextCost.color = energy >= card.EnergyCost ? Color.white : Color.red;
+                }
+            }
+        }
+
+        // Update UI elements based on player state
+        public void UpdatePlayerState(bool isAlive)
+        {
+            Debug.Log($"[UIGameMng] Updating UI for player state: {(isAlive ? "Alive" : "Dead")}");
+            
+            // Update deck visibility
+            if (DeckPanel != null)
+            {
+                DeckPanel.SetActive(true); // Always keep deck panel visible
+            }
+            
+            // Update energy UI
+            if (EnergyBar != null)
+            {
+                EnergyBar.gameObject.SetActive(isAlive);
+            }
+            if (EnergyLabel != null)
+            {
+                EnergyLabel.gameObject.SetActive(isAlive);
+            }
+            
+            // Update card states and interactions
+            foreach (UIGameCard card in UIDeck)
+            {
+                if (card != null)
+                {
+                    // Keep cards visible but disable interactions when dead
+                    card.gameObject.SetActive(true);
+                    
+                    // Disable card interactions when dead
+                    if (!isAlive)
+                    {
+                        // Deselect any selected card
+                        DeselectCards();
+                        // Set card to appear disabled (grayed out)
+                        card.SetSelection(false);
+                    }
                 }
             }
         }

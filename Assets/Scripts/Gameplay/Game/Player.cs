@@ -62,6 +62,32 @@ public class Player : MonoBehaviour
     public int PlayerLevel = 1;
     public int XPPerKill = 10; // Base XP gained from killing a unit
 
+    [Header("Debug")]
+    [SerializeField] private bool _isAlive = true;
+    public bool IsAlive
+    {
+        get => _isAlive;
+        set
+        {
+            if (_isAlive != value)
+            {
+                _isAlive = value;
+                GameMng.GM.SetPlayerState(_isAlive);
+                Debug.Log($"[Player] State changed to: {(_isAlive ? "Alive" : "Dead")}");
+                
+                // Update control state based on alive status
+                SetInControl(_isAlive);
+                SetCanGenEnergy(_isAlive);
+                
+                // Update UI if available
+                if (GameMng.UI != null)
+                {
+                    GameMng.UI.UpdatePlayerState(_isAlive);
+                }
+            }
+        }
+    }
+
     public ScriptableObject[] TestingDeck = new ScriptableObject[8];
 
     KeyCode[] Keys;
@@ -448,7 +474,10 @@ public class Player : MonoBehaviour
             KeyCode.Alpha5, KeyCode.Alpha6, KeyCode.Alpha7, KeyCode.Alpha8 };
         UnitDrag = FindFirstObjectByType<DragUnitCtrl>();
         UnitDrag.setMeshActive(false);
-        InControl = CanGenEnergy = true;
+        
+        // Initialize control state based on alive status
+        InControl = CanGenEnergy = _isAlive;
+        Debug.Log($"[Player] Initial state: {(_isAlive ? "Alive" : "Dead")}");
 
         playerDeck = new List<NFTsCard>();
         

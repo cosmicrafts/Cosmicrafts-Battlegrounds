@@ -47,6 +47,7 @@
 
         [Header("Warning System")]
         public GameObject Warning; // Warning message object with animation
+        [SerializeField] private GameObject lowHealthWarning; // Red pulsing warning for low health
         [TextArea(1, 3)]
         public string UnitLimitWarningText = "Unit Limit Reached!";
         [TextArea(1, 3)]
@@ -597,6 +598,14 @@
                     Warning.SetActive(false);
                 }
                 Warning.SetActive(true);
+            }
+        }
+
+        public void ShowLowHealthWarning(bool show)
+        {
+            if (lowHealthWarning != null)
+            {
+                lowHealthWarning.SetActive(show);
             }
         }
     }

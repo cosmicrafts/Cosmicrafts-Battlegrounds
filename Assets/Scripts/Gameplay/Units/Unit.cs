@@ -700,5 +700,10 @@ namespace Cosmicrafts
                 DestroyUnit();
             }
         }
+
+        public float GetHealthPercentage()
+        {
+            return (float)HitPoints / (float)MaxHp;
+        }
     }
 }

@@ -372,11 +372,13 @@ MonoBehaviour:
   MaxXP: 100
   PlayerLevel: 1
   XPPerKill: 10
+  _isAlive: 1
   TestingDeck:
   - {fileID: 11400000, guid: ce625a8613266e59db1eee1061f68475, type: 2}
   - {fileID: 11400000, guid: 444e2119928c183ecb8e87733527c193, type: 2}
   - {fileID: 11400000, guid: 3339b519e185fb2449ab65a5c1dbdd8d, type: 2}
   - {fileID: 11400000, guid: 265a32c5b81d7ed98865d0dc2f16f03d, type: 2}
+  lowHealthThreshold: 0.35
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -451,8 +453,6 @@ MonoBehaviour:
   HasTaunt: 0
   TauntRadius: 5
   TauntCooldown: 1
-  isGhost: 1
-  ghostMaterial: {fileID: 2100000, guid: c2e9ae388c4feb6b7b998a5c94d5d370, type: 2}
 --- !u!114 &2198226034328220054
 MonoBehaviour:
   m_ObjectHideFlags: 0

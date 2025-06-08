@@ -93,6 +93,10 @@ public class Player : MonoBehaviour
     KeyCode[] Keys;
     private PlayerMovement playerMovement;
 
+    [Header("Low Health Warning")]
+    [SerializeField] private float lowHealthThreshold = 0.3f; // 30% health threshold
+    private bool wasLowHealth = false;
+
     private void Awake()
     {
         Debug.Log("--PLAYER AWAKES--");
@@ -716,6 +720,25 @@ public class Player : MonoBehaviour
         
         // Clean up destroyed units from active units list
         CleanupActiveUnitsList();
+
+        // Check for low health warning on player's base station
+        if (GameMng.GM != null && GameMng.UI != null)
+        {
+            int playerBaseIndex = (MyTeam == Team.Blue) ? 1 : 0;
+            Unit baseStation = GameMng.GM.Targets[playerBaseIndex];
+            
+            if (baseStation != null && !baseStation.IsDeath)
+            {
+                float healthPercent = baseStation.GetHealthPercentage();
+                bool isLowHealth = healthPercent <= lowHealthThreshold;
+                
+                if (isLowHealth != wasLowHealth)
+                {
+                    wasLowHealth = isLowHealth;
+                    GameMng.UI.ShowLowHealthWarning(isLowHealth);
+                }
+            }
+        }
     }
 
     // Move spawn points with the player and update ships

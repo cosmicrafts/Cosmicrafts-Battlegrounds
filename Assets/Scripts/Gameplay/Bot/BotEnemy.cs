@@ -83,7 +83,9 @@ public class BotEnemy : MonoBehaviour
     private System.Random rng;
 
     //Allows to generate energy
-    bool CanGenEnergy;
+    private bool CanGenEnergy;
+    private bool isPlayerAlive = true; // Track player state
+
     private void Awake() { }
     // Start is called before the first frame update
     void Start()
@@ -94,6 +96,9 @@ public class BotEnemy : MonoBehaviour
         activeUnits = new List<Unit>();
         CanGenEnergy = true;
         rng = new System.Random();
+
+        // Subscribe to player state changes
+        GameMng.GM.OnPlayerStateChanged += HandlePlayerStateChanged;
 
         // Initialize spawn points if none exist
         InitializeSpawnPoints();
@@ -125,6 +130,20 @@ public class BotEnemy : MonoBehaviour
 
         //Start AI loop
         StartCoroutine(IA());
+    }
+
+    private void OnDestroy()
+    {
+        // Unsubscribe from player state changes
+        if (GameMng.GM != null)
+        {
+            GameMng.GM.OnPlayerStateChanged -= HandlePlayerStateChanged;
+        }
+    }
+
+    private void HandlePlayerStateChanged(bool isAlive)
+    {
+        isPlayerAlive = isAlive;
     }
 
     // Initialize spawn points if none exist - simplified from Player.cs
@@ -413,6 +432,12 @@ public class BotEnemy : MonoBehaviour
             if (TargetUnit == null || GameMng.GM.IsGameOver())
             {
                 break;
+            }
+            
+            // Skip spawning if player is dead
+            if (!isPlayerAlive)
+            {
+                continue;
             }
             
             // Check if we've reached maximum active units

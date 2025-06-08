@@ -319,9 +319,8 @@
             
             if (baseStation != null)
             {
-                // TODO: Implement random nearby respawn location based on death position
-                // For now, respawn at original position
-                Vector3 respawnPosition = BS_Positions[playerBaseIndex];
+                // Use the current position of the base station instead of the original position
+                Vector3 respawnPosition = baseStation.transform.position;
                 
                 // Reset the base station
                 baseStation.ResetUnit();

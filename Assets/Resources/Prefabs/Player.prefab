@@ -437,6 +437,7 @@ MonoBehaviour:
   Size: 1
   DodgeChance: 0
   Level: 1
+  explosionScaleMultiplier: 8
   IsBaseStation: 0
   IsInmortal: 0
   flagShield: 0
@@ -450,6 +451,8 @@ MonoBehaviour:
   HasTaunt: 0
   TauntRadius: 5
   TauntCooldown: 1
+  isGhost: 1
+  ghostMaterial: {fileID: 2100000, guid: c2e9ae388c4feb6b7b998a5c94d5d370, type: 2}
 --- !u!114 &2198226034328220054
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -409,7 +409,7 @@ public class BotEnemy : MonoBehaviour
         while(!GameMng.GM.IsGameOver())
         {
             yield return IADelta;//Add a delay time to think
-            //Check if the game is not ended and the player base station still exists
+            //Check if the game is not ended and the player base station still exists 
             if (TargetUnit == null || GameMng.GM.IsGameOver())
             {
                 break;

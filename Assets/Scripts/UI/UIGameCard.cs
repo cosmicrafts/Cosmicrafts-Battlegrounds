@@ -70,8 +70,6 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
     
     private void OnCardHotkeyPressed(InputAction.CallbackContext context)
     {
-      //  Debug.Log($"Hotkey pressed for card {IdCardDeck}");
-        
         // Only trigger card if the context is performed
         if (context.performed)
         {
@@ -92,7 +90,11 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
                 }
                 else
                 {
-                    Debug.Log($"Not enough energy to deploy card {IdCardDeck}");
+                    // Show not enough energy warning
+                    if (uiGameMng != null)
+                    {
+                        uiGameMng.ShowNotEnoughEnergyWarning();
+                    }
                 }
             }
             else
@@ -138,9 +140,8 @@ public class UIGameCard : MonoBehaviour, IPointerClickHandler, IBeginDragHandler
                 }
                 else
                 {
-                    // Not enough energy - provide visual feedback
-                 //   Debug.Log($"Not enough energy to deploy card {IdCardDeck}. Need {EnergyCost}, have {Mathf.FloorToInt(player.CurrentEnergy)}");
-                    // Flash the card red or play sound effect for feedback
+                    // Show not enough energy warning
+                    uiGameMng.ShowNotEnoughEnergyWarning();
                 }
             }
             else

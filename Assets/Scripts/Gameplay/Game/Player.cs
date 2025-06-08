@@ -303,6 +303,12 @@ public class Player : MonoBehaviour
                 activeUnits.RemoveAt(i);
             }
         }
+        
+        // Update unit counter in UI
+        if (GameMng.UI != null)
+        {
+            GameMng.UI.UpdateUnitCounter(activeUnits.Count, maxActiveUnits);
+        }
     }
     
     // Get a unit from the pool or create a new one if none available
@@ -383,6 +389,15 @@ public class Player : MonoBehaviour
                 return CreateNewUnit(keyId, position);
             }
             
+            // Add to active units list
+            activeUnits.Add(unit);
+            
+            // Update unit counter in UI
+            if (GameMng.UI != null)
+            {
+                GameMng.UI.UpdateUnitCounter(activeUnits.Count, maxActiveUnits);
+            }
+            
             return unit;
         }
         
@@ -457,6 +472,12 @@ public class Player : MonoBehaviour
             if (activeUnits.Contains(unit))
             {
                 activeUnits.Remove(unit);
+                
+                // Update unit counter in UI
+                if (GameMng.UI != null)
+                {
+                    GameMng.UI.UpdateUnitCounter(activeUnits.Count, maxActiveUnits);
+                }
             }
         }
         catch (System.Exception e)
@@ -915,11 +936,28 @@ public class Player : MonoBehaviour
     // Modified method to use object pooling
     public void DeplyUnit(NFTsCard nftcard, Vector3 targetPosition)
     {
+        // Only check unit limit for Ship type cards
+        if (nftcard.EntType == (int)NFTClass.Ship && activeUnits.Count >= maxActiveUnits)
+        {
+            // Show warning instead of debug log
+            if (GameMng.UI != null)
+            {
+                GameMng.UI.ShowUnitLimitWarning();
+            }
+            return;
+        }
+
         if (nftcard.EnergyCost <= CurrentEnergy)
         {
             // Check if we've reached maximum active units for non-spell cards
             if ((NFTClass)nftcard.EntType != NFTClass.Skill && activeUnits.Count >= maxActiveUnits)
             {
+                // Show warning first
+                if (GameMng.UI != null)
+                {
+                    GameMng.UI.ShowUnitLimitWarning();
+                }
+                // Then log the message
                 Debug.LogWarning($"Maximum active units ({maxActiveUnits}) reached, cannot deploy more units");
                 return;
             }
@@ -1015,6 +1053,14 @@ public class Player : MonoBehaviour
                         }
                     }
                 }
+            }
+        }
+        else
+        {
+            // Show not enough energy warning
+            if (GameMng.UI != null)
+            {
+                GameMng.UI.ShowNotEnoughEnergyWarning();
             }
         }
     }
@@ -1124,6 +1170,12 @@ public class Player : MonoBehaviour
         }
         
         Debug.Log($"Player leveled up to level {PlayerLevel}! Max Energy increased to {MaxEnergy}");
+    }
+
+    // Add public method to get active units count
+    public int GetActiveUnitsCount()
+    {
+        return activeUnits.Count;
     }
 }
 }

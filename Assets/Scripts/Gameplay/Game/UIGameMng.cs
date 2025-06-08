@@ -6,6 +6,7 @@
     using UnityEngine.InputSystem;
     using System.Collections.Generic;
     using System;
+    using System.Collections;
 
     /*
      * This is the in-game UI controller
@@ -40,6 +41,16 @@
         public TMP_Text XPLabel;
         public Image XPBarFill;  // Main XP bar (replaces Slider)
         public Image XPBarGhost; // Ghost/Incremental bar
+
+        [Header("Unit Counter")]
+        public TMP_Text UnitCounterLabel; // New field for unit counter
+
+        [Header("Warning System")]
+        public GameObject Warning; // Warning message object with animation
+        [TextArea(1, 3)]
+        public string UnitLimitWarningText = "Unit Limit Reached!";
+        [TextArea(1, 3)]
+        public string NotEnoughEnergyWarningText = "Not Enough Energy!";
 
         //XP Bar Animation
         [Header("XP Bar Animation")]
@@ -264,8 +275,20 @@
                     {
                         NFTsCard nftCard = playerDeck[cardIndex];
                         
-                        // Pass the position - if zero, Player.DeplyUnit will use random spawn point
+                        // Store current unit count before deployment
+                        int currentUnits = GameMng.P.GetActiveUnitsCount();
+                        int maxUnits = GameMng.P.maxActiveUnits;
+                        
+                        // Try to deploy the unit
                         GameMng.P.DeplyUnit(nftCard, position);
+                        
+                        // If unit count didn't change and it's a ship card, show unit limit warning
+                        if (nftCard.EntType == (int)NFTClass.Ship && 
+                            GameMng.P.GetActiveUnitsCount() == currentUnits && 
+                            currentUnits >= maxUnits)
+                        {
+                            ShowUnitLimitWarning();
+                        }
                         
                         // Update energy UI - handled by Player.RestEnergy, but update here to be safe
                         UpdateEnergy(GameMng.P.CurrentEnergy, GameMng.P.MaxEnergy);
@@ -300,6 +323,8 @@
             }
             else
             {
+                // Show not enough energy warning
+                ShowNotEnoughEnergyWarning();
                 Debug.Log($"Not enough energy to deploy card {cardIndex}. Need {card.EnergyCost}, have {energyInt}");
             }
         }
@@ -371,6 +396,18 @@
             if (EnergyLabel != null)
             {
                 EnergyLabel.gameObject.SetActive(isAlive);
+            }
+            
+            // Update unit counter visibility
+            if (UnitCounterLabel != null)
+            {
+                UnitCounterLabel.gameObject.SetActive(isAlive);
+            }
+
+            // Hide warning when player dies
+            if (Warning != null)
+            {
+                Warning.SetActive(false);
             }
             
             // Update card states and interactions
@@ -496,6 +533,71 @@
         public Color GetShieldBarColor(bool isEnnemy)
         {
             return isEnnemy ? EnemyShieldBarColor : FriendShieldBarColor;
+        }
+
+        // Add new method to update unit counter
+        public void UpdateUnitCounter(int activeUnits, int maxUnits)
+        {
+            if (UnitCounterLabel != null)
+            {
+                UnitCounterLabel.text = $"{activeUnits}/{maxUnits} Units";
+            }
+        }
+
+        // Add simple method to show unit limit warning
+        public void ShowUnitLimitWarning()
+        {
+            if (Warning != null)
+            {
+                // Set the warning text
+                TMP_Text warningText = Warning.GetComponent<TMP_Text>();
+                if (warningText != null)
+                {
+                    warningText.text = UnitLimitWarningText;
+                }
+
+                // Force the warning to be active
+                Warning.SetActive(true);
+
+                // Get the animation component
+                Animation anim = Warning.GetComponent<Animation>();
+                if (anim != null)
+                {
+                    // Force stop any existing animation
+                    anim.Stop();
+                    // Force play the animation from the beginning
+                    anim.Play("Warning");
+                }
+                else
+                {
+                    Debug.LogError("Warning GameObject is missing Animation component!");
+                }
+            }
+            else
+            {
+                Debug.LogError("Warning GameObject reference is missing in UIGameMng!");
+            }
+        }
+
+        // Add method to show not enough energy warning
+        public void ShowNotEnoughEnergyWarning()
+        {
+            if (Warning != null)
+            {
+                // Set the warning text
+                TMP_Text warningText = Warning.GetComponent<TMP_Text>();
+                if (warningText != null)
+                {
+                    warningText.text = NotEnoughEnergyWarningText;
+                }
+
+                // If already active, disable and enable to restart animation
+                if (Warning.activeSelf)
+                {
+                    Warning.SetActive(false);
+                }
+                Warning.SetActive(true);
+            }
         }
     }
 }

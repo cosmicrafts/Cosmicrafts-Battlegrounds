@@ -5,6 +5,8 @@
     using UnityEngine;
     using System.Linq;
     using System.Collections;
+    using UnityEngine.Rendering;
+    using UnityEngine.Rendering.Universal;
 
     public class GameMng : MonoBehaviour
     {
@@ -24,6 +26,12 @@
         public GameObject deathPanel;
         [Tooltip("Button that triggers respawn")]
         public UnityEngine.UI.Button respawnButton;
+        [Tooltip("Global Volume in the scene to switch profiles")]
+        public Volume globalVolume;
+        [Tooltip("Profile to use when player is dead")]
+        public VolumeProfile deathProfile;
+        [Tooltip("Profile to use when player is alive")]
+        public VolumeProfile aliveProfile;
         
         private int playerLives = 9; // Number of lives before game over
         private int playerLivesRemaining;
@@ -300,6 +308,12 @@
                     deathPanel.SetActive(true);
                 }
                 
+                // Switch to death profile
+                if (globalVolume != null && deathProfile != null)
+                {
+                    globalVolume.profile = deathProfile;
+                }
+                
                 // Disable the base station
                 baseStation.IsDeath = true;
                 baseStation.UI.HideUI();
@@ -356,6 +370,12 @@
             if (deathPanel != null)
             {
                 deathPanel.SetActive(false);
+            }
+            
+            // Switch back to alive profile
+            if (globalVolume != null && aliveProfile != null)
+            {
+                globalVolume.profile = aliveProfile;
             }
             
             // Get player base station

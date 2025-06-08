@@ -21695,6 +21695,7 @@ GameObject:
   - component: {fileID: 697417429600388968}
   - component: {fileID: 697417429600388976}
   - component: {fileID: 697417429600388977}
+  - component: {fileID: 697417429600388978}
   m_Layer: 0
   m_Name: MainCamera
   m_TagString: MainCamera
@@ -21767,6 +21768,23 @@ MonoBehaviour:
   spaceLayers: []
   showSectorBounds: 1
   sectorBoundColor: {r: 0, g: 1, b: 0, a: 0.3}
+--- !u!114 &697417429600388978
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 697417429600388974}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IsGlobal: 1
+  priority: 0
+  blendDistance: 0
+  weight: 1
+  sharedProfile: {fileID: 11400000, guid: ab09877e2e707104187f6f83e2f62510, type: 2}
 --- !u!1 &697417429613703969
 GameObject:
   m_ObjectHideFlags: 0
@@ -21987,6 +22005,9 @@ MonoBehaviour:
   - {x: 0, y: 0, z: 0}
   deathPanel: {fileID: 1626123228}
   respawnButton: {fileID: 422451834}
+  globalVolume: {fileID: 697417429600388978}
+  deathProfile: {fileID: 11400000, guid: c127d4079dfb37548ab032713bd67645, type: 2}
+  aliveProfile: {fileID: 11400000, guid: ab09877e2e707104187f6f83e2f62510, type: 2}
   Targets:
   - {fileID: 0}
   - {fileID: 0}
@@ -24116,7 +24137,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 75
+  orthographic size: 125
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

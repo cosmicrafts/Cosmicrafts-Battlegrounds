@@ -79,6 +79,24 @@ public class Player : MonoBehaviour
                 SetInControl(_isAlive);
                 SetCanGenEnergy(_isAlive);
                 
+                // Get the shooter component
+                Shooter shooter = GetComponent<Shooter>();
+                if (shooter != null)
+                {
+                    if (!_isAlive)
+                    {
+                        // When dying, completely disable targeting
+                        shooter.StopAttack();
+                        shooter.enabled = false; // Disable the entire component
+                    }
+                    else
+                    {
+                        // When respawning, re-enable the shooter
+                        shooter.enabled = true;
+                        shooter.ResetShooter();
+                    }
+                }
+                
                 // Update UI if available
                 if (GameMng.UI != null)
                 {

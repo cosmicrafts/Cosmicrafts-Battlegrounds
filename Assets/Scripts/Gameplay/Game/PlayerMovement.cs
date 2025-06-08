@@ -79,6 +79,24 @@ namespace Cosmicrafts
         
         void HandleRotation()
         {
+            // Get player component to check alive state
+            Player player = GetComponent<Player>();
+            if (player != null && !player.IsAlive)
+            {
+                // When dead, only use movement-based rotation
+                Vector3 normalizedVelocity = currentVelocity.normalized;
+                if (normalizedVelocity.sqrMagnitude > 0.001f)
+                {
+                    Quaternion targetRotation = Quaternion.LookRotation(normalizedVelocity);
+                    transform.rotation = Quaternion.Lerp(
+                        transform.rotation,
+                        targetRotation,
+                        rotationSpeed * Time.deltaTime
+                    );
+                }
+                return;
+            }
+
             bool isCurrentlyTargeting = shooter != null && shooter.GetIdTarget() != 0;
             
             // If we just stopped targeting, start the timer

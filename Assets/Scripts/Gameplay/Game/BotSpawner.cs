@@ -5,35 +5,31 @@ namespace Cosmicrafts
 {
     public class BotSpawner : MonoBehaviour
     {
+        [System.Serializable]
+        public class BotSpawnConfig
+        {
+            public CharacterBaseSO botBaseSO;
+            [Range(0f, 1f)]
+            public float spawnRate = 0.5f; // Probability of this bot type spawning
+        }
+
         [Header("Bot Settings")]
-        public CharacterBaseSO botBaseSO; // ScriptableObject containing bot data
-        public int numberOfBots = 3; // Number of bots to spawn (including the base station)
+        public List<BotSpawnConfig> botConfigs = new List<BotSpawnConfig>();
+        public int maxActiveBots = 10; // Maximum number of bots active at once
         
-        [Header("Bot Positioning")]
-        [Tooltip("Center position for spawning additional bots")]
-        public Vector3 spawnCenter = new Vector3(50, 0, 50);
-        [Tooltip("Radius around the spawn center to place bots")]
-        public float spawnRadius = 30f;
-        [Tooltip("Minimum spacing between bots")]
-        public float minBotSpacing = 10f;
-        [Tooltip("Maximum attempts to find valid positions")]
-        public int maxPositioningAttempts = 20;
+        [Header("Spawn Distance")]
+        [Tooltip("Minimum distance from player to spawn bots")]
+        public float minSpawnDistance = 100f;
+        [Tooltip("Maximum distance from player to spawn bots")]
+        public float maxSpawnDistance = 250f;
+        [Tooltip("Distance at which bots are recycled back to pool")]
+        public float recycleDistance = 500f;
         
         // Runtime data
-        private List<BotEnemy> bots = new List<BotEnemy>();
+        private List<BotEnemy> activeBots = new List<BotEnemy>();
         private Unit botBaseStation;
         private Team botTeam = Team.Red;
         private Vector3 baseStationPosition;
-        private List<Vector3> usedPositions = new List<Vector3>();
-        
-        private void Awake()
-        {
-            // Set default spawn center if not changed
-            if (spawnCenter == Vector3.zero)
-            {
-                spawnCenter = new Vector3(50, 0, 50);
-            }
-        }
         
         // Initialize with player team
         public void Initialize(Team playerTeam, Vector3 playerBasePosition)
@@ -47,18 +43,12 @@ namespace Cosmicrafts
                 // Fallback if player position is near center
                 baseStationPosition = playerBasePosition + new Vector3(100, 0, 100);
             }
-            
-            // Add base station position to used positions
-            usedPositions.Add(playerBasePosition);
-            usedPositions.Add(baseStationPosition);
-            
-            // Debug.Log($"BotSpawner initialized with team {botTeam}, base at {baseStationPosition}");
         }
         
         // Spawn everything needed
         public void SpawnBots()
         {
-            if (numberOfBots <= 0 || botBaseSO == null || botBaseSO.BasePrefab == null)
+            if (maxActiveBots <= 0 || botConfigs.Count == 0 || botConfigs[0].botBaseSO == null || botConfigs[0].botBaseSO.BasePrefab == null)
             {
                 Debug.Log("No bots to spawn or missing bot prefab");
                 return;
@@ -70,17 +60,14 @@ namespace Cosmicrafts
             // Spawn bot base station
             SpawnBotBaseStation();
             
-            // Spawn additional bots
-            SpawnAdditionalBots();
-            
-            Debug.Log($"Spawned {bots.Count} total bots");
+            Debug.Log($"Spawned {activeBots.Count} total bots");
         }
         
         // Spawn the bot base station
         private void SpawnBotBaseStation()
         {
             // Create bot base station
-            GameObject botBaseObj = botBaseSO.BasePrefab.GetComponent<BotEnemy>().prefabBaseStation;
+            GameObject botBaseObj = botConfigs[0].botBaseSO.BasePrefab.GetComponent<BotEnemy>().prefabBaseStation;
             botBaseStation = Instantiate(botBaseObj, baseStationPosition, Quaternion.identity).GetComponent<Unit>();
             botBaseStation.PlayerId = 2;
             botBaseStation.MyTeam = botTeam;
@@ -92,116 +79,9 @@ namespace Cosmicrafts
             BotEnemy baseBot = botBaseStation.GetComponent<BotEnemy>();
             if (baseBot != null)
             {
-                bots.Add(baseBot);
+                activeBots.Add(baseBot);
                 baseBot.botName = "Bot_Base";
-                // Debug.Log($"Bot base station created at {baseStationPosition}");
             }
-        }
-        
-        // Spawn additional bots beyond the base station
-        private void SpawnAdditionalBots()
-        {
-            if (botBaseStation == null || numberOfBots <= 1)
-            {
-                return;
-            }
-            
-            // Calculate how many more bots to spawn
-            int additionalBots = numberOfBots - 1;
-            // Debug.Log($"Spawning {additionalBots} additional bots");
-            
-            for (int i = 0; i < additionalBots; i++)
-            {
-                // Find a valid position for this bot
-                Vector3 botPosition = GetValidBotPosition();
-                
-                // Spawn the bot
-                GameObject botObj = Instantiate(botBaseSO.BasePrefab, botPosition, Quaternion.identity);
-                BotEnemy bot = botObj.GetComponent<BotEnemy>();
-                
-                if (bot == null)
-                {
-                    Debug.LogError("Bot prefab doesn't contain BotEnemy component!");
-                    Destroy(botObj);
-                    continue;
-                }
-                
-                // Configure the bot
-                Unit botUnit = bot.GetComponent<Unit>();
-                if (botUnit != null)
-                {
-                    botUnit.MyTeam = botTeam;
-                    botUnit.PlayerId = 2;
-                    
-                    // Apply character data from the scriptable object
-                    botBaseSO.ApplyOverridesToUnit(botUnit);
-                    botBaseSO.ApplySkillsOnDeploy(botUnit);
-                    
-                    botUnit.setId(Random.Range(10000, 99999));
-                    // Debug.Log($"Additional bot {i+1} spawned at {botPosition}");
-                }
-                
-                // Track the bot
-                bots.Add(bot);
-                bot.botName = $"Bot_{i+1}";
-                
-                // Remember this position
-                usedPositions.Add(botPosition);
-            }
-        }
-        
-        // Find a valid position for a bot that's not too close to other positions
-        private Vector3 GetValidBotPosition()
-        {
-            Vector3 position = Vector3.zero;
-            bool validPosition = false;
-            int attempts = 0;
-            
-            while (!validPosition && attempts < maxPositioningAttempts)
-            {
-                attempts++;
-                
-                // Get random position within spawn radius
-                float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-                float distance = Random.Range(0f, spawnRadius);
-                
-                // Calculate position using polar coordinates
-                position = spawnCenter + new Vector3(
-                    Mathf.Cos(angle) * distance,
-                    0f,
-                    Mathf.Sin(angle) * distance
-                );
-                
-                // Check if it's far enough from other positions
-                validPosition = true;
-                foreach (Vector3 usedPos in usedPositions)
-                {
-                    if (Vector3.Distance(position, usedPos) < minBotSpacing)
-                    {
-                        validPosition = false;
-                        break;
-                    }
-                }
-                
-                // Always push away from base stations
-                if (Vector3.Distance(position, baseStationPosition) < minBotSpacing * 2)
-                {
-                    validPosition = false;
-                }
-            }
-            
-            if (!validPosition)
-            {
-                // If we couldn't find a good position, use a fallback
-                Debug.LogWarning("Couldn't find valid bot position - using fallback");
-                position = spawnCenter + new Vector3(
-                    Random.Range(-1f, 1f) * spawnRadius,
-                    0f,
-                    Random.Range(-1f, 1f) * spawnRadius
-                );
-            }
-            
-            return position;
         }
         
         public void RespawnBots(int newBotCount = -1)
@@ -209,7 +89,7 @@ namespace Cosmicrafts
             // Update bot count if specified
             if (newBotCount >= 0)
             {
-                numberOfBots = newBotCount;
+                maxActiveBots = newBotCount;
             }
             
             // Respawn all bots
@@ -218,24 +98,151 @@ namespace Cosmicrafts
         
         public List<BotEnemy> GetBots()
         {
-            return bots;
+            return activeBots;
         }
         
         public void ClearBots()
         {
-            foreach (BotEnemy bot in bots)
+            foreach (BotEnemy bot in activeBots)
             {
                 if (bot != null && bot.gameObject != null)
                 {
                     Destroy(bot.gameObject);
                 }
             }
-            bots.Clear();
+            activeBots.Clear();
         }
         
         public Unit GetBotBaseStation()
         {
             return botBaseStation;
+        }
+
+        private void Update()
+        {
+            if (GameMng.P == null) return;
+
+            // Check for bots that need recycling
+            CheckAndRecycleBots();
+
+            // Try to spawn new bots if we're under the limit
+            if (activeBots.Count < maxActiveBots)
+            {
+                TrySpawnNewBot();
+            }
+        }
+
+        private void CheckAndRecycleBots()
+        {
+            for (int i = activeBots.Count - 1; i >= 0; i--)
+            {
+                BotEnemy bot = activeBots[i];
+                if (bot == null || bot.gameObject == null) continue;
+
+                float distanceToPlayer = Vector3.Distance(bot.transform.position, GameMng.P.transform.position);
+                
+                // If bot is too far, recycle it
+                if (distanceToPlayer > recycleDistance)
+                {
+                    RecycleBot(bot);
+                }
+            }
+        }
+
+        private void TrySpawnNewBot()
+        {
+            // Get player position and level
+            Vector3 playerPos = GameMng.P.transform.position;
+            int playerLevel = GameMng.P.PlayerLevel;
+
+            // Select a bot type based on spawn rates
+            BotSpawnConfig selectedConfig = SelectBotConfig();
+            if (selectedConfig == null) return;
+
+            // Get spawn position
+            Vector3 spawnPos = GetSpawnPositionAroundPlayer(playerPos);
+            
+            // Spawn the bot
+            GameObject botObj = Instantiate(selectedConfig.botBaseSO.BasePrefab, spawnPos, Quaternion.identity);
+            BotEnemy bot = botObj.GetComponent<BotEnemy>();
+            
+            if (bot != null)
+            {
+                Unit botUnit = bot.GetComponent<Unit>();
+                if (botUnit != null)
+                {
+                    botUnit.MyTeam = botTeam;
+                    botUnit.PlayerId = 2;
+                    botUnit.Level = playerLevel; // Match player level
+                    
+                    // Apply character data
+                    selectedConfig.botBaseSO.ApplyOverridesToUnit(botUnit);
+                    selectedConfig.botBaseSO.ApplySkillsOnDeploy(botUnit);
+                    
+                    botUnit.setId(Random.Range(10000, 99999));
+                }
+                
+                activeBots.Add(bot);
+                bot.botName = $"Bot_{activeBots.Count}";
+            }
+        }
+
+        private BotSpawnConfig SelectBotConfig()
+        {
+            if (botConfigs.Count == 0) return null;
+
+            // Calculate total spawn rate
+            float totalRate = 0f;
+            foreach (var config in botConfigs)
+            {
+                totalRate += config.spawnRate;
+            }
+
+            // Select random value
+            float random = Random.Range(0f, totalRate);
+            float current = 0f;
+
+            // Find selected config
+            foreach (var config in botConfigs)
+            {
+                current += config.spawnRate;
+                if (random <= current)
+                {
+                    return config;
+                }
+            }
+
+            return botConfigs[0]; // Fallback
+        }
+
+        private Vector3 GetSpawnPositionAroundPlayer(Vector3 playerPos)
+        {
+            // Get random angle and distance
+            float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
+            float distance = Random.Range(minSpawnDistance, maxSpawnDistance);
+            
+            // Calculate position
+            Vector3 offset = new Vector3(
+                Mathf.Cos(angle) * distance,
+                0f,
+                Mathf.Sin(angle) * distance
+            );
+            
+            return playerPos + offset;
+        }
+
+        private void RecycleBot(BotEnemy bot)
+        {
+            if (bot == null) return;
+
+            // Remove from active bots
+            activeBots.Remove(bot);
+            
+            // Destroy the bot
+            if (bot.gameObject != null)
+            {
+                Destroy(bot.gameObject);
+            }
         }
     }
 } 

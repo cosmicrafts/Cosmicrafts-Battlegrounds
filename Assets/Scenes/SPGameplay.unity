@@ -479,7 +479,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 86099102}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d7dbdf504ba312a4c93eca0650e2570e, type: 3}
   m_Name: 
@@ -19504,12 +19504,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 33e1c0ff69aa42f389f0524723d4a883, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  botBaseSO: {fileID: 11400000, guid: 4303fe846bf08e1b6ae8ee11062c7768, type: 2}
-  numberOfBots: 4
-  spawnCenter: {x: 0, y: 0, z: 0}
-  spawnRadius: 500
-  minBotSpacing: 500
-  maxPositioningAttempts: 20
+  botConfigs:
+  - botBaseSO: {fileID: 11400000, guid: 4303fe846bf08e1b6ae8ee11062c7768, type: 2}
+    spawnRate: 0.781
+  - botBaseSO: {fileID: 11400000, guid: 0d77604e7ea43191685db0c7ab875bbf, type: 2}
+    spawnRate: 0.5
+  - botBaseSO: {fileID: 11400000, guid: 38ae8adb757cbd8189b10122636560d3, type: 2}
+    spawnRate: 0.25
+  - botBaseSO: {fileID: 11400000, guid: bb7737c97ba1e10018f938161cb3a624, type: 2}
+    spawnRate: 0.1
+  maxActiveBots: 10
+  minSpawnDistance: 100
+  maxSpawnDistance: 250
+  recycleDistance: 500
 --- !u!4 &1458940567
 Transform:
   m_ObjectHideFlags: 0

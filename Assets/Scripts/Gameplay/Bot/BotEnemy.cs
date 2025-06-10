@@ -16,8 +16,6 @@ public class BotEnemy : MonoBehaviour
 
     //Bot player Name 
     public string botName = "DefaultScriptName";
-    //Bot player Level 
-    public int botLv = 5;
     //Bot player Avatar 
     public int botAvatar = 1;
     
@@ -86,6 +84,9 @@ public class BotEnemy : MonoBehaviour
     private bool CanGenEnergy;
     private bool isPlayerAlive = true; // Track player state
 
+    // Add reference to Unit component
+    private Unit unitComponent;
+
     private void Awake() { }
     // Start is called before the first frame update
     void Start()
@@ -97,8 +98,19 @@ public class BotEnemy : MonoBehaviour
         CanGenEnergy = true;
         rng = new System.Random();
 
-        // Subscribe to player state changes
-        GameMng.GM.OnPlayerStateChanged += HandlePlayerStateChanged;
+        // Get Unit component
+        unitComponent = GetComponent<Unit>();
+        if (unitComponent != null)
+        {
+            // Subscribe to player state changes
+            GameMng.GM.OnPlayerStateChanged += HandlePlayerStateChanged;
+            
+            // Subscribe to XP updates to sync level with player
+            if (GameMng.UI != null)
+            {
+                GameMng.UI.OnXPUpdated += OnPlayerLevelUpdated;
+            }
+        }
 
         // Initialize spawn points if none exist
         InitializeSpawnPoints();
@@ -139,11 +151,34 @@ public class BotEnemy : MonoBehaviour
         {
             GameMng.GM.OnPlayerStateChanged -= HandlePlayerStateChanged;
         }
+        
+        // Unsubscribe from XP updates
+        if (GameMng.UI != null)
+        {
+            GameMng.UI.OnXPUpdated -= OnPlayerLevelUpdated;
+        }
     }
 
     private void HandlePlayerStateChanged(bool isAlive)
     {
         isPlayerAlive = isAlive;
+    }
+
+    // Add method to handle player level updates
+    private void OnPlayerLevelUpdated(int currentXP, int maxXP, int playerLevel)
+    {
+        if (unitComponent != null)
+        {
+            // Update bot's level to match player
+            unitComponent.SetLevel(playerLevel);
+            
+            // Update UI if available
+            UIUnit uiUnit = GetComponentInChildren<UIUnit>();
+            if (uiUnit != null)
+            {
+                uiUnit.UpdateLevelText(playerLevel);
+            }
+        }
     }
 
     // Initialize spawn points if none exist - simplified from Player.cs
@@ -295,7 +330,7 @@ public class BotEnemy : MonoBehaviour
         CanGenEnergy = can;
     }
     
-    // Get a unit from the pool or create a new one if none available
+    // Modify GetUnitFromPool to ensure spawned units match player level
     private Unit GetUnitFromPool(ShipsDataBase unitData, Vector3 position)
     {
         if (unitData == null || unitData.prefab == null)
@@ -335,10 +370,22 @@ public class BotEnemy : MonoBehaviour
             try
             {
                 unit.ResetUnit(); // Reset the unit's state
+                
+                // Set level to match player
+                if (GameMng.P != null)
+                {
+                    unit.SetLevel(GameMng.P.PlayerLevel);
+                    
+                    // Update UI if available
+                    UIUnit uiUnit = unit.GetComponentInChildren<UIUnit>();
+                    if (uiUnit != null)
+                    {
+                        uiUnit.UpdateLevelText(GameMng.P.PlayerLevel);
+                    }
+                }
             }
             catch (System.Exception)
             {
-               // Debug.LogError($"Error resetting unit: {e.Message}");
                 // If there's an error resetting, create a new unit instead
                 GameMng.GM.DeleteUnit(unit);
                 return CreateNewUnit(unitData, position);
@@ -351,7 +398,7 @@ public class BotEnemy : MonoBehaviour
         return CreateNewUnit(unitData, position);
     }
     
-    // Helper method to create a new unit
+    // Modify CreateNewUnit to ensure new units match player level
     private Unit CreateNewUnit(ShipsDataBase unitData, Vector3 position)
     {
         if (unitData.prefab == null)
@@ -366,6 +413,19 @@ public class BotEnemy : MonoBehaviour
         {
             // Subscribe to unit's death event to return it to pool
             newUnit.OnUnitDeath += ReturnUnitToPool;
+            
+            // Set level to match player
+            if (GameMng.P != null)
+            {
+                newUnit.SetLevel(GameMng.P.PlayerLevel);
+                
+                // Update UI if available
+                UIUnit uiUnit = newUnit.GetComponentInChildren<UIUnit>();
+                if (uiUnit != null)
+                {
+                    uiUnit.UpdateLevelText(GameMng.P.PlayerLevel);
+                }
+            }
         }
         
         return newUnit;

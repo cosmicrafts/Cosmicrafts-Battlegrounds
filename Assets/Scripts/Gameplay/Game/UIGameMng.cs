@@ -472,6 +472,16 @@
                     // On level up, set ghost to 0 and fill to current
                     XPBarGhost.fillAmount = 0f;
                     currentFill = 0f;
+                    
+                    // Update bot levels when player levels up
+                    if (GameMng.GM != null)
+                    {
+                        BotSpawner botSpawner = FindObjectOfType<BotSpawner>();
+                        if (botSpawner != null)
+                        {
+                            botSpawner.UpdateBotLevels();
+                        }
+                    }
                 }
                 
                 // Instantly set ghost bar to new value

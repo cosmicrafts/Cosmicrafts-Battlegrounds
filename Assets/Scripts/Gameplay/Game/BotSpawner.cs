@@ -96,7 +96,7 @@ namespace Cosmicrafts
         private BotEnemy TrySpawnNewBot(Vector3 spawnPosition)
         {
             // Get player level
-            int playerLevel = GameMng.P.PlayerLevel;
+            int playerLevel = GameMng.P != null ? GameMng.P.PlayerLevel : 1;
 
             // Select a bot type based on spawn rates
             BotSpawnConfig selectedConfig = SelectBotConfig();
@@ -277,6 +277,36 @@ namespace Cosmicrafts
         public Unit GetBotBaseStation()
         {
             return botBaseStation;
+        }
+
+        // Add method to update all active bots to match player level
+        public void UpdateBotLevels()
+        {
+            if (GameMng.P == null) return;
+            
+            int playerLevel = GameMng.P.PlayerLevel;
+            
+            foreach (BotEnemy bot in activeBots)
+            {
+                if (bot != null && bot.gameObject != null)
+                {
+                    Unit botUnit = bot.GetComponent<Unit>();
+                    if (botUnit != null)
+                    {
+                        botUnit.Level = playerLevel;
+                        
+                        // Reapply character data to ensure stats are updated
+                        foreach (var config in botConfigs)
+                        {
+                            if (config.botBaseSO != null)
+                            {
+                                config.botBaseSO.ApplyOverridesToUnit(botUnit);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 } 

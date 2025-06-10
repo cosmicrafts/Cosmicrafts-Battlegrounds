@@ -752,8 +752,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -0.13420105}
+  m_SizeDelta: {x: 0, y: 77.143}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &148751866
 MonoBehaviour:
@@ -19420,7 +19420,7 @@ MonoBehaviour:
     spawnRate: 0.25
   - botBaseSO: {fileID: 11400000, guid: bb7737c97ba1e10018f938161cb3a624, type: 2}
     spawnRate: 0.1
-  maxActiveBots: 4
+  maxActiveBots: 2
   encounterProbabilityPerStep: 0.1
   stepDistance: 2
   minSpawnDistance: 100
@@ -24053,7 +24053,7 @@ Camera:
   far clip plane: 1000
   field of view: 60
   orthographic: 1
-  orthographic size: 125
+  orthographic size: 150
   m_Depth: -1
   m_CullingMask:
     serializedVersion: 2

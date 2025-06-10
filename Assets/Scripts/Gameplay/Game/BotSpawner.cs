@@ -17,6 +17,14 @@ namespace Cosmicrafts
         public List<BotSpawnConfig> botConfigs = new List<BotSpawnConfig>();
         public int maxActiveBots = 10; // Maximum number of bots active at once
         
+        [Header("Encounter Settings")]
+        [Tooltip("Chance to trigger an encounter per step (0-1)")]
+        [Range(0f, 1f)]
+        public float encounterProbabilityPerStep = 0.1f;
+        
+        [Tooltip("Distance player must move to count as a 'step'")]
+        public float stepDistance = 2f;
+        
         [Header("Spawn Distance")]
         [Tooltip("Minimum distance from player to spawn bots")]
         public float minSpawnDistance = 100f;
@@ -30,7 +38,160 @@ namespace Cosmicrafts
         private Unit botBaseStation;
         private Team botTeam = Team.Red;
         private Vector3 baseStationPosition;
+        private float stepDistanceCounter = 0f;
+        private Vector3 lastPlayerPosition;
         
+        private void Start()
+        {
+            if (GameMng.P != null)
+            {
+                lastPlayerPosition = GameMng.P.transform.position;
+            }
+        }
+        
+        private void Update()
+        {
+            if (GameMng.P == null) return;
+
+            // Track player movement for steps
+            TrackPlayerSteps();
+
+            // Check for bots that need recycling
+            CheckAndRecycleBots();
+        }
+
+        private void TrackPlayerSteps()
+        {
+            Vector3 currentPos = GameMng.P.transform.position;
+            float distanceMoved = Vector3.Distance(currentPos, lastPlayerPosition);
+            stepDistanceCounter += distanceMoved;
+            lastPlayerPosition = currentPos;
+
+            // Trigger encounter check every "step"
+            if (stepDistanceCounter >= stepDistance)
+            {
+                stepDistanceCounter = 0f;
+                if (Random.value <= encounterProbabilityPerStep && activeBots.Count < maxActiveBots)
+                {
+                    TriggerRandomEncounter();
+                }
+            }
+        }
+
+        private void TriggerRandomEncounter()
+        {
+            // Get random position around player (circle, not grid)
+            Vector2 randomDir = Random.insideUnitCircle.normalized;
+            float spawnDistance = Random.Range(minSpawnDistance, maxSpawnDistance);
+            Vector3 spawnPos = GameMng.P.transform.position + new Vector3(randomDir.x, 0, randomDir.y) * spawnDistance;
+
+            // Spawn the bot
+            BotEnemy newBot = TrySpawnNewBot(spawnPos);
+            if (newBot != null)
+            {
+                activeBots.Add(newBot);
+            }
+        }
+
+        private BotEnemy TrySpawnNewBot(Vector3 spawnPosition)
+        {
+            // Get player level
+            int playerLevel = GameMng.P.PlayerLevel;
+
+            // Select a bot type based on spawn rates
+            BotSpawnConfig selectedConfig = SelectBotConfig();
+            if (selectedConfig == null) return null;
+            
+            // Spawn the bot
+            GameObject botObj = Instantiate(selectedConfig.botBaseSO.BasePrefab, spawnPosition, Quaternion.identity);
+            BotEnemy bot = botObj.GetComponent<BotEnemy>();
+            
+            if (bot != null)
+            {
+                Unit botUnit = bot.GetComponent<Unit>();
+                if (botUnit != null)
+                {
+                    botUnit.MyTeam = botTeam;
+                    botUnit.PlayerId = 2;
+                    botUnit.Level = playerLevel; // Match player level
+                    
+                    // Apply character data
+                    selectedConfig.botBaseSO.ApplyOverridesToUnit(botUnit);
+                    selectedConfig.botBaseSO.ApplySkillsOnDeploy(botUnit);
+                    
+                    botUnit.setId(Random.Range(10000, 99999));
+                }
+                
+                bot.botName = $"Bot_{activeBots.Count}";
+                return bot;
+            }
+            
+            return null;
+        }
+
+        private BotSpawnConfig SelectBotConfig()
+        {
+            if (botConfigs.Count == 0) return null;
+
+            // Calculate total spawn rate
+            float totalRate = 0f;
+            foreach (var config in botConfigs)
+            {
+                totalRate += config.spawnRate;
+            }
+
+            // Select random value
+            float random = Random.Range(0f, totalRate);
+            float current = 0f;
+
+            // Find selected config
+            foreach (var config in botConfigs)
+            {
+                current += config.spawnRate;
+                if (random <= current)
+                {
+                    return config;
+                }
+            }
+
+            return botConfigs[0]; // Fallback
+        }
+
+        private void CheckAndRecycleBots()
+        {
+            for (int i = activeBots.Count - 1; i >= 0; i--)
+            {
+                BotEnemy bot = activeBots[i];
+                if (bot == null || bot.gameObject == null)
+                {
+                    activeBots.RemoveAt(i);
+                    continue;
+                }
+
+                float distanceToPlayer = Vector3.Distance(bot.transform.position, GameMng.P.transform.position);
+                
+                // If bot is too far, recycle it
+                if (distanceToPlayer > recycleDistance)
+                {
+                    RecycleBot(bot);
+                }
+            }
+        }
+
+        private void RecycleBot(BotEnemy bot)
+        {
+            if (bot == null) return;
+
+            // Remove from active bots
+            activeBots.Remove(bot);
+            
+            // Destroy the bot
+            if (bot.gameObject != null)
+            {
+                Destroy(bot.gameObject);
+            }
+        }
+
         // Initialize with player team
         public void Initialize(Team playerTeam, Vector3 playerBasePosition)
         {
@@ -116,133 +277,6 @@ namespace Cosmicrafts
         public Unit GetBotBaseStation()
         {
             return botBaseStation;
-        }
-
-        private void Update()
-        {
-            if (GameMng.P == null) return;
-
-            // Check for bots that need recycling
-            CheckAndRecycleBots();
-
-            // Try to spawn new bots if we're under the limit
-            if (activeBots.Count < maxActiveBots)
-            {
-                TrySpawnNewBot();
-            }
-        }
-
-        private void CheckAndRecycleBots()
-        {
-            for (int i = activeBots.Count - 1; i >= 0; i--)
-            {
-                BotEnemy bot = activeBots[i];
-                if (bot == null || bot.gameObject == null) continue;
-
-                float distanceToPlayer = Vector3.Distance(bot.transform.position, GameMng.P.transform.position);
-                
-                // If bot is too far, recycle it
-                if (distanceToPlayer > recycleDistance)
-                {
-                    RecycleBot(bot);
-                }
-            }
-        }
-
-        private void TrySpawnNewBot()
-        {
-            // Get player position and level
-            Vector3 playerPos = GameMng.P.transform.position;
-            int playerLevel = GameMng.P.PlayerLevel;
-
-            // Select a bot type based on spawn rates
-            BotSpawnConfig selectedConfig = SelectBotConfig();
-            if (selectedConfig == null) return;
-
-            // Get spawn position
-            Vector3 spawnPos = GetSpawnPositionAroundPlayer(playerPos);
-            
-            // Spawn the bot
-            GameObject botObj = Instantiate(selectedConfig.botBaseSO.BasePrefab, spawnPos, Quaternion.identity);
-            BotEnemy bot = botObj.GetComponent<BotEnemy>();
-            
-            if (bot != null)
-            {
-                Unit botUnit = bot.GetComponent<Unit>();
-                if (botUnit != null)
-                {
-                    botUnit.MyTeam = botTeam;
-                    botUnit.PlayerId = 2;
-                    botUnit.Level = playerLevel; // Match player level
-                    
-                    // Apply character data
-                    selectedConfig.botBaseSO.ApplyOverridesToUnit(botUnit);
-                    selectedConfig.botBaseSO.ApplySkillsOnDeploy(botUnit);
-                    
-                    botUnit.setId(Random.Range(10000, 99999));
-                }
-                
-                activeBots.Add(bot);
-                bot.botName = $"Bot_{activeBots.Count}";
-            }
-        }
-
-        private BotSpawnConfig SelectBotConfig()
-        {
-            if (botConfigs.Count == 0) return null;
-
-            // Calculate total spawn rate
-            float totalRate = 0f;
-            foreach (var config in botConfigs)
-            {
-                totalRate += config.spawnRate;
-            }
-
-            // Select random value
-            float random = Random.Range(0f, totalRate);
-            float current = 0f;
-
-            // Find selected config
-            foreach (var config in botConfigs)
-            {
-                current += config.spawnRate;
-                if (random <= current)
-                {
-                    return config;
-                }
-            }
-
-            return botConfigs[0]; // Fallback
-        }
-
-        private Vector3 GetSpawnPositionAroundPlayer(Vector3 playerPos)
-        {
-            // Get random angle and distance
-            float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            float distance = Random.Range(minSpawnDistance, maxSpawnDistance);
-            
-            // Calculate position
-            Vector3 offset = new Vector3(
-                Mathf.Cos(angle) * distance,
-                0f,
-                Mathf.Sin(angle) * distance
-            );
-            
-            return playerPos + offset;
-        }
-
-        private void RecycleBot(BotEnemy bot)
-        {
-            if (bot == null) return;
-
-            // Remove from active bots
-            activeBots.Remove(bot);
-            
-            // Destroy the bot
-            if (bot.gameObject != null)
-            {
-                Destroy(bot.gameObject);
-            }
         }
     }
 } 

@@ -19513,10 +19513,12 @@ MonoBehaviour:
     spawnRate: 0.25
   - botBaseSO: {fileID: 11400000, guid: bb7737c97ba1e10018f938161cb3a624, type: 2}
     spawnRate: 0.1
-  maxActiveBots: 10
+  maxActiveBots: 4
   minSpawnDistance: 100
   maxSpawnDistance: 250
   recycleDistance: 500
+  gridCellSize: 100
+  gridCheckRadius: 3
 --- !u!4 &1458940567
 Transform:
   m_ObjectHideFlags: 0

@@ -26,6 +26,21 @@ public class Spell_04 : Spell
     {
         base.Start();
         
+        // Override damage from NFTs data if available
+        if (NFTs != null)
+        {
+            // Get the original ScriptableObject to access level and base damage
+            if (GameMng.GM != null)
+            {
+                var spellSO = GameMng.GM.GetSpellSO(NFTs.KeyId);
+                if (spellSO != null)
+                {
+                    // Use the scaled damage from the SO
+                    explosionDamage = spellSO.GetScaledDamage();
+                }
+            }
+        }
+        
         // Find the MainStation for the appropriate team
         var (mainStation, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
         _mainStationUnit = mainStationUnit;

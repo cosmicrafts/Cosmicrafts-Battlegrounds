@@ -648,6 +648,42 @@
             return allPlayersNfts.ContainsKey(finalKey) ? allPlayersNfts[finalKey] as NFTsSpell : null;
         }
 
+        // Get the SpellDataBase SO from a spell key
+        public SpellsDataBase GetSpellSO(string spellKey)
+        {
+            // Try to get the SO from the player's deck first
+            if (P != null && P.PlayerDeck != null)
+            {
+                foreach (NFTsCard card in P.PlayerDeck)
+                {
+                    if (card is NFTsSpell spell && spell.KeyId == spellKey)
+                    {
+                        // Get the SO from the card mapping using the new method
+                        ScriptableObject so = P.GetCardSO(spellKey);
+                        if (so is SpellsDataBase spellSO)
+                        {
+                            return spellSO;
+                        }
+                    }
+                }
+            }
+            
+            // If not found in player's deck, try to find it in the bot's deck
+            BotEnemy bot = FindFirstObjectByType<BotEnemy>();
+            if (bot != null)
+            {
+                foreach (SpellsDataBase spellSO in bot.DeckSpells)
+                {
+                    if (spellSO != null && spellSO.ToNFTCard().KeyId == spellKey)
+                    {
+                        return spellSO;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
         public int GetRemainingSecs()
         {
             TimeSpan currentTime = timeOut.Add(startTime - DateTime.Now);

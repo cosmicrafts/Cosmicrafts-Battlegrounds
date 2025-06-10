@@ -476,7 +476,7 @@
                     // Update bot levels when player levels up
                     if (GameMng.GM != null)
                     {
-                        BotSpawner botSpawner = FindObjectOfType<BotSpawner>();
+                        BotSpawner botSpawner = FindFirstObjectByType<BotSpawner>();
                         if (botSpawner != null)
                         {
                             botSpawner.UpdateBotLevels();

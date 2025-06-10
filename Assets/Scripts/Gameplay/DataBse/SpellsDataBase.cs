@@ -10,33 +10,50 @@ namespace Cosmicrafts
         [Tooltip("Associated Prefab")]
         [Header("Prefab")]
         [SerializeField]
-        protected GameObject Prefab;
+        public GameObject Prefab;
         
         [Tooltip("Spell icon sprite")]
         [Header("Spell Icon")]
         [SerializeField]
-        protected Sprite IconSprite;
+        public Sprite IconSprite;
 
         [Tooltip("Name of the spell")]
         [Header("Spell Name")]
         [SerializeField]
-        protected string Name;
+        public string Name;
 
         [Tooltip("Local ID of the spell")]
         [Header("Local ID")]
         [SerializeField]
-        protected int LocalID;
+        public int LocalID;
 
         [Tooltip("Faction of the spell")]
         [Header("Faction")]
         [SerializeField]
-        protected Factions Faction;
+        public Factions Faction;
 
         [Tooltip("Energy cost of the spell")]
         [Header("Spell Cost")]
         [SerializeField]
         [Range(1, 9999)]
-        protected int EnergyCost;
+        public int EnergyCost;
+
+        [Tooltip("Level of the spell")]
+        [Header("Level")]
+        [SerializeField]
+        [Range(1, 99)]
+        public int Level = 1;
+
+        [Tooltip("Base damage of the spell")]
+        [Header("Damage")]
+        [SerializeField]
+        [Range(0, 9999)]
+        public int BaseDamage = 0;
+
+        [Tooltip("Type of damage the spell deals")]
+        [Header("Damage Type")]
+        [SerializeField]
+        public TypeDmg DamageType = TypeDmg.Normal;
 
         #endregion
 
@@ -48,6 +65,9 @@ namespace Cosmicrafts
         public int localId => LocalID;
         public int faction => (int)Faction;
         public int cost => EnergyCost;
+        public int level => Level;
+        public int baseDamage => BaseDamage;
+        public TypeDmg damageType => DamageType;
 
         public NFTsSpell ToNFTCard()
         {
@@ -60,7 +80,10 @@ namespace Cosmicrafts
                 TypePrefix = NFTsCollection.NFTsPrefix[(int)NFTClass.Skill],
                 FactionPrefix = NFTsCollection.NFTsFactionsPrefixs[(Factions)faction],
                 Prefab = prefab,
-                IconSprite = iconSprite
+                IconSprite = iconSprite,
+                Level = level,
+                BaseDamage = baseDamage,
+                DamageType = damageType
             };
             
             if (nFTsCard.IconSprite == null)
@@ -69,6 +92,12 @@ namespace Cosmicrafts
             }
             
             return nFTsCard;
+        }
+
+        // Method to get scaled damage based on level
+        public int GetScaledDamage()
+        {
+            return Mathf.RoundToInt(BaseDamage * (1 + (Level - 1) * 0.1f));
         }
 
         #endregion

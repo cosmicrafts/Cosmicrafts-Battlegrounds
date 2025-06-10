@@ -64,6 +64,22 @@ public class Spell_02 : Spell
         var (mainStation, mainStationUnit) = SpellUtils.FindPlayerMainStation(MyTeam, PlayerId);
         _mainStationUnit = mainStationUnit;
         
+        // Get the scaled damage from the NFTsSpell
+        if (NFTs != null)
+        {
+            // Get the original ScriptableObject to access level and base damage
+            if (GameMng.GM != null)
+            {
+                var spellSO = GameMng.GM.GetSpellSO(NFTs.KeyId);
+                if (spellSO != null)
+                {
+                    // Use the scaled damage from the SO
+                    explosionDamage = spellSO.GetScaledDamage();
+                }
+            }
+            damageType = NFTs.DamageType;
+        }
+        
         // Apply skill modifiers to the actual values
         float finalRadius = explosionRadius * radiusMultiplier;
         

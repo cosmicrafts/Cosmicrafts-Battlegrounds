@@ -19,7 +19,7 @@ MonoBehaviour:
   hpOverride: 1200
   shieldOverride: 350
   bulletDamageOverride: 25
-  levelOverride: 2
+  levelOverride: 1
   skills:
   - skillName: 0
     Type: 0

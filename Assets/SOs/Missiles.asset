@@ -18,3 +18,6 @@ MonoBehaviour:
   LocalID: 0
   Faction: 0
   EnergyCost: 2
+  Level: 2
+  BaseDamage: 300
+  DamageType: 0

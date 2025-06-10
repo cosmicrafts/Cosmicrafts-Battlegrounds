@@ -71,6 +71,17 @@ public class Spell : MonoBehaviour
 
         if (nFTsSpell == null || GlobalManager.GMD == null || GlobalManager.GMD.DebugMode)
             return;
+            
+        // Get the original ScriptableObject to access level and base damage
+        if (GameMng.GM != null)
+        {
+            var spellSO = GameMng.GM.GetSpellSO(nFTsSpell.KeyId);
+            if (spellSO != null)
+            {
+                // Use the scaled damage from the SO
+                nFTsSpell.BaseDamage = spellSO.GetScaledDamage();
+            }
+        }
     }
 }
 }

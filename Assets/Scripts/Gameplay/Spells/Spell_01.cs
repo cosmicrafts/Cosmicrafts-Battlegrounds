@@ -67,6 +67,22 @@
         {
             base.Start();
             
+            // Get the scaled damage from the NFTsSpell
+            if (NFTs != null)
+            {
+                // Get the original ScriptableObject to access level and base damage
+                if (GameMng.GM != null)
+                {
+                    var spellSO = GameMng.GM.GetSpellSO(NFTs.KeyId);
+                    if (spellSO != null)
+                    {
+                        // Use the scaled damage from the SO
+                        damagePerSecond = spellSO.GetScaledDamage();
+                    }
+                }
+                damageType = NFTs.DamageType;
+            }
+            
             _damageTimer = damageInterval;
             _baseDamagePerTick = Mathf.RoundToInt(damagePerSecond * damageInterval);
             

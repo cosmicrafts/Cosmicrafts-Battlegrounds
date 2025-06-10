@@ -1090,6 +1090,11 @@ public class Player : MonoBehaviour
                         if (spell != null)
                         {
                             spell.PlayerId = ID;
+                            // Set the spell's level to match player level
+                            if (cardSOMapping.ContainsKey(nftcard.KeyId) && cardSOMapping[nftcard.KeyId] is SpellsDataBase spellSO)
+                            {
+                                spellSO.Level = PlayerLevel;
+                            }
                             RestEnergy(nftcard.EnergyCost);
                         }
                     }
@@ -1217,6 +1222,12 @@ public class Player : MonoBehaviour
     public int GetActiveUnitsCount()
     {
         return activeUnits.Count;
+    }
+
+    // Add public method to get SO mapping
+    public ScriptableObject GetCardSO(string cardKey)
+    {
+        return cardSOMapping.ContainsKey(cardKey) ? cardSOMapping[cardKey] : null;
     }
 }
 }

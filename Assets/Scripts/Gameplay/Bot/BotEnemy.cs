@@ -38,6 +38,9 @@ public class BotEnemy : MonoBehaviour
     //Prefabs Deck units (assign in inspector)
     public ShipsDataBase[] DeckUnits = new ShipsDataBase[8];
     
+    //Prefabs Deck spells (assign in inspector)
+    public SpellsDataBase[] DeckSpells = new SpellsDataBase[4];
+    
     //Current Energy
     [Range(0, 99)]
     public float CurrentEnergy = 30;
@@ -68,6 +71,7 @@ public class BotEnemy : MonoBehaviour
 
     //NFTs data
     Dictionary<ShipsDataBase, NFTsUnit> DeckNfts;
+    Dictionary<SpellsDataBase, NFTsSpell> DeckSpellNfts;
 
     //Bot's enemy base station
     Unit TargetUnit;
@@ -121,6 +125,7 @@ public class BotEnemy : MonoBehaviour
 
         //Init Deck Cards info with the units prefabs info
         DeckNfts = new Dictionary<ShipsDataBase, NFTsUnit>();
+        DeckSpellNfts = new Dictionary<SpellsDataBase, NFTsSpell>();
         unitPool = new Dictionary<ShipsDataBase, List<Unit>>();
         
         for (int i = 0; i < DeckUnits.Length; i++)
@@ -133,6 +138,17 @@ public class BotEnemy : MonoBehaviour
                 
                 // Initialize pool for each unit type
                 unitPool.Add(DeckUnits[i], new List<Unit>());
+            }
+        }
+
+        // Initialize spell deck
+        for (int i = 0; i < DeckSpells.Length; i++)
+        {
+            if (DeckSpells[i] != null)
+            {
+                NFTsSpell nFTsSpell = DeckSpells[i].ToNFTCard();
+                GameMng.GM.AddNftCardData(nFTsSpell, 2);
+                DeckSpellNfts.Add(DeckSpells[i], nFTsSpell);
             }
         }
 
@@ -508,52 +524,110 @@ public class BotEnemy : MonoBehaviour
             
             // Get only non-null units from the deck
             ShipsDataBase[] validUnits = DeckUnits.Where(unit => unit != null).ToArray();
+            SpellsDataBase[] validSpells = DeckSpells.Where(spell => spell != null).ToArray();
             
-            // Skip if there are no valid units
-            if (validUnits.Length == 0)
+            // Skip if there are no valid units or spells
+            if (validUnits.Length == 0 && validSpells.Length == 0)
             {
                 yield return IADelta;
                 continue;
             }
             
-            //Select first unit as default to spawn
-            ShipsDataBase SelectedUnit = validUnits[0];
-            
             //Mix game cards
             validUnits = validUnits.OrderBy(r => rng.Next()).ToArray();
+            validSpells = validSpells.OrderBy(r => rng.Next()).ToArray();
             
-            //Select a unit depending on the AI mode and current energy
-            if (CurrentEnergy < MaxCostUnit)
-            {
-                continue;
-            }
+            // Decide whether to use a spell or spawn a unit
+            bool useSpell = validSpells.Length > 0 && Random.value < 0.3f; // 30% chance to use a spell
             
-            for (int i = 0; i < 10; i++)
+            if (useSpell)
             {
-                SelectedUnit = validUnits[Random.Range(0, validUnits.Length)];
-                if (SelectedUnit.cost <= CurrentEnergy)
+                // Try to use a spell
+                SpellsDataBase selectedSpell = null;
+                for (int i = 0; i < validSpells.Length; i++)
                 {
-                    break;
+                    selectedSpell = validSpells[i];
+                    if (selectedSpell.EnergyCost <= CurrentEnergy)
+                    {
+                        break;
+                    }
+                }
+                
+                if (selectedSpell != null && selectedSpell.EnergyCost <= CurrentEnergy)
+                {
+                    // Use the spell
+                    UseSpell(selectedSpell);
+                    CurrentEnergy -= selectedSpell.EnergyCost;
                 }
             }
-
-            //Check if the bot has enough energy
-            if (SelectedUnit.cost <= CurrentEnergy && activeUnits.Count < maxActiveUnits)
+            else
             {
-                // Use spawn points system instead of random child position
-                Vector3 PositionSpawn = GetSpawnPosition(SelectedUnit);
+                //Select first unit as default to spawn
+                ShipsDataBase SelectedUnit = validUnits[0];
                 
-                // Debug.Log($"Bot spawning {SelectedUnit.name} at position {PositionSpawn}");
-
-                //Get or create unit from pool
-                Unit unit = GetUnitFromPool(SelectedUnit, PositionSpawn);
-                
-                // Add to active units list only if unit is valid
-                if (unit != null && unit.gameObject != null)
+                //Select a unit depending on the AI mode and current energy
+                if (CurrentEnergy < MaxCostUnit)
                 {
-                    activeUnits.Add(unit);
-                    CurrentEnergy -= SelectedUnit.cost;
+                    continue;
                 }
+                
+                for (int i = 0; i < 10; i++)
+                {
+                    SelectedUnit = validUnits[Random.Range(0, validUnits.Length)];
+                    if (SelectedUnit.cost <= CurrentEnergy)
+                    {
+                        break;
+                    }
+                }
+
+                //Check if the bot has enough energy
+                if (SelectedUnit.cost <= CurrentEnergy && activeUnits.Count < maxActiveUnits)
+                {
+                    // Use spawn points system instead of random child position
+                    Vector3 PositionSpawn = GetSpawnPosition(SelectedUnit);
+                    
+                    //Get or create unit from pool
+                    Unit unit = GetUnitFromPool(SelectedUnit, PositionSpawn);
+                    
+                    // Add to active units list only if unit is valid
+                    if (unit != null && unit.gameObject != null)
+                    {
+                        activeUnits.Add(unit);
+                        CurrentEnergy -= SelectedUnit.cost;
+                    }
+                }
+            }
+        }
+    }
+
+    private void UseSpell(SpellsDataBase spell)
+    {
+        if (spell == null || spell.Prefab == null) return;
+
+        // Get a random position near the target unit
+        Vector3 targetPos = TargetUnit.transform.position;
+        Vector3 randomOffset = new Vector3(
+            Random.Range(-10f, 10f),
+            0f,
+            Random.Range(-10f, 10f)
+        );
+        Vector3 spellPosition = targetPos + randomOffset;
+
+        // Create the spell
+        GameObject spellObj = Instantiate(spell.Prefab, spellPosition, Quaternion.identity);
+        Spell spellComponent = spellObj.GetComponent<Spell>();
+        
+        if (spellComponent != null)
+        {
+            // Set the spell's properties
+            spellComponent.SetNfts(DeckSpellNfts[spell]);
+            spellComponent.MyTeam = MyTeam;
+            spellComponent.PlayerId = ID;
+            
+            // Set the spell's level to match the bot's level
+            if (unitComponent != null)
+            {
+                spell.Level = unitComponent.GetLevel();
             }
         }
     }

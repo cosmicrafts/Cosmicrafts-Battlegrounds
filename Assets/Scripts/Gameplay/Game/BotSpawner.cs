@@ -34,7 +34,7 @@ namespace Cosmicrafts
         public float recycleDistance = 500f;
         
         // Runtime data
-        private List<BotEnemy> activeBots = new List<BotEnemy>();
+        private List<Bot> activeBots = new List<Bot>();
         private Unit botBaseStation;
         private Team botTeam = Team.Red;
         private Vector3 baseStationPosition;
@@ -86,14 +86,14 @@ namespace Cosmicrafts
             Vector3 spawnPos = GameMng.P.transform.position + new Vector3(randomDir.x, 0, randomDir.y) * spawnDistance;
 
             // Spawn the bot
-            BotEnemy newBot = TrySpawnNewBot(spawnPos);
+            Bot newBot = TrySpawnNewBot(spawnPos);
             if (newBot != null)
             {
                 activeBots.Add(newBot);
             }
         }
 
-        private BotEnemy TrySpawnNewBot(Vector3 spawnPosition)
+        private Bot TrySpawnNewBot(Vector3 spawnPosition)
         {
             // Get player level
             int playerLevel = GameMng.P != null ? GameMng.P.PlayerLevel : 1;
@@ -104,7 +104,7 @@ namespace Cosmicrafts
             
             // Spawn the bot
             GameObject botObj = Instantiate(selectedConfig.botBaseSO.BasePrefab, spawnPosition, Quaternion.identity);
-            BotEnemy bot = botObj.GetComponent<BotEnemy>();
+            Bot bot = botObj.GetComponent<Bot>();
             
             if (bot != null)
             {
@@ -164,7 +164,7 @@ namespace Cosmicrafts
         {
             for (int i = activeBots.Count - 1; i >= 0; i--)
             {
-                BotEnemy bot = activeBots[i];
+                Bot bot = activeBots[i];
                 if (bot == null || bot.gameObject == null)
                 {
                     activeBots.RemoveAt(i);
@@ -181,7 +181,7 @@ namespace Cosmicrafts
             }
         }
 
-        private void RecycleBot(BotEnemy bot)
+        private void RecycleBot(Bot bot)
         {
             if (bot == null) return;
 
@@ -231,7 +231,7 @@ namespace Cosmicrafts
         private void SpawnBotBaseStation()
         {
             // Create bot base station
-            GameObject botBaseObj = botConfigs[0].botBaseSO.BasePrefab.GetComponent<BotEnemy>().prefabBaseStation;
+            GameObject botBaseObj = botConfigs[0].botBaseSO.BasePrefab.GetComponent<Bot>().prefabBaseStation;
             botBaseStation = Instantiate(botBaseObj, baseStationPosition, Quaternion.identity).GetComponent<Unit>();
             botBaseStation.PlayerId = 2;
             botBaseStation.MyTeam = botTeam;
@@ -246,8 +246,8 @@ namespace Cosmicrafts
                 botConfigs[0].botBaseSO.ApplySkillsOnDeploy(botBaseStation);
             }
             
-            // Add base station's BotEnemy to the bots list (first bot)
-            BotEnemy baseBot = botBaseStation.GetComponent<BotEnemy>();
+            // Add base station's Bot to the bots list (first bot)
+            Bot baseBot = botBaseStation.GetComponent<Bot>();
             if (baseBot != null)
             {
                 activeBots.Add(baseBot);
@@ -268,14 +268,14 @@ namespace Cosmicrafts
             SpawnBots();
         }
         
-        public List<BotEnemy> GetBots()
+        public List<Bot> GetBots()
         {
             return activeBots;
         }
         
         public void ClearBots()
         {
-            foreach (BotEnemy bot in activeBots)
+            foreach (Bot bot in activeBots)
             {
                 if (bot != null && bot.gameObject != null)
                 {
@@ -297,7 +297,7 @@ namespace Cosmicrafts
             
             int playerLevel = GameMng.P.PlayerLevel;
             
-            foreach (BotEnemy bot in activeBots)
+            foreach (Bot bot in activeBots)
             {
                 if (bot != null && bot.gameObject != null)
                 {

@@ -669,7 +669,7 @@
             }
             
             // If not found in player's deck, try to find it in the bot's deck
-            BotEnemy bot = FindFirstObjectByType<BotEnemy>();
+            Bot bot = FindFirstObjectByType<Bot>();
             if (bot != null)
             {
                 foreach (SpellsDataBase spellSO in bot.DeckSpells)

@@ -29,7 +29,7 @@ public static class ResourcesServices
 
         foreach (var bot in bots)
         {
-            names.Add(bot.GetComponent<BotEnemy>().botName);
+            names.Add(bot.GetComponent<Bot>().botName);
         }
 
         return names;

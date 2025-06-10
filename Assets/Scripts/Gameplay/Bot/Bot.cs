@@ -11,7 +11,7 @@ using UnityEngine.XR;
  * Uses its own energy and deck
  * The positions to deploy units are predefined
  */
-public class BotEnemy : MonoBehaviour
+public class Bot : MonoBehaviour
 {
 
     //Bot player Name 

@@ -1031,7 +1031,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   botName: Alpha-9
-  botLv: 420
   botAvatar: 1
   spawnPoints:
   - {fileID: 7247232008569535157}
@@ -1041,6 +1040,11 @@ MonoBehaviour:
   prefabBaseStation: {fileID: 2198226034328220048}
   DeckUnits:
   - {fileID: 11400000, guid: e6bc65fa66c655a4da48ec661cae23f0, type: 2}
+  DeckSpells:
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
+  - {fileID: 0}
   CurrentEnergy: 1
   MaxEnergy: 10
   SpeedEnergy: 0.25
@@ -1102,8 +1106,8 @@ MonoBehaviour:
   IsDeath: 0
   PlayerId: 1
   MyTeam: 0
-  HitPoints: 550
-  Shield: 250
+  HitPoints: 999999
+  Shield: 999999
   ShieldDelay: 1.41
   Size: 1
   DodgeChance: 0

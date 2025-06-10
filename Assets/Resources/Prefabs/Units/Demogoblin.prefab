@@ -897,8 +897,8 @@ MonoBehaviour:
   IsDeath: 0
   PlayerId: 1
   MyTeam: 0
-  HitPoints: 120
-  Shield: 120
+  HitPoints: 999999
+  Shield: 999999
   ShieldDelay: 1.41
   Size: 1
   DodgeChance: 0
@@ -913,6 +913,7 @@ MonoBehaviour:
   ShieldGameObject: {fileID: 8358885684385215374}
   UI: {fileID: 8725141663424671622}
   MyAnim: {fileID: 5587368828233238574}
+  ghostMaterial: {fileID: 0}
   TailPoint: {fileID: 0}
   HasTaunt: 0
   TauntRadius: 5

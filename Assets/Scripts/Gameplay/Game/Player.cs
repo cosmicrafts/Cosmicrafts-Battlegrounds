@@ -336,36 +336,13 @@ public class Player : MonoBehaviour
     // Get a unit from the pool or create a new one if none available
     private Unit GetUnitFromPool(string keyId, Vector3 position)
     {
-        GameObject prefab = null;
-
-        // First try to get the prefab from DeckUnits
-        if (!string.IsNullOrEmpty(keyId) && DeckUnits.ContainsKey(keyId))
+        if (string.IsNullOrEmpty(keyId))
         {
-            prefab = DeckUnits[keyId];
-        }
-        // If that fails, try to get it from the ScriptableObject mapping
-        else if (!string.IsNullOrEmpty(keyId) && cardSOMapping.ContainsKey(keyId))
-        {
-            // Get prefab from ScriptableObject
-            if (cardSOMapping[keyId] is ShipsDataBase shipCard)
-            {
-                prefab = shipCard.prefab;
-                // Add to DeckUnits for future reference
-                if (prefab != null && !DeckUnits.ContainsKey(keyId))
-                {
-                    DeckUnits[keyId] = prefab;
-                }
-            }
-        }
-
-        // If we still don't have a valid prefab, log error and exit
-        if (prefab == null)
-        {
-            Debug.LogWarning($"Cannot get unit from pool: No prefab found for key {keyId}");
+            Debug.LogWarning("Cannot get unit from pool: keyId is null or empty");
             return null;
         }
         
-        // Initialize pool for this unit type if it doesn't exist
+        // Get the pool for this unit type
         if (!unitPool.ContainsKey(keyId))
         {
             unitPool[keyId] = new List<Unit>();
@@ -402,22 +379,33 @@ public class Player : MonoBehaviour
             try
             {
                 unit.ResetUnit(); // Reset the unit's state
+                
+                // Get the NFT data from the card SO
+                ScriptableObject cardSO = GetCardSO(keyId);
+                if (cardSO != null)
+                {
+                    if (cardSO is ShipsDataBase shipCardSO)
+                    {
+                        unit.SetNfts(shipCardSO.ToNFTCard());
+                    }
+                    // Don't set NFT data for spells as they use a different type
+                }
+                
+                // Set the unit's level to match the player's level
+                unit.SetLevel(PlayerLevel);
+                
+                // Update UI if available
+                UIUnit uiUnit = unit.GetComponentInChildren<UIUnit>();
+                if (uiUnit != null)
+                {
+                    uiUnit.UpdateLevelText(PlayerLevel);
+                }
             }
-            catch (System.Exception e)
+            catch (System.Exception)
             {
-                Debug.LogError($"Error resetting unit: {e.Message}");
                 // If there's an error resetting, create a new unit instead
                 GameMng.GM.DeleteUnit(unit);
                 return CreateNewUnit(keyId, position);
-            }
-            
-            // Add to active units list
-            activeUnits.Add(unit);
-            
-            // Update unit counter in UI
-            if (GameMng.UI != null)
-            {
-                GameMng.UI.UpdateUnitCounter(activeUnits.Count, maxActiveUnits);
             }
             
             return unit;
@@ -430,27 +418,28 @@ public class Player : MonoBehaviour
     // Helper method to create a new unit
     private Unit CreateNewUnit(string keyId, Vector3 position)
     {
-        GameObject prefab = null;
-        
-        // Try to get prefab from DeckUnits first
-        if (DeckUnits.ContainsKey(keyId))
+        // Get the card SO
+        ScriptableObject cardSO = GetCardSO(keyId);
+        if (cardSO == null)
         {
-            prefab = DeckUnits[keyId];
+            Debug.LogError($"Cannot create unit: no card SO found for keyId {keyId}");
+            return null;
         }
-        // If not in DeckUnits, try to get from ScriptableObject
-        else if (cardSOMapping.ContainsKey(keyId) && cardSOMapping[keyId] is ShipsDataBase shipCard)
+        
+        // Get the prefab based on card type
+        GameObject prefab = null;
+        if (cardSO is ShipsDataBase shipCardPrefab)
         {
-            prefab = shipCard.prefab;
-            // Add to DeckUnits for future reference
-            if (prefab != null && !DeckUnits.ContainsKey(keyId))
-            {
-                DeckUnits[keyId] = prefab;
-            }
+            prefab = shipCardPrefab.prefab;
+        }
+        else if (cardSO is SpellsDataBase spellCard)
+        {
+            prefab = spellCard.Prefab;
         }
         
         if (prefab == null)
         {
-            Debug.LogError($"Cannot create unit: prefab is null for key {keyId}");
+            Debug.LogError($"Cannot create unit: prefab is null for card {keyId}");
             return null;
         }
         
@@ -460,6 +449,23 @@ public class Player : MonoBehaviour
         {
             // Subscribe to unit's death event to return it to pool
             newUnit.OnUnitDeath += ReturnUnitToPool;
+            
+            // Set the NFT data only for ships
+            if (cardSO is ShipsDataBase shipCardData)
+            {
+                newUnit.SetNfts(shipCardData.ToNFTCard());
+            }
+            // Don't set NFT data for spells as they use a different type
+            
+            // Set the unit's level to match the player's level
+            newUnit.SetLevel(PlayerLevel);
+            
+            // Update UI if available
+            UIUnit uiUnit = newUnit.GetComponentInChildren<UIUnit>();
+            if (uiUnit != null)
+            {
+                uiUnit.UpdateLevelText(PlayerLevel);
+            }
         }
         
         return newUnit;

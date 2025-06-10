@@ -122,6 +122,9 @@ namespace Cosmicrafts
                     botUnit.setId(Random.Range(10000, 99999));
                 }
                 
+                // Set the bot's CharacterBaseSO reference
+                bot.botCharacterSO = selectedConfig.botBaseSO;
+                
                 bot.botName = $"Bot_{activeBots.Count}";
                 return bot;
             }
@@ -236,12 +239,20 @@ namespace Cosmicrafts
             // Generate a unique ID
             botBaseStation.setId(Random.Range(1000, 9999));
             
+            // Apply character data from SO
+            if (botConfigs[0].botBaseSO != null)
+            {
+                botConfigs[0].botBaseSO.ApplyOverridesToUnit(botBaseStation);
+                botConfigs[0].botBaseSO.ApplySkillsOnDeploy(botBaseStation);
+            }
+            
             // Add base station's BotEnemy to the bots list (first bot)
             BotEnemy baseBot = botBaseStation.GetComponent<BotEnemy>();
             if (baseBot != null)
             {
                 activeBots.Add(baseBot);
                 baseBot.botName = "Bot_Base";
+                baseBot.botCharacterSO = botConfigs[0].botBaseSO; // Set the SO reference
             }
         }
         

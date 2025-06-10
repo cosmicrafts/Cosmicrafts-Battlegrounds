@@ -91,6 +91,10 @@ public class BotEnemy : MonoBehaviour
     // Add reference to Unit component
     private Unit unitComponent;
 
+    // Add reference to bot's CharacterBaseSO
+    [HideInInspector]
+    public CharacterBaseSO botCharacterSO;
+
     private void Awake() { }
     // Start is called before the first frame update
     void Start()
@@ -387,7 +391,20 @@ public class BotEnemy : MonoBehaviour
             {
                 unit.ResetUnit(); // Reset the unit's state
                 
-                // Set level to match player
+                // First set the NFT data from ShipsDataBase
+                if (DeckNfts.ContainsKey(unitData))
+                {
+                    unit.SetNfts(DeckNfts[unitData]);
+                }
+                
+                // Then apply character overrides if available
+                if (botCharacterSO != null)
+                {
+                    botCharacterSO.ApplyOverridesToUnit(unit);
+                    botCharacterSO.ApplySkillsOnDeploy(unit);
+                }
+                
+                // Get the current player level if available
                 if (GameMng.P != null)
                 {
                     unit.SetLevel(GameMng.P.PlayerLevel);
@@ -430,7 +447,20 @@ public class BotEnemy : MonoBehaviour
             // Subscribe to unit's death event to return it to pool
             newUnit.OnUnitDeath += ReturnUnitToPool;
             
-            // Set level to match player
+            // First set the NFT data from ShipsDataBase
+            if (DeckNfts.ContainsKey(unitData))
+            {
+                newUnit.SetNfts(DeckNfts[unitData]);
+            }
+            
+            // Then apply character overrides if available
+            if (botCharacterSO != null)
+            {
+                botCharacterSO.ApplyOverridesToUnit(newUnit);
+                botCharacterSO.ApplySkillsOnDeploy(newUnit);
+            }
+            
+            // Get the current player level if available
             if (GameMng.P != null)
             {
                 newUnit.SetLevel(GameMng.P.PlayerLevel);

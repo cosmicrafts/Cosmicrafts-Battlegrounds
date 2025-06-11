@@ -33,6 +33,11 @@ namespace Cosmicrafts
         [Tooltip("Distance at which bots are recycled back to pool")]
         public float recycleDistance = 500f;
         
+        [Header("Pool Settings")]
+        [SerializeField] private int initialPoolSize = 20;
+        private Dictionary<BotSpawnConfig, Queue<Bot>> botPools = new Dictionary<BotSpawnConfig, Queue<Bot>>();
+        private Dictionary<Bot, BotSpawnConfig> botConfigMap = new Dictionary<Bot, BotSpawnConfig>();
+        
         // Runtime data
         private List<Bot> activeBots = new List<Bot>();
         private Unit botBaseStation;
@@ -41,12 +46,112 @@ namespace Cosmicrafts
         private float stepDistanceCounter = 0f;
         private Vector3 lastPlayerPosition;
         
+        private void InitializePools()
+        {
+            botPools.Clear();
+            botConfigMap.Clear();
+
+            foreach (var config in botConfigs)
+            {
+                if (config.botBaseSO != null && config.botBaseSO.BasePrefab != null)
+                {
+                    botPools[config] = new Queue<Bot>();
+                    
+                    // Pre-populate the pool
+                    for (int i = 0; i < initialPoolSize; i++)
+                    {
+                        CreatePooledBot(config);
+                    }
+                }
+            }
+        }
+
+        private void CreatePooledBot(BotSpawnConfig config)
+        {
+            GameObject botObj = Instantiate(config.botBaseSO.BasePrefab);
+            Bot bot = botObj.GetComponent<Bot>();
+            
+            if (bot != null)
+            {
+                Unit botUnit = bot.GetComponent<Unit>();
+                if (botUnit != null)
+                {
+                    // Initialize with player level
+                    int playerLevel = GameMng.P != null ? GameMng.P.PlayerLevel : 1;
+                    botUnit.Level = playerLevel;
+                    Debug.Log($"Created new pooled bot with level {playerLevel}");
+                }
+                
+                bot.gameObject.SetActive(false);
+                botPools[config].Enqueue(bot);
+                botConfigMap[bot] = config;
+            }
+        }
+
+        private Bot GetBotFromPool(BotSpawnConfig config)
+        {
+            if (!botPools.ContainsKey(config) || botPools[config].Count == 0)
+            {
+                Debug.Log("Creating new bot for pool");
+                CreatePooledBot(config);
+            }
+
+            if (botPools[config].Count > 0)
+            {
+                Bot bot = botPools[config].Dequeue();
+                bot.gameObject.SetActive(true);
+                
+                // Get the current level before resetting
+                Unit botUnit = bot.GetComponent<Unit>();
+                if (botUnit != null)
+                {
+                    int currentLevel = botUnit.Level;
+                    Debug.Log($"Getting bot from pool, current level {currentLevel}");
+                    
+                    // Reset the unit's state
+                    botUnit.ResetUnit();
+                    
+                    // Restore the level immediately after reset
+                    botUnit.Level = currentLevel;
+                    Debug.Log($"Restored bot level to {currentLevel} after reset");
+                }
+                
+                return bot;
+            }
+
+            return null;
+        }
+
+        private void ReturnBotToPool(Bot bot)
+        {
+            if (bot == null || !botConfigMap.ContainsKey(bot)) return;
+
+            // Reset the bot's state before returning to pool
+            Unit botUnit = bot.GetComponent<Unit>();
+            if (botUnit != null)
+            {
+                int currentLevel = botUnit.Level;
+                Debug.Log($"Returning bot to pool with level {currentLevel}");
+                
+                // Store the level before reset
+                botUnit.ResetUnit();
+                
+                // Restore the level after reset
+                botUnit.Level = currentLevel;
+            }
+
+            BotSpawnConfig config = botConfigMap[bot];
+            bot.gameObject.SetActive(false);
+            botPools[config].Enqueue(bot);
+        }
+
         private void Start()
         {
             if (GameMng.P != null)
             {
                 lastPlayerPosition = GameMng.P.transform.position;
             }
+            InitializePools();
         }
         
         private void Update()
@@ -97,34 +202,45 @@ namespace Cosmicrafts
         {
             // Get player level
             int playerLevel = GameMng.P != null ? GameMng.P.PlayerLevel : 1;
+            Debug.Log($"Spawning new bot with player level: {playerLevel}");
 
             // Select a bot type based on spawn rates
             BotSpawnConfig selectedConfig = SelectBotConfig();
             if (selectedConfig == null) return null;
             
-            // Spawn the bot
-            GameObject botObj = Instantiate(selectedConfig.botBaseSO.BasePrefab, spawnPosition, Quaternion.identity);
-            Bot bot = botObj.GetComponent<Bot>();
-            
+            // Get bot from pool
+            Bot bot = GetBotFromPool(selectedConfig);
             if (bot != null)
             {
+                bot.transform.position = spawnPosition;
+                bot.transform.rotation = Quaternion.identity;
+                
                 Unit botUnit = bot.GetComponent<Unit>();
                 if (botUnit != null)
                 {
+                    Debug.Log($"Setting bot level to {playerLevel} (was {botUnit.Level})");
+                    // Set level and team BEFORE applying character data
+                    botUnit.Level = playerLevel;
                     botUnit.MyTeam = botTeam;
                     botUnit.PlayerId = 2;
-                    botUnit.Level = playerLevel; // Match player level
                     
-                    // Apply character data
+                    // Apply character data with the correct level
                     selectedConfig.botBaseSO.ApplyOverridesToUnit(botUnit);
                     selectedConfig.botBaseSO.ApplySkillsOnDeploy(botUnit);
                     
+                    // Set ID after all other properties are set
                     botUnit.setId(Random.Range(10000, 99999));
+
+                    // Ensure UI is updated with the correct level immediately
+                    UIUnit uiUnit = botUnit.GetComponentInChildren<UIUnit>();
+                    if (uiUnit != null)
+                    {
+                        uiUnit.UpdateLevelText(playerLevel);
+                    }
                 }
                 
                 // Set the bot's CharacterBaseSO reference
                 bot.botCharacterSO = selectedConfig.botBaseSO;
-                
                 bot.botName = $"Bot_{activeBots.Count}";
                 return bot;
             }
@@ -176,6 +292,7 @@ namespace Cosmicrafts
                 // If bot is too far, recycle it
                 if (distanceToPlayer > recycleDistance)
                 {
+                    Debug.Log($"Recycling bot at distance {distanceToPlayer} (threshold: {recycleDistance})");
                     RecycleBot(bot);
                 }
             }
@@ -188,11 +305,8 @@ namespace Cosmicrafts
             // Remove from active bots
             activeBots.Remove(bot);
             
-            // Destroy the bot
-            if (bot.gameObject != null)
-            {
-                Destroy(bot.gameObject);
-            }
+            // Return to pool instead of destroying
+            ReturnBotToPool(bot);
         }
 
         // Initialize with player team
@@ -277,9 +391,9 @@ namespace Cosmicrafts
         {
             foreach (Bot bot in activeBots)
             {
-                if (bot != null && bot.gameObject != null)
+                if (bot != null)
                 {
-                    Destroy(bot.gameObject);
+                    ReturnBotToPool(bot);
                 }
             }
             activeBots.Clear();
@@ -307,17 +421,32 @@ namespace Cosmicrafts
                         botUnit.Level = playerLevel;
                         
                         // Reapply character data to ensure stats are updated
-                        foreach (var config in botConfigs)
+                        if (bot.botCharacterSO != null)
                         {
-                            if (config.botBaseSO != null)
-                            {
-                                config.botBaseSO.ApplyOverridesToUnit(botUnit);
-                                break;
-                            }
+                            bot.botCharacterSO.ApplyOverridesToUnit(botUnit);
+                            bot.botCharacterSO.ApplySkillsOnDeploy(botUnit);
                         }
                     }
                 }
             }
+        }
+
+        private void OnDestroy()
+        {
+            // Clean up all pooled bots
+            foreach (var pool in botPools.Values)
+            {
+                while (pool.Count > 0)
+                {
+                    Bot bot = pool.Dequeue();
+                    if (bot != null)
+                    {
+                        Destroy(bot.gameObject);
+                    }
+                }
+            }
+            botPools.Clear();
+            botConfigMap.Clear();
         }
     }
 } 

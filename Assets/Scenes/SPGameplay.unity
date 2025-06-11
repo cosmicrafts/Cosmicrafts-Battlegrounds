@@ -752,8 +752,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -0.13420105}
-  m_SizeDelta: {x: 0, y: 77.143}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &148751866
 MonoBehaviour:
@@ -19426,6 +19426,7 @@ MonoBehaviour:
   minSpawnDistance: 100
   maxSpawnDistance: 250
   recycleDistance: 500
+  initialPoolSize: 20
 --- !u!4 &1458940567
 Transform:
   m_ObjectHideFlags: 0

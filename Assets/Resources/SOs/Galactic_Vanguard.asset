@@ -22,5 +22,5 @@ MonoBehaviour:
   Shield: 140
   EnergyCost: 1
   Damage: 45
-  Speed: 25
+  Speed: 5
   Level: 1

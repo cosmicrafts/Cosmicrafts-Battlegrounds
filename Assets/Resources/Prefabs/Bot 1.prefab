@@ -1041,6 +1041,7 @@ MonoBehaviour:
   prefabBaseStation: {fileID: 2198226034328220048}
   DeckUnits:
   - {fileID: 11400000, guid: 2483b3775a9db561c9e4807620bd414a, type: 2}
+  - {fileID: 11400000, guid: 6d13ad9c5163f992ea602c1171826be1, type: 2}
   DeckSpells:
   - {fileID: 0}
   - {fileID: 0}
@@ -1051,6 +1052,7 @@ MonoBehaviour:
   SpeedEnergy: 0.25
   waitSpawn: 3
   maxActiveUnits: 4
+  botCharacterSO: {fileID: 0}
 --- !u!54 &2198226034328220052
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -1138,6 +1140,9 @@ MonoBehaviour:
   AvoidanceRange: 1.5
   RotationDamping: 0.86
   AlignRotationWithMovement: 1
+  driftAmount: 0.3
+  driftDecayRate: 2
+  maxDriftSpeedMultiplier: 0.5
   followPlayerWhenIdle: 1
   playerFollowDistance: 8
   returnToSpawnWhenIdle: 1

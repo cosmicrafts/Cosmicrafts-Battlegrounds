@@ -27,6 +27,17 @@
         public float RotationDamping = 0.1f; // Damping factor for smoother rotation
         public bool AlignRotationWithMovement = true; // Flag to toggle rotation alignment
 
+        [Header("Drift Settings")]
+        [Tooltip("How much the ship will drift after movement (0 = no drift, 1 = full drift)")]
+        [Range(0f, 1f)]
+        public float driftAmount = 0.3f;
+        [Tooltip("How quickly the drift decays (higher = faster decay)")]
+        [Range(0.1f, 10f)]
+        public float driftDecayRate = 2f;
+        [Tooltip("Maximum drift speed as a percentage of max speed")]
+        [Range(0f, 1f)]
+        public float maxDriftSpeedMultiplier = 0.5f;
+
         [Header("Follow Behavior")]
         [Tooltip("Whether the ship should follow the player when not attacking")]
         public bool followPlayerWhenIdle = true;
@@ -98,6 +109,8 @@
         public float spawnPointUpdateInterval = 0.5f;
         private float spawnPointUpdateTimer = 0f;
         
+        private Vector3 currentDrift = Vector3.zero;
+
         protected override void Start()
         {
             base.Start();
@@ -292,10 +305,21 @@
 
         protected override void FixedUpdate()
         {
-            // Limit velocity but don't zero it completely
-            if (MyRb.linearVelocity.magnitude > MaxSpeed + 1f)
+            // Apply drift to velocity
+            if (currentDrift.magnitude > 0.01f)
             {
-                MyRb.linearVelocity = MyRb.linearVelocity.normalized * (MaxSpeed + 1f);
+                // Decay drift over time
+                currentDrift = Vector3.Lerp(currentDrift, Vector3.zero, driftDecayRate * Time.fixedDeltaTime);
+                
+                // Apply drift to rigidbody
+                MyRb.linearVelocity += currentDrift;
+            }
+
+            // Limit total velocity (including drift)
+            float maxTotalSpeed = MaxSpeed * (1f + maxDriftSpeedMultiplier);
+            if (MyRb.linearVelocity.magnitude > maxTotalSpeed)
+            {
+                MyRb.linearVelocity = MyRb.linearVelocity.normalized * maxTotalSpeed;
             }
             
             // Allow some angular velocity for smoother turns, but cap it
@@ -406,6 +430,13 @@
                     {
                         Vector3 directionToTarget = (MySt.Destination - transform.position).normalized;
                         moveDirection = MySt.GetSteeredDirection(directionToTarget);
+                        
+                        // Calculate drift based on movement direction and speed
+                        if (moveDirection.sqrMagnitude > 0.01f)
+                        {
+                            // Add drift in the movement direction
+                            currentDrift = moveDirection * Speed * driftAmount;
+                        }
                     }
                     
                     // Only update rotation if we want to align with movement
@@ -622,6 +653,7 @@
             Speed = 0f;
             DeathRot = Vector3.zero;
             moveDirection = Vector3.zero;
+            currentDrift = Vector3.zero; // Reset drift
             
             // Reset player follow timer
             playerFollowUpdateTimer = 0f;

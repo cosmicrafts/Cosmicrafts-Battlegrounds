@@ -546,7 +546,7 @@
 
             #if SCREENDISTORTION_ON
             sampler2D _DistNormalMap, _GrabTexture;
-			half4 _DistNormalMap_ST, _GrabTexture_ST;
+			half4 _DistNormalMap_ST;
 			half _DistortionPower, _DistortionBlend, _DistortionScrollXSpeed, _DistortionScrollYSpeed;
             #endif
 
@@ -1245,7 +1245,7 @@
 				half4 originalScreenCoord = i.screenCoord;
             	#endif
             	half3 usableNormals = UnpackNormal(normalMap);
-            	half2 distortUvOffset = usableNormals.rg * _DistortionPower * i.color.a * i.screenCoord.z * _GrabTexture_ST.xy * normalMap.a;
+            	half2 distortUvOffset = usableNormals.rg * _DistortionPower * i.color.a * i.screenCoord.z * normalMap.a;
 				i.screenCoord.xy = distortUvOffset + i.screenCoord.xy;
             	half3 distortCol = tex2Dproj(_GrabTexture, i.screenCoord).rgb;
             	#if DISTORTONLYBACK_ON

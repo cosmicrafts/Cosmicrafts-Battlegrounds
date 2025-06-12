@@ -60,9 +60,9 @@ public class Spell_03 : Spell
         Debug.Log($"Spell_03 SetNfts called with NFT: {(nFTsSpell != null ? nFTsSpell.KeyId : "null")}");
         base.SetNfts(nFTsSpell);
         
-        if (nFTsSpell == null || GlobalManager.GMD == null || GlobalManager.GMD.DebugMode)
+        if (nFTsSpell == null)
         {
-            Debug.LogWarning($"Spell_03 SetNfts early return - nFTsSpell null: {nFTsSpell == null}, GMD null: {GlobalManager.GMD == null}");
+            Debug.LogWarning($"Spell_03 SetNfts early return - nFTsSpell is null");
             return;
         }
 

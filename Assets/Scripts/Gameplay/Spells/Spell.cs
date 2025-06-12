@@ -69,7 +69,7 @@ public class Spell : MonoBehaviour
     {
         NFTs = nFTsSpell;
 
-        if (nFTsSpell == null || GlobalManager.GMD == null || GlobalManager.GMD.DebugMode)
+        if (nFTsSpell == null)
             return;
             
         // Get the original ScriptableObject to access level and base damage

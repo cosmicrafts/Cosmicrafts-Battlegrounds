@@ -363,7 +363,7 @@ namespace Cosmicrafts
                 }
                 
                 GameMng.P.AddXP(xpReward);
-                Debug.Log($"Awarded {xpReward} XP for destroying {gameObject.name} (Level {Level})");
+                // Debug.Log($"Awarded {xpReward} XP for destroying {gameObject.name} (Level {Level})");
 
                 // Show XP gain text
                 if (GameMng.UI != null)

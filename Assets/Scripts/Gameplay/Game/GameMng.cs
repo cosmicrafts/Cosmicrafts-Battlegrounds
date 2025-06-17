@@ -62,12 +62,12 @@
 
         private void Awake()
         {
-            Debug.Log("--GAME MANAGER AWAKE--");
+            // Debug.Log("--GAME MANAGER AWAKE--");
 
             // Init static unique controllers
             GM = this;
 
-            Debug.Log("--GAME VARIABLES READY--");
+            // Debug.Log("--GAME VARIABLES READY--");
 
             MT = new GameMetrics();
             MT.InitMetrics();
@@ -167,7 +167,7 @@
             // 4. Apply gameplay modifiers from CharacterBaseSO (e.g., global buffs)
             characterSO.ApplyGameplayModifiers();
 
-            Debug.Log($"Player initialized. Player Component: {P.name}, Base Unit: {(playerBaseUnit != null ? playerBaseUnit.name : "MISSING_UNIT_COMPONENT")} at {playerGameObject.transform.position}");
+            // Debug.Log($"Player initialized. Player Component: {P.name}, Base Unit: {(playerBaseUnit != null ? playerBaseUnit.name : "MISSING_UNIT_COMPONENT")} at {playerGameObject.transform.position}");
         }
 
         // Renamed and refactored from InitBaseStations
@@ -175,7 +175,7 @@
         {
             if (P == null)
             {
-                Debug.LogError("SetupTeamBasesAndBots: Player (P) is null. Cannot proceed.");
+                // Debug.LogError("SetupTeamBasesAndBots: Player (P) is null. Cannot proceed.");
                 return;
             }
 
@@ -198,7 +198,7 @@
                 playerBaseStationInstance.OnUnitDeath -= HandlePlayerBaseStationDeath; // Ensure no double subscription
                 playerBaseStationInstance.OnUnitDeath += HandlePlayerBaseStationDeath;
 
-                Debug.Log($"Player base station ({playerBaseStationInstance.name}) registered. Team: {playerBaseStationInstance.MyTeam}, PlayerId: {playerBaseStationInstance.PlayerId}, Pos: {playerBaseStationInstance.transform.position}");
+                // Debug.Log($"Player base station ({playerBaseStationInstance.name}) registered. Team: {playerBaseStationInstance.MyTeam}, PlayerId: {playerBaseStationInstance.PlayerId}, Pos: {playerBaseStationInstance.transform.position}");
             }
             else
             {
@@ -238,7 +238,7 @@
                     enemyBaseStation.UpdateOutlineColor();
                     
                     Targets[enemyBaseIndex] = enemyBaseStation;
-                    Debug.Log($"Enemy base station ({enemyBaseStation.name}) registered. Team: {enemyBaseStation.MyTeam}, PlayerId: {enemyBaseStation.PlayerId}");
+                    // Debug.Log($"Enemy base station ({enemyBaseStation.name}) registered. Team: {enemyBaseStation.MyTeam}, PlayerId: {enemyBaseStation.PlayerId}");
                 }
                 else
                 {
@@ -300,7 +300,7 @@
             
             if (baseStation == Targets[playerBaseIndex] && !isRespawning)
             {
-                Debug.Log("[GameMng] Player base station died, triggering death state");
+                // Debug.Log("[GameMng] Player base station died, triggering death state");
                 
                 // Show death panel
                 if (deathPanel != null)
@@ -370,7 +370,7 @@
         private IEnumerator RespawnPlayerBaseStation()
         {
             isRespawning = true;
-            Debug.Log("[GameMng] Starting player respawn process");
+            // Debug.Log("[GameMng] Starting player respawn process");
             
             // Hide death panel
             if (deathPanel != null)
@@ -433,7 +433,7 @@
                     }
                 }
                 
-                Debug.Log("[GameMng] Player respawn completed successfully");
+                // Debug.Log("[GameMng] Player respawn completed successfully");
             }
             else
             {

@@ -287,7 +287,7 @@ public class Player : MonoBehaviour
                 
                 if (originalIndex != index)
                 {
-                    Debug.Log($"Switched spawn point for {unitKeyId} from {originalIndex} to {index} to avoid conflict");
+                   // Debug.Log($"Switched spawn point for {unitKeyId} from {originalIndex} to {index} to avoid conflict");
                 }
             }
         }
@@ -1005,11 +1005,11 @@ public class Player : MonoBehaviour
                     GameMng.UI.ShowUnitLimitWarning();
                 }
                 // Then log the message
-                Debug.LogWarning($"Maximum active units ({maxActiveUnits}) reached, cannot deploy more units");
+               // Debug.LogWarning($"Maximum active units ({maxActiveUnits}) reached, cannot deploy more units");
                 return;
             }
             
-            Debug.Log($"Attempting to deploy unit: {nftcard.KeyId}, SO mapping exists: {cardSOMapping.ContainsKey(nftcard.KeyId)}, DeckUnits exists: {DeckUnits.ContainsKey(nftcard.KeyId)}");
+            // Debug.Log($"Attempting to deploy unit: {nftcard.KeyId}, SO mapping exists: {cardSOMapping.ContainsKey(nftcard.KeyId)}, DeckUnits exists: {DeckUnits.ContainsKey(nftcard.KeyId)}");
             
             Vector3 spawnPosition;
             Transform usedSpawnPoint = null;
@@ -1025,12 +1025,12 @@ public class Player : MonoBehaviour
                 spawnPosition = position;
                 usedSpawnPoint = spawnPoint;
                 
-                Debug.Log($"Auto-deploying unit {nftcard.KeyId} at spawn point {usedSpawnPoint.name} (index {spawnPoints.IndexOf(usedSpawnPoint)})");
+                // Debug.Log($"Auto-deploying unit {nftcard.KeyId} at spawn point {usedSpawnPoint.name} (index {spawnPoints.IndexOf(usedSpawnPoint)})");
             }
             else
             {
                 spawnPosition = CMath.GetMouseWorldPos();
-                Debug.Log($"Deploying unit {nftcard.KeyId} at mouse position {spawnPosition}");
+                // Debug.Log($"Deploying unit {nftcard.KeyId} at mouse position {spawnPosition}");
             }
             
             if ((NFTClass)nftcard.EntType != NFTClass.Skill)
@@ -1170,7 +1170,7 @@ public class Player : MonoBehaviour
 
     public void AddXP(int amount)
     {
-        Debug.Log($"[Player] Adding {amount} XP. Current: {CurrentXP}, Max: {MaxXP}, Level: {PlayerLevel}");
+        // Debug.Log($"[Player] Adding {amount} XP. Current: {CurrentXP}, Max: {MaxXP}, Level: {PlayerLevel}");
         CurrentXP += amount;
         
         // Check for level up
@@ -1182,7 +1182,7 @@ public class Player : MonoBehaviour
         // Update UI if needed
         if (GameMng.UI != null)
         {
-            Debug.Log($"[Player] Updating UI with XP: {CurrentXP}/{MaxXP}, Level: {PlayerLevel}");
+           // Debug.Log($"[Player] Updating UI with XP: {CurrentXP}/{MaxXP}, Level: {PlayerLevel}");
             GameMng.UI.UpdateXP(CurrentXP, MaxXP, PlayerLevel);
         }
         else
@@ -1205,7 +1205,7 @@ public class Player : MonoBehaviour
         // Update UI
         if (GameMng.UI != null)
         {
-            Debug.Log($"[Player] Updating UI after level up. Energy: {CurrentEnergy}/{MaxEnergy}, XP: {CurrentXP}/{MaxXP}");
+            // Debug.Log($"[Player] Updating UI after level up. Energy: {CurrentEnergy}/{MaxEnergy}, XP: {CurrentXP}/{MaxXP}");
             GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
             GameMng.UI.UpdateXP(CurrentXP, MaxXP, PlayerLevel);
         }

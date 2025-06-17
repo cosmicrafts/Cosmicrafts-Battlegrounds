@@ -381,7 +381,7 @@
         // Update UI elements based on player state
         public void UpdatePlayerState(bool isAlive)
         {
-            Debug.Log($"[UIGameMng] Updating UI for player state: {(isAlive ? "Alive" : "Dead")}");
+            // Debug.Log($"[UIGameMng] Updating UI for player state: {(isAlive ? "Alive" : "Dead")}");
             
             // Update deck visibility
             if (DeckPanel != null)

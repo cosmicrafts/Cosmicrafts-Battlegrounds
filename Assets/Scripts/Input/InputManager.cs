@@ -78,7 +78,7 @@ namespace Cosmicrafts
         {
             if (cardNumber >= 1 && cardNumber <= 8 && cardCallbacks[cardNumber - 1] != null)
             {
-                Debug.Log($"Card {cardNumber} selected via Input System");
+                // Debug.Log($"Card {cardNumber} selected via Input System");
                 cardCallbacks[cardNumber - 1](ctx);
             }
         }

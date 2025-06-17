@@ -96,6 +96,11 @@
         // Gameplay state
         private bool isGameOver = false;
 
+        [Header("Level Up UI")]
+        [SerializeField] private GameObject levelUpEffect; // Visual effect for level up
+        [SerializeField] private TMP_Text levelUpText; // Text showing the new level
+        [SerializeField] private float levelUpEffectDuration = 2f; // How long to show the effect
+
         private void Awake()
         {
             // Set the UI controller
@@ -619,6 +624,33 @@
             if (lowHealthWarning != null)
             {
                 lowHealthWarning.SetActive(show);
+            }
+        }
+
+        public void ShowLevelUpEffect(int newLevel)
+        {
+            if (levelUpEffect != null)
+            {
+                // Set the level text
+                if (levelUpText != null)
+                {
+                    levelUpText.text = $"{newLevel}";
+                }
+                
+                // Show the effect
+                levelUpEffect.SetActive(true);
+                
+                // Start coroutine to hide it after duration
+                StartCoroutine(HideLevelUpEffect());
+            }
+        }
+
+        private IEnumerator HideLevelUpEffect()
+        {
+            yield return new WaitForSeconds(levelUpEffectDuration);
+            if (levelUpEffect != null)
+            {
+                levelUpEffect.SetActive(false);
             }
         }
     }

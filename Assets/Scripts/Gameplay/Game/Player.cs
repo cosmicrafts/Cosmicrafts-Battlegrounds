@@ -1,6 +1,7 @@
 ﻿namespace Cosmicrafts {
 using System.Collections.Generic;
 using UnityEngine;
+using System.Collections;
 /*
  ! This is the Player code
  ? Controls his energy, gameplay, deck, etc.
@@ -114,6 +115,10 @@ public class Player : MonoBehaviour
     [Header("Low Health Warning")]
     [SerializeField] private float lowHealthThreshold = 0.3f; // 30% health threshold
     private bool wasLowHealth = false;
+
+    [Header("Level Up Effects")]
+    [SerializeField] private GameObject levelUpEffect; // Visual effect for level up
+    [SerializeField] private float levelUpEffectDuration = 2f; // How long to show the effect
 
     private void Awake()
     {
@@ -1202,12 +1207,35 @@ public class Player : MonoBehaviour
         MaxEnergy += 2; // Increase max energy
         CurrentEnergy = MaxEnergy; // Restore energy to max
         
+        // Refill HP and Shield
+        Unit playerUnit = GetComponent<Unit>();
+        if (playerUnit != null)
+        {
+            playerUnit.HitPoints = playerUnit.GetMaxHitPoints();
+            playerUnit.Shield = playerUnit.GetMaxShield();
+            
+            // Update UI if available
+            UIUnit uiUnit = playerUnit.GetComponentInChildren<UIUnit>();
+            if (uiUnit != null)
+            {
+                uiUnit.SetHPBar(1f);
+                uiUnit.SetShieldBar(1f);
+            }
+        }
+        
+        // Trigger level up visual effect
+        if (levelUpEffect != null)
+        {
+            levelUpEffect.SetActive(true);
+            StartCoroutine(DeactivateLevelUpEffect());
+        }
+        
         // Update UI
         if (GameMng.UI != null)
         {
-            // Debug.Log($"[Player] Updating UI after level up. Energy: {CurrentEnergy}/{MaxEnergy}, XP: {CurrentXP}/{MaxXP}");
             GameMng.UI.UpdateEnergy(CurrentEnergy, MaxEnergy);
             GameMng.UI.UpdateXP(CurrentXP, MaxXP, PlayerLevel);
+            GameMng.UI.ShowLevelUpEffect(PlayerLevel);
         }
         else
         {
@@ -1222,6 +1250,15 @@ public class Player : MonoBehaviour
         }
         
         Debug.Log($"Player leveled up to level {PlayerLevel}! Max Energy increased to {MaxEnergy}");
+    }
+
+    private IEnumerator DeactivateLevelUpEffect()
+    {
+        yield return new WaitForSeconds(levelUpEffectDuration);
+        if (levelUpEffect != null)
+        {
+            levelUpEffect.SetActive(false);
+        }
     }
 
     // Add public method to get active units count

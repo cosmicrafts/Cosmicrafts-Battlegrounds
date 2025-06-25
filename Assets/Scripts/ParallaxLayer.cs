@@ -176,50 +176,38 @@ namespace Cosmicrafts
                     return;
                 }
                 
-                // Determine tile size
-                Vector2 gridTileSize = tileSize;
-                
-                // Auto-detect size if not specified
-                if (gridTileSize.x <= 0 || gridTileSize.y <= 0)
-                {
-                    // Try to find a renderer to get dimensions
-                    Renderer renderer = GetComponent<Renderer>();
-                    if (renderer == null)
-                    {
-                        renderer = GetComponentInChildren<Renderer>();
-                    }
-                    
-                    if (renderer != null)
-                    {
-                        Bounds bounds = renderer.bounds;
-                        gridTileSize = new Vector2(bounds.size.x, bounds.size.z);
-                    }
-                    else
-                    {
-                        // Default size
-                        gridTileSize = new Vector2(10f, 10f);
-                        Debug.LogWarning("ParallaxLayer: Could not find a Renderer to determine tile size. Using default size of 10x10.");
-                    }
-                }
-                
                 // Calculate grid dimensions
-                int halfGrid = gridSize / 2;
-                int startOffset = -halfGrid;
-                int endOffset = halfGrid + (gridSize % 2); // Add 1 for odd grid sizes
+                // For gridSize 1, we want 8 tiles around the center (3x3 grid with center empty)
+                // For gridSize 2, we want 24 tiles (5x5 grid with center empty)
+                int totalSize = (gridSize * 2) + 1;
+                int halfSize = gridSize;
                 
                 // Store original GameObject to duplicate
                 GameObject originalObject = gameObject;
                 
                 // Create grid tiles
-                for (int x = startOffset; x < endOffset; x++)
+                for (int x = -halfSize; x <= halfSize; x++)
                 {
-                    for (int z = startOffset; z < endOffset; z++)
+                    for (int z = -halfSize; z <= halfSize; z++)
                     {
                         // Skip the center tile (that's the original)
                         if (x == 0 && z == 0) continue;
                         
+                        // Get the actual size of the object from its renderer
+                        Renderer renderer = originalObject.GetComponent<Renderer>();
+                        if (renderer == null)
+                        {
+                            renderer = originalObject.GetComponentInChildren<Renderer>();
+                        }
+                        
+                        Vector3 tileSize = renderer != null ? renderer.bounds.size : new Vector3(1f, 1f, 1f);
+                        
                         // Calculate position offset for this tile
-                        Vector3 positionOffset = new Vector3(x * gridTileSize.x, 0, z * gridTileSize.y);
+                        Vector3 positionOffset = new Vector3(
+                            x * tileSize.x,  // Use actual object size
+                            0,               // Keep Y at 0
+                            z * tileSize.z   // Use actual object size
+                        );
                         
                         // Duplicate the original plane
                         GameObject duplicate = Instantiate(originalObject, originalObject.transform.parent);

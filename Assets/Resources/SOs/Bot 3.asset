@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06a5fcb66d9ad3045ba725af3153fa65, type: 3}
+  m_Name: Bot 3
+  m_EditorClassIdentifier: 
+  baseMoveSpeed: 5
+  baseRotationSpeed: 10
+  characterIcon: {fileID: 21300000, guid: 917b41800d6604d4e99bef50da598d65, type: 3}
+  basePrefab: {fileID: 2198226034328220048, guid: 6ad468732b9efcf68b8265fe5cb5dacd, type: 3}
+  hpOverride: 350
+  shieldOverride: 220
+  bulletDamageOverride: 40
+  levelOverride: 1
+  skills:
+  - skillName: 0
+    Type: 0
+    Target: 0
+    Multiplier: 0.1
+    ApplicationType: 0

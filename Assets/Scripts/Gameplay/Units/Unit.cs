@@ -1,0 +1,735 @@
+﻿using UnityEngine;
+using System.Linq;
+using System;
+
+namespace Cosmicrafts
+{
+    public enum Team
+    {
+        Blue,
+        Red
+    }
+
+    public enum TypeDmg
+    {
+        Normal,
+        Direct,
+        Shield
+    }
+
+    public class Unit : MonoBehaviour
+    {
+        public event Action<Unit> OnDeath;
+        public event Action<Unit> OnUnitDeath;
+        protected int Id;
+        protected NFTsUnit NFTs;
+        public bool IsDeath;
+        public int PlayerId = 1;
+        public Team MyTeam;
+
+        [Range(1, 999999)]
+        public int HitPoints = 10;
+        int MaxHp = 10;
+        [Range(1, 999999)]
+        public int Shield = 0;
+        int MaxShield = 0;
+        [Range(0, 10)]
+        public float ShieldDelay = 3f;
+        [Range(0.1f, 10)]
+        public float Size = 1f;
+        [Range(0, 1)]
+        public float DodgeChance = 0f;
+        [Range(1, 999)]
+        public int Level = 1;
+
+        [Header("Death Effects")]
+        [Tooltip("Multiplier for the explosion effect size. Base size is 1.8x the unit's size")]
+        [Range(0.1f, 20f)]
+        public float explosionScaleMultiplier = 1f;
+
+        [HideInInspector]
+        public bool IsBaseStation = false;
+        [HideInInspector]
+        MainStation MainStationData;
+
+        [HideInInspector]
+        public bool IsInmortal = false;
+        [HideInInspector]
+        public bool flagShield = false;
+        [HideInInspector]
+        protected bool Disabled = false;
+        [HideInInspector]
+        protected float Casting = .5f;
+
+        float ShieldLoad = 0f;
+        float ShieldCharge = 0f;
+        float ShieldSpeed = 1f;
+
+        protected SphereCollider TrigerBase;
+        protected SphereCollider SolidBase;
+
+        public GameObject Mesh;
+        public GameObject Explosion;
+        public GameObject Portal;
+        public GameObject ShieldGameObject;
+        public UIUnit UI;
+        [SerializeField]
+        protected Animator MyAnim;
+        protected Vector3 LastImpact;
+        
+        [Header("Ghost Effect")]
+        [Tooltip("Optional material to use for ghost effect. If not set, no ghost effect will be applied.")]
+        public Material ghostMaterial;
+        private Material originalMaterial;
+        private Renderer meshRenderer;
+        
+        [Tooltip("Transform that VFX effects will follow (e.g. for dash trails)")]
+        public Transform TailPoint;
+
+        protected Rigidbody MyRb;
+
+        private float shieldVisualTimer = 0f;
+
+        [Header("Taunt Ability")]
+        public bool HasTaunt = false;
+        public float TauntRadius = 5f;
+        public float TauntCooldown = 1f;
+        private float tauntTimer = 0f;
+
+        private void Awake()
+        {
+            // Empty Awake method - we don't need to cache animation clips anymore
+        }
+
+        protected virtual void Start()
+        {
+            MainStationData = GetComponent<MainStation>();
+            IsBaseStation = MainStationData != null;
+            LastImpact = Vector3.zero;
+            MaxShield = Shield;
+            MaxHp = HitPoints;
+            Level = Mathf.Clamp(Level, 1, 999);
+            MyRb = GetComponent<Rigidbody>();
+            
+            TrigerBase = GetComponent<SphereCollider>();
+            SolidBase = Mesh.GetComponent<SphereCollider>();
+
+            // Find the mesh renderer (either MeshRenderer or SkinnedMeshRenderer)
+            meshRenderer = Mesh.GetComponent<Renderer>();
+            if (meshRenderer == null)
+            {
+                meshRenderer = Mesh.GetComponentInChildren<Renderer>();
+            }
+            
+            // Store original material if we found a renderer
+            if (meshRenderer != null)
+            {
+                originalMaterial = meshRenderer.material;
+            }
+
+            UI.Init(MaxHp - 1, MaxShield - 1);
+            
+            TrigerBase.radius = SolidBase.radius;
+            transform.localScale = new Vector3(Size, Size, Size);
+            MyAnim = Mesh.GetComponent<Animator>();
+            Portal.transform.parent = null;
+
+            // New rotation logic based on unit context
+            if (IsBaseStation)
+            {
+                if (MyTeam == Team.Blue)
+                {
+                    // Player base station - face forward (up)
+                    transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+                }
+                else
+                {
+                    // Bot base station - face the player base
+                    if (GameMng.P != null)
+                    {
+                        Vector3 directionToPlayer = (GameMng.P.transform.position - transform.position).normalized;
+                        transform.rotation = Quaternion.LookRotation(directionToPlayer, Vector3.up);
+                    }
+                    else
+                    {
+                        // Fallback - face down
+                        transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+                    }
+                }
+            }
+            else
+            {
+                // For regular units, use spawn point's rotation if available
+                Ship ship = GetComponent<Ship>();
+                if (ship != null && ship.spawnPointTransform != null)
+                {
+                    // Use spawn point's rotation
+                    transform.rotation = ship.spawnPointTransform.rotation;
+                }
+                else
+                {
+                    // Fallback - face towards team's objective
+                    Vector3 targetPos = MyTeam == Team.Blue ? 
+                        transform.position + Vector3.forward : // Player units face forward
+                        (GameMng.P != null ? GameMng.P.transform.position : transform.position + Vector3.back); // Bot units face player
+                    
+                    Vector3 direction = (targetPos - transform.position).normalized;
+                    transform.rotation = Quaternion.LookRotation(direction, Vector3.up);
+                }
+            }
+
+            Destroy(Portal, 3f);
+            GameMng.GM.AddUnit(this);
+        }
+
+        protected virtual void Update()
+        {
+            if (Casting > 0f)
+            {
+                Casting -= Time.deltaTime;
+                if (Casting <= 0f)
+                {
+                    CastComplete();
+                }
+            }
+
+            if (ShieldLoad > 0.1f)
+            {
+                ShieldLoad -= Time.deltaTime;
+            }
+            else if (Shield < MaxShield)
+            {
+                if (ShieldCharge < ShieldSpeed)
+                {
+                    ShieldCharge += Time.deltaTime;
+                }
+                else
+                {
+                    ShieldCharge = 12.5f;
+                    Shield++;
+                    UI.SetShieldBar((float)Shield / (float)MaxShield);
+                }
+            }
+            
+            // Handle shield visual timer without coroutines
+            if (shieldVisualTimer > 0)
+            {
+                shieldVisualTimer -= Time.deltaTime;
+                if (shieldVisualTimer <= 0 && ShieldGameObject != null)
+                {
+                    ShieldGameObject.SetActive(false);
+                }
+            }
+
+            // Taunt logic
+            if (HasTaunt && !IsDeath)
+            {
+                tauntTimer -= Time.deltaTime;
+                if (tauntTimer <= 0f)
+                {
+                    tauntTimer = TauntCooldown;
+                    // Pulse taunt
+                    Collider[] colliders = Physics.OverlapSphere(transform.position, TauntRadius);
+                    foreach (var col in colliders)
+                    {
+                        if (col == null || col.gameObject == null || col.gameObject == this.gameObject) continue;
+                        Unit otherUnit = col.GetComponent<Unit>();
+                        if (otherUnit != null && !otherUnit.IsMyTeam(MyTeam) && !otherUnit.GetIsDeath())
+                        {
+                            // Get both EDetector and Shooter components
+                            EDetector detector = otherUnit.GetComponentInChildren<EDetector>();
+                            Shooter shooter = otherUnit.GetComponent<Shooter>();
+                            
+                            // Force immediate target re-evaluation
+                            if (detector != null)
+                            {
+                                detector.ForceRefreshTarget();
+                            }
+                            
+                            if (shooter != null)
+                            {
+                                // Clear current target and force re-evaluation
+                                shooter.SetTarget(null);
+                                shooter.HandleTauntEffect();
+                                
+                                // Debug log to verify taunt effect
+                              //  Debug.Log($"[{MyTeam}] Taunt unit {gameObject.name} affecting {otherUnit.name}");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        protected virtual void FixedUpdate()
+        {
+            if (MyRb.linearVelocity.magnitude > 0f)
+            {
+                MyRb.linearVelocity = Vector3.zero;
+            }
+            if (MyRb.angularVelocity.magnitude > 0.5f)
+            {
+                MyRb.angularVelocity = Vector3.zero;
+            }
+            if (transform.rotation.x != 0f || transform.rotation.y != 0f)
+            {
+                transform.rotation = Quaternion.Euler(0f, transform.rotation.eulerAngles.y, 0f);
+            }
+        }
+
+        protected virtual void CastComplete()
+        {
+            MyAnim.SetBool("Idle", true);
+            MyAnim.speed = 1;
+        }
+
+        public void AddDmg(int dmg, TypeDmg typeDmg)
+        {
+            if (IsDeath || !InControl() || dmg <= 0)
+                return;
+
+            ShieldLoad = ShieldDelay;
+            ShieldCharge = 0f;
+
+            int DirectDmg = 0;
+
+            if (Shield > 0 && typeDmg != TypeDmg.Direct)
+            {
+                Shield -= dmg;
+                if (Shield < 0)
+                {
+                    HitPoints += Shield;
+                    DirectDmg += Mathf.Abs(Shield);
+                    Shield = 0;
+                }
+                if (UI != null)
+                {
+                    UI.SetShieldBar((float)Shield / (float)MaxShield);
+                }
+            }
+            else if (typeDmg != TypeDmg.Shield)
+            {
+                HitPoints -= dmg;
+                DirectDmg += dmg;
+            }
+
+            // Only add damage to metrics if this is an enemy unit
+            if (!IsMyTeam(GameMng.P?.MyTeam ?? Team.Blue) && GameMng.MT != null)
+            {
+                GameMng.MT.AddDamage(DirectDmg);
+            }
+
+            if (HitPoints <= 0 && !IsInmortal)
+            {
+                HitPoints = 0;
+                Die();
+            }
+
+            if (UI != null)
+            {
+                UI.SetHPBar((float)HitPoints / (float)MaxHp);
+            }
+        }
+
+        public void AddDmg(int dmg)
+        {
+            AddDmg(dmg, TypeDmg.Normal);
+        }
+
+        public virtual void Die()
+        {
+            if (IsDeath)
+                return;
+
+            HitPoints = 0;
+            IsDeath = true;
+
+            // Play explosion effect immediately
+            BlowUpEffect();
+
+            // Award XP to the player if this is an enemy unit
+            if (!IsMyTeam(GameMng.P?.MyTeam ?? Team.Blue) && GameMng.P != null)
+            {
+                // Calculate XP based on unit level and type
+                int xpReward = GameMng.P.XPPerKill;
+                
+                // Bonus XP for higher level units
+                xpReward += Level * 2;
+                
+                // Extra XP for base stations
+                if (IsBaseStation)
+                {
+                    xpReward *= 5;
+                }
+                
+                GameMng.P.AddXP(xpReward);
+                // Debug.Log($"Awarded {xpReward} XP for destroying {gameObject.name} (Level {Level})");
+
+                // Show XP gain text
+                if (GameMng.UI != null)
+                {
+                    GameMng.UI.ShowXPGain(xpReward, transform.position);
+                }
+            }
+
+            // Broadcast the death event
+            OnDeath?.Invoke(this);
+            OnUnitDeath?.Invoke(this);
+
+            // Special handling for player base stations - don't hide UI or disable colliders
+            if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
+            {
+                // Don't hide UI or disable anything
+               // Debug.Log($"Player base station 'died' but keeping visuals active");
+            }
+            else
+            {
+                // Regular death handling for other units
+                UI.HideUI();
+                MyAnim.SetTrigger("Die");
+                SolidBase.enabled = false;
+            }
+
+            // Don't automatically destroy if it's the player's base station
+            // GameMng.HandlePlayerBaseStationDeath will handle it instead
+            if (!IsBaseStation || MyTeam != GameMng.P.MyTeam)
+            {
+                // For non-player base stations, destroy normally
+                Destroy(gameObject, .25f); // Give time for death animation to play
+            }
+        }
+
+        public virtual void DisableUnit()
+        {
+            Disabled = true;
+
+            Ship ship = GetComponent<Ship>();
+
+            if (ship != null)
+                ship.CanMove = false;
+
+            Shooter shooter = GetComponent<Shooter>();
+
+            if (shooter != null)
+                shooter.CanAttack = false;
+        }
+
+        public virtual void EnableUnit()
+        {
+            Disabled = false;
+
+            Ship ship = GetComponent<Ship>();
+
+            if (ship != null)
+                ship.CanMove = true;
+
+            Shooter shooter = GetComponent<Shooter>();
+
+            if (shooter != null)
+                shooter.CanAttack = true;
+        }
+
+        public bool IsMyTeam(Team other)
+        {
+            return other == MyTeam;
+        }
+
+        public bool GetIsDeath()
+        {
+            return IsDeath;
+        }
+
+        public bool GetIsDisabled()
+        {
+            return Disabled;
+        }
+
+        public bool GetIsCasting()
+        {
+            return Casting > 0f;
+        }
+
+        public virtual void DestroyUnit()
+        {
+            // If it's the player's base station, let GameMng handle it instead
+            // This prevents actual destruction of the player's base
+            if (IsBaseStation && MyTeam == GameMng.P.MyTeam)
+            {
+                // GameMng.HandlePlayerBaseStationDeath will be called through the OnUnitDeath event
+                // which will handle respawning without destroying the base station
+                return;
+            }
+
+            GameMng.GM.DeleteUnit(this);
+
+            if (!GameMng.GM.IsGameOver() && IsBaseStation)
+            {
+                if (WaveController.instance != null && MyTeam == Team.Red)
+                {
+                    WaveController.instance.OnBaseDestroyed();
+                }
+                else if (MyTeam == Team.Red)
+                {
+                    // Enemy base station is destroyed - player wins
+                    GameMng.GM.EndGame(Team.Blue);
+                }
+                // Player base station destruction is now handled by GameMng.HandlePlayerBaseStationDeath
+                // We don't immediately end the game here
+            }
+
+            if (!IsMyTeam(GameMng.P.MyTeam))
+            {
+                GameMng.MT.AddKills(1);
+            }
+
+            Destroy(gameObject);
+        }
+
+        public void BlowUpEffect()
+        {
+            GameObject explosion = Instantiate(Explosion, transform.position, Quaternion.identity);
+            // Base size is 1.8x the unit's size, multiplied by the custom multiplier
+            explosion.transform.localScale = transform.localScale * 1.8f * explosionScaleMultiplier;
+            Destroy(explosion, 4f);
+        }
+
+        public void SetImpactPosition(Vector3 position)
+        {
+            LastImpact = position;
+        }
+
+        public void setId(int id)
+        {
+            Id = id;
+        }
+
+        public int getId()
+        {
+            return Id;
+        }
+
+        public string getKey()
+        {
+            return NFTs == null ? string.Empty : NFTs.KeyId;
+        }
+
+        public int GetPlayerId()
+        {
+            return PlayerId;
+        }
+
+        public Animator GetAnimator()
+        {
+            return MyAnim;
+        }
+
+        public int GetMaxShield()
+        {
+            return MaxShield;
+        }
+
+        public void SetMaxShield(int maxshield)
+        {
+            MaxShield = maxshield;
+        }
+
+        public void SetMaxHitPoints(int maxhp)
+        {
+            MaxHp = maxhp;
+            UI.SetHPBar((float)HitPoints / (float)MaxHp);
+        }
+
+        public int GetMaxHitPoints()
+        {
+            return MaxHp;
+        }
+
+        public virtual void SetNfts(NFTsUnit nFTsUnit)
+        {
+            NFTs = nFTsUnit;
+
+            if (nFTsUnit == null)
+                return;
+
+            HitPoints = nFTsUnit.HitPoints;
+            MaxHp = HitPoints;
+            Shield = nFTsUnit.Shield;
+            MaxShield = Shield;
+            Level = nFTsUnit.Level;
+
+            GetComponent<Shooter>()?.InitStatsFromNFT(nFTsUnit);
+            
+            // Update outline color when NFT data is set
+            UpdateOutlineColor();
+        }
+
+        public bool InControl()
+        {
+            return (!Disabled && Casting <= 0f);
+        }
+
+        public void OnImpactShield(int dmg)
+        {
+            // Early return if object is inactive or destroyed
+            if (this == null || !gameObject || !gameObject.activeInHierarchy || IsDeath)
+            {
+                return;
+            }
+            
+            // Only activate shield visual if we have shield remaining
+            if (Shield > 0 && ShieldGameObject != null)
+            {
+                ShieldGameObject.SetActive(true);
+                // Set timer instead of using coroutine
+                shieldVisualTimer = 1f;
+            }
+            
+            // Apply damage
+            AddDmg(dmg);
+        }
+
+        public int GetLevel()
+        {
+            return Level;
+        }
+
+        public void SetLevel(int newLevel)
+        {
+            Level = Mathf.Clamp(newLevel, 1, 99);
+        }
+
+        public virtual void MoveTo(Vector3 position)
+        {
+            Ship ship = GetComponent<Ship>();
+            if (ship != null)
+            {
+                ship.SetDestination(position, ship.StoppingDistance);
+            }
+            else
+            {
+                Debug.LogWarning($"MoveTo called on {name}, but no Ship component was found.");
+            }
+        }
+
+        public virtual void ResetUnit()
+        {
+           // Debug.Log($"[Unit.ResetUnit] Resetting unit {gameObject.name} (ID: {Id})");
+            
+            // Reset the unit to its initial state for reuse in object pooling
+            IsDeath = false;
+            Disabled = false;
+            Casting = 0f;
+            
+            // Make sure colliders are enabled
+            if (SolidBase != null) 
+                SolidBase.enabled = true;
+            
+            // Re-enable GameObject if it was disabled
+            if (!gameObject.activeSelf)
+                gameObject.SetActive(true);
+            
+            // Reset health and shield to their maximum values
+            HitPoints = MaxHp;
+            Shield = MaxShield;
+            
+            // Reset UI elements
+            if (UI != null) {
+                UI.SetHPBar(1f);
+                UI.SetShieldBar((float)Shield / (float)MaxShield);
+                // Show UI
+                if (UI.Canvas != null)
+                    UI.Canvas.SetActive(true);
+            }
+            
+            // Reset animation state if needed
+            if (MyAnim != null) {
+                MyAnim.ResetTrigger("Die");
+                MyAnim.SetBool("Idle", true);
+            }
+            
+            // Reset any ship-specific components
+            Ship ship = GetComponent<Ship>();
+            if (ship != null)
+                ship.ResetShip();
+            
+            Shooter shooter = GetComponent<Shooter>();
+            if (shooter != null)
+                shooter.ResetShooter();
+            
+            // Create portal effect for respawn if Portal prefab exists
+            if (Portal != null) {
+                GameObject portal = Instantiate(Portal, transform.position, Quaternion.identity);
+                Destroy(portal, 3f);
+            }
+            
+            //Debug.Log($"[Unit.ResetUnit] Unit reset complete at position {transform.position}");
+        }
+
+        // Method to update the outline color based on current team and player ID
+        public void UpdateOutlineColor()
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        private Color GetTeamColor()
+        {
+            if (GameMng.P != null && MyTeam == GameMng.P.MyTeam && PlayerId == GameMng.P.ID)
+                return Color.green; // Player's own units
+            else if (GameMng.P != null && MyTeam == GameMng.P.MyTeam)
+                return Color.blue; // Ally units
+            else
+                return Color.red; // Enemy units
+        }
+
+        // Enable or disable the outline
+        public void EnableOutline(bool enable)
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Set outline width (dilate shift in EPO)
+        public void SetOutlineWidth(float width)
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Set outline drawing mode
+        public void SetOutlineDrawingMode()
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Set outline render style
+        public void SetOutlineRenderStyle()
+        {
+            // Empty stub - outline functionality removed
+        }
+
+        // Method to trigger the OnUnitDeath event
+        public virtual void OnUnitDeathHandler()
+        {
+            // Trigger the event for object pooling
+            if (OnUnitDeath != null)
+            {
+                OnUnitDeath(this);
+            }
+            else
+            {
+                // Fall back to destroy if no listeners
+                DestroyUnit();
+            }
+        }
+
+        public float GetHealthPercentage()
+        {
+            return (float)HitPoints / (float)MaxHp;
+        }
+
+        public void SetGhostEffect(bool enable)
+        {
+            if (meshRenderer == null || ghostMaterial == null) return;
+            
+            meshRenderer.material = enable ? ghostMaterial : originalMaterial;
+        }
+    }
+}

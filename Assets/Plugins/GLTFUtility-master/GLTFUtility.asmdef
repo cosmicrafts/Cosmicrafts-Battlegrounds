@@ -1,0 +1,22 @@
+{
+    "name": "Siccity.GLTFUtility",
+    "rootNamespace": "",
+    "references": [
+        "GUID:270c9a1a487a4f144af51a6b44c1a399"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": true,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        {
+            "name": "com.atteneder.draco",
+            "expression": "",
+            "define": "HAVE_DRACO"
+        }
+    ],
+    "noEngineReferences": false
+}

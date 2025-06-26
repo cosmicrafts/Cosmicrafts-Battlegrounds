@@ -1,0 +1,285 @@
+namespace Cosmicrafts
+{
+    using UnityEngine;
+    using System.Collections.Generic;
+
+    /// <summary>
+    /// Controls the parallax movement of a space layer relative to the camera.
+    /// Lower parallax factors will move more slowly, creating a sense of depth.
+    /// Can also generate a grid of planes to create a tiled background.
+    /// </summary>
+    public class ParallaxLayer : MonoBehaviour
+    {
+        [Tooltip("How fast this layer moves relative to camera (0 = fixed in world space, 1 = fixed to camera)")]
+        [Range(0f, 1f)]
+        public float parallaxFactor = 0.1f;
+
+        [Tooltip("Apply an extra speed factor to make layers move at different rates")]
+        public Vector2 speedMultiplier = Vector2.one;
+
+        [Header("Scale Animation")]
+        [Tooltip("Enable scale animation based on parallax movement")]
+        public bool enableScaleAnimation = false;
+
+        [Tooltip("How much the scale changes with distance (0 = no scale change, 1 = full scale change)")]
+        [Range(0f, 1f)]
+        public float scaleAnimationFactor = 0.2f;
+
+        [Tooltip("Maximum scale multiplier when closest to camera")]
+        [Range(1f, 20f)]
+        public float maxScaleMultiplier = 1.5f;
+
+        [Tooltip("Minimum scale multiplier when farthest from camera")]
+        [Range(0.1f, 1f)]
+        public float minScaleMultiplier = 0.8f;
+
+        [Tooltip("How smoothly the scale changes (higher = smoother)")]
+        [Range(0.1f, 10f)]
+        public float scaleSmoothing = 2f;
+
+        [Tooltip("Reference distance for scaling (distance at which scale is 1.0)")]
+        public float referenceDistance = 10f;
+
+        [Header("Grid Generation")]
+        [Tooltip("Size of the grid in X and Z (e.g. 3 = 3x3 grid)")]
+        [Range(1, 5)]
+        public int gridSize = 1;
+
+        [Tooltip("If true, will generate the grid on start")]
+        public bool generateGridOnStart = false;
+
+        [Tooltip("Size of each grid tile. If zero, will use the object's renderer bounds.")]
+        public Vector2 tileSize = Vector2.zero;
+
+        // Used to track camera movement
+        private Vector3 lastCameraPosition;
+        private Camera mainCamera;
+        
+        // Flag to prevent recursive grid generation
+        private bool isGeneratingGrid = false;
+        
+        // Track created grid objects
+        private List<GameObject> gridObjects = new List<GameObject>();
+
+        // Scale animation variables
+        private Vector3 originalScale;
+        private Vector3 targetScale;
+        private float baseDistance;
+
+        private void Start()
+        {
+            mainCamera = Camera.main;
+            if (mainCamera != null)
+            {
+                lastCameraPosition = mainCamera.transform.position;
+                // Store the initial distance as our reference
+                baseDistance = Vector3.Distance(transform.position, mainCamera.transform.position);
+            }
+            else
+            {
+                Debug.LogWarning("ParallaxLayer could not find main camera. Using current position as fallback.");
+                lastCameraPosition = transform.position;
+                baseDistance = referenceDistance;
+            }
+            
+            // Store original scale for animation
+            originalScale = transform.localScale;
+            targetScale = originalScale;
+            
+            // Generate grid if enabled
+            if (generateGridOnStart && !isGeneratingGrid)
+            {
+                GenerateGrid();
+            }
+        }
+
+        private void LateUpdate()
+        {
+            if (mainCamera == null) return;
+
+            // Calculate camera movement delta this frame
+            Vector3 cameraDelta = mainCamera.transform.position - lastCameraPosition;
+            
+            // For top-down game, we only care about X and Z movement
+            // In a top-down perspective, Y is height/altitude, not depth
+            cameraDelta.y = 0;
+
+            // Apply parallax effect based on factor (inverse because we want things to move in the opposite direction)
+            // 0 = stationary in world space, 1 = fixed to camera
+            Vector3 parallaxDelta = cameraDelta * (1f - parallaxFactor);
+            
+            // Apply custom speed multiplier
+            parallaxDelta.x *= speedMultiplier.x;
+            parallaxDelta.z *= speedMultiplier.y;
+
+            // Move the layer
+            transform.position -= parallaxDelta;
+
+            // Handle scale animation if enabled
+            if (enableScaleAnimation)
+            {
+                // Calculate current distance to camera
+                float currentDistance = Vector3.Distance(transform.position, mainCamera.transform.position);
+                
+                // Calculate how far we are from our reference distance
+                float distanceRatio = currentDistance / baseDistance;
+                
+                // Invert the ratio so closer = bigger, farther = smaller
+                float inverseRatio = 1f / distanceRatio;
+                
+                // Apply the scale animation factor
+                float scaleEffect = Mathf.Lerp(1f, inverseRatio, scaleAnimationFactor);
+                
+                // Clamp the scale effect between our min and max multipliers
+                float finalScaleMultiplier = Mathf.Clamp(scaleEffect, minScaleMultiplier, maxScaleMultiplier);
+                
+                // Calculate target scale
+                targetScale = originalScale * finalScaleMultiplier;
+                
+                // Debug scaling values
+               // Debug.Log($"Distance: {currentDistance:F2}, Ratio: {distanceRatio:F2}, Scale: {finalScaleMultiplier:F2}");
+                
+                // Smoothly interpolate to target scale
+                transform.localScale = Vector3.Lerp(
+                    transform.localScale,
+                    targetScale,
+                    Time.deltaTime * scaleSmoothing
+                );
+            }
+            else if (transform.localScale != originalScale)
+            {
+                // Reset scale if animation is disabled
+                transform.localScale = originalScale;
+            }
+
+            // Update last camera position
+            lastCameraPosition = mainCamera.transform.position;
+        }
+        
+        /// <summary>
+        /// Generates a grid of duplicate planes around the original plane.
+        /// </summary>
+        public void GenerateGrid()
+        {
+            // Prevent recursive calls
+            if (isGeneratingGrid) return;
+            isGeneratingGrid = true;
+            
+            try
+            {
+                // First clean up any existing grid
+                CleanupGrid();
+                
+                // If grid size is 1, we don't need to do anything
+                if (gridSize <= 1)
+                {
+                    return;
+                }
+                
+                // Calculate grid dimensions
+                // For gridSize 1, we want 8 tiles around the center (3x3 grid with center empty)
+                // For gridSize 2, we want 24 tiles (5x5 grid with center empty)
+                int totalSize = (gridSize * 2) + 1;
+                int halfSize = gridSize;
+                
+                // Store original GameObject to duplicate
+                GameObject originalObject = gameObject;
+                
+                // Create grid tiles
+                for (int x = -halfSize; x <= halfSize; x++)
+                {
+                    for (int z = -halfSize; z <= halfSize; z++)
+                    {
+                        // Skip the center tile (that's the original)
+                        if (x == 0 && z == 0) continue;
+                        
+                        // Get the actual size of the object from its renderer
+                        Renderer renderer = originalObject.GetComponent<Renderer>();
+                        if (renderer == null)
+                        {
+                            renderer = originalObject.GetComponentInChildren<Renderer>();
+                        }
+                        
+                        Vector3 tileSize = renderer != null ? renderer.bounds.size : new Vector3(1f, 1f, 1f);
+                        
+                        // Calculate position offset for this tile
+                        Vector3 positionOffset = new Vector3(
+                            x * tileSize.x,  // Use actual object size
+                            0,               // Keep Y at 0
+                            z * tileSize.z   // Use actual object size
+                        );
+                        
+                        // Duplicate the original plane
+                        GameObject duplicate = Instantiate(originalObject, originalObject.transform.parent);
+                        
+                        // Remove the original ParallaxLayer component from the duplicate to avoid recursion
+                        ParallaxLayer duplicateLayer = duplicate.GetComponent<ParallaxLayer>();
+                        if (duplicateLayer != null)
+                        {
+                            Destroy(duplicateLayer);
+                        }
+
+                        // Add a new ParallaxLayer component with grid generation disabled
+                        ParallaxLayer newLayer = duplicate.AddComponent<ParallaxLayer>();
+                        // Copy settings from the original
+                        newLayer.parallaxFactor = this.parallaxFactor;
+                        newLayer.speedMultiplier = this.speedMultiplier;
+                        // Disable grid generation to prevent recursion
+                        newLayer.gridSize = 1;
+                        newLayer.generateGridOnStart = false;
+                        
+                        // Position the duplicate with the correct offset
+                        duplicate.transform.position = originalObject.transform.position + positionOffset;
+                        
+                        // Name it for easier identification
+                        duplicate.name = originalObject.name + $"_Tile_{x}_{z}";
+                        
+                        // Add to tracking list
+                        gridObjects.Add(duplicate);
+                    }
+                }
+            }
+            finally
+            {
+                // Always clear the flag when done
+                isGeneratingGrid = false;
+            }
+        }
+        
+        /// <summary>
+        /// Cleans up any previously generated grid objects.
+        /// </summary>
+        public void CleanupGrid()
+        {
+            foreach (GameObject obj in gridObjects)
+            {
+                if (obj != null)
+                {
+                    if (Application.isPlaying)
+                    {
+                        Destroy(obj);
+                    }
+                    else
+                    {
+                        DestroyImmediate(obj);
+                    }
+                }
+            }
+            gridObjects.Clear();
+        }
+        
+        /// <summary>
+        /// Helper method that can be called from a button in the editor or other scripts.
+        /// </summary>
+        public void RegenerateGrid()
+        {
+            CleanupGrid();
+            GenerateGrid();
+        }
+        
+        private void OnDestroy()
+        {
+            CleanupGrid();
+        }
+    }
+} 
